@@ -336,7 +336,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
               SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Similar Feedbacks Found',
+                  _SdkLocale.duplicateWarningTitle,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -353,7 +353,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Before submitting, check if your issue is already reported:',
+                  _SdkLocale.duplicateWarningSub,
                   style: TextStyle(color: Colors.white70, fontSize: 13),
                 ),
                 const SizedBox(height: 12),
@@ -422,7 +422,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                 Navigator.of(dialogContext).pop(false);
               },
               child: const Text(
-                'I will check later',
+                _SdkLocale.checkLater,
                 style: TextStyle(color: Colors.white60),
               ),
             ),
@@ -435,7 +435,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                 Navigator.of(dialogContext).pop(true);
               },
               child: const Text(
-                'Report New Issue',
+                _SdkLocale.reportNewIssue,
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
@@ -570,7 +570,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                           : comments.isEmpty
                           ? const Center(
                               child: Text(
-                                'No comments yet. Start the conversation!',
+                                _SdkLocale.noCommentsYet,
                                 style: TextStyle(
                                   color: Colors.grey,
                                   fontSize: 12,
@@ -665,7 +665,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                               fontSize: 13,
                             ),
                             decoration: InputDecoration(
-                              hintText: 'Type a message...',
+                              hintText: _SdkLocale.typeMessage,
                               hintStyle: const TextStyle(
                                 color: Colors.grey,
                                 fontSize: 13,
@@ -821,12 +821,12 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                             setState(() => _isCapturing = false);
                           },
                     child: const Text(
-                      'Cancel',
+                      _SdkLocale.cancel,
                       style: TextStyle(color: Colors.white70),
                     ),
                   ),
                   title: const Text(
-                    'SnappySnag Feedback',
+                    _SdkLocale.titleFeedback,
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.white,
@@ -845,7 +845,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text(
-                                      'Please add a memo describing the issue first.',
+                                      _SdkLocale.memoPromptSnackBar,
                                     ),
                                     backgroundColor: Colors.orange,
                                   ),
@@ -893,20 +893,20 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                 final messengerContext =
                                     SnappySnag().navigatorKey?.currentContext ??
                                     context;
-                                String message = 'Feedback sent successfully!';
+                                String message = _SdkLocale.statusSuccess;
                                 if (!success) {
                                   if (statusCode == 429) {
                                     message =
-                                        'Rate limit exceeded. Please wait a minute before retrying.';
+                                        _SdkLocale.statusRateLimit;
                                   } else if (statusCode == 401) {
                                     message =
-                                        'Failed to send: Invalid or inactive API Key.';
+                                        _SdkLocale.statusInvalidKey;
                                   } else if (statusCode == 403) {
                                     message =
-                                        'Failed to send: This app package is not authorized.';
+                                        _SdkLocale.statusUnauthorizedPackage;
                                   } else {
                                     message =
-                                        'Failed to send feedback (Network or Server Error).';
+                                        _SdkLocale.statusNetworkError;
                                   }
                                 }
 
@@ -934,7 +934,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                               ),
                             )
                           : const Text(
-                              'Send',
+                              _SdkLocale.send,
                               style: TextStyle(
                                 color: Colors.amber,
                                 fontWeight: FontWeight.bold,
@@ -1129,7 +1129,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         CrossAxisAlignment.stretch,
                                     children: [
                                       const Text(
-                                        'Describe the issue',
+                                        _SdkLocale.describeIssue,
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
@@ -1148,7 +1148,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         ),
                                         decoration: InputDecoration(
                                           hintText:
-                                              'e.g., The title font size is too small on this screen...',
+                                              _SdkLocale.memoHint,
                                           hintStyle: const TextStyle(
                                             color: Colors.grey,
                                           ),
@@ -1181,7 +1181,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                           );
                                         },
                                         child: const Text(
-                                          'Done',
+                                          _SdkLocale.done,
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -1594,4 +1594,33 @@ class DrawingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+
+/// Internal localization helper for SnappySnag SDK.
+class _SdkLocale {
+  static bool get _isJa => Platform.localeName.toLowerCase().startsWith('ja');
+
+  static String get cancel => _isJa ? 'キャンセル' : 'Cancel';
+  static String get send => _isJa ? '送信' : 'Send';
+  static String get titleFeedback => _isJa ? 'バグ報告' : 'SnappySnag Feedback';
+  static String get memoPromptSnackBar => _isJa ? '最初にバグ内容のメモを追加してください。' : 'Please add a memo describing the issue first.';
+  
+  static String get statusSuccess => _isJa ? 'フィードバックの送信が成功しました！' : 'Feedback sent successfully!';
+  static String get statusRateLimit => _isJa ? '送信頻度の上限を超えました。1分ほど待って再度お試しください。' : 'Rate limit exceeded. Please wait a minute before retrying.';
+  static String get statusInvalidKey => _isJa ? '送信失敗: APIキーが無効または停止されています。' : 'Failed to send: Invalid or inactive API Key.';
+  static String get statusUnauthorizedPackage => _isJa ? '送信失敗: このアプリパッケージは許可されていません。' : 'Failed to send: This app package is not authorized.';
+  static String get statusNetworkError => _isJa ? 'フィードバックの送信に失敗しました（ネットワークまたはサーバーエラー）。' : 'Failed to send feedback (Network or Server Error).';
+
+  static String get duplicateWarningTitle => _isJa ? '類似のバグ報告が見つかりました' : 'Similar Feedbacks Found';
+  static String get duplicateWarningSub => _isJa ? '報告する前に、同様の不具合が既に報告されていないか確認してください。' : 'Before submitting, check if your issue is already reported:';
+  static String get checkLater => _isJa ? '後で確認する' : 'I will check later';
+  static String get reportNewIssue => _isJa ? '新規に報告する' : 'Report New Issue';
+
+  static String get noCommentsYet => _isJa ? 'コメントはまだありません。会話を始めましょう！' : 'No comments yet. Start the conversation!';
+  static String get typeMessage => _isJa ? 'メッセージを入力...' : 'Type a message...';
+
+  static String get describeIssue => _isJa ? 'バグの詳細を説明してください' : 'Describe the issue';
+  static String get memoHint => _isJa ? '（例: この画面のタイトルのフォントサイズが小さすぎます...）' : 'e.g., The title font size is too small on this screen...';
+  static String get done => _isJa ? '完了' : 'Done';
 }
