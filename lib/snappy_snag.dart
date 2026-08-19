@@ -1592,43 +1592,26 @@ class _SdkLocale {
 
   static String get cancel => _isJa ? 'キャンセル' : 'Cancel';
   static String get send => _isJa ? '送信' : 'Send';
-  static String get titleFeedback => _isJa ? 'バグ報告' : 'SnappySnag Feedback';
-  static String get memoPromptSnackBar => _isJa
-      ? '最初にバグ内容のメモを追加してください。'
-      : 'Please add a memo describing the issue first.';
+  static String get titleFeedback => _isJa ? 'フィードバック送信' : 'SnappySnag Feedback';
+  static String get memoPromptSnackBar => _isJa ? '最初に内容のメモを追加してください。' : 'Please add a memo describing your feedback first.';
+  
+  static String get statusSuccess => _isJa ? 'フィードバックの送信が成功しました！' : 'Feedback sent successfully!';
+  static String get statusRateLimit => _isJa ? '送信頻度の上限を超えました。1分ほど待って再度お試しください。' : 'Rate limit exceeded. Please wait a minute before retrying.';
+  static String get statusInvalidKey => _isJa ? '送信失敗: APIキーが無効または停止されています。' : 'Failed to send: Invalid or inactive API Key.';
+  static String get statusUnauthorizedPackage => _isJa ? '送信失敗: このアプリパッケージは許可されていません。' : 'Failed to send: This app package is not authorized.';
+  static String get statusNetworkError => _isJa ? 'フィードバックの送信に失敗しました（ネットワークまたはサーバーエラー）。' : 'Failed to send feedback (Network or Server Error).';
 
-  static String get statusSuccess =>
-      _isJa ? 'フィードバックの送信が成功しました！' : 'Feedback sent successfully!';
-  static String get statusRateLimit => _isJa
-      ? '送信頻度の上限を超えました。1分ほど待って再度お試しください。'
-      : 'Rate limit exceeded. Please wait a minute before retrying.';
-  static String get statusInvalidKey => _isJa
-      ? '送信失敗: APIキーが無効または停止されています。'
-      : 'Failed to send: Invalid or inactive API Key.';
-  static String get statusUnauthorizedPackage => _isJa
-      ? '送信失敗: このアプリパッケージは許可されていません。'
-      : 'Failed to send: This app package is not authorized.';
-  static String get statusNetworkError => _isJa
-      ? 'フィードバックの送信に失敗しました（ネットワークまたはサーバーエラー）。'
-      : 'Failed to send feedback (Network or Server Error).';
-
-  static String get duplicateWarningTitle =>
-      _isJa ? '類似のバグ報告が見つかりました' : 'Similar Feedbacks Found';
-  static String get duplicateWarningSub => _isJa
-      ? '報告する前に、同様の不具合が既に報告されていないか確認してください。'
-      : 'Before submitting, check if your issue is already reported:';
+  static String get duplicateWarningTitle => _isJa ? 'この画面で報告されているフィードバック' : 'Feedbacks reported on this screen';
+  static String get duplicateWarningSub => _isJa ? '送信する前に、同様の内容が既に報告されていないか確認してください。' : 'Before submitting, check if your issue is already reported:';
   static String get checkLater => _isJa ? '後で確認する' : 'I will check later';
-  static String get reportNewIssue => _isJa ? '新規に報告する' : 'Report New Issue';
+  static String get reportNewIssue => _isJa ? '新規にフィードバックを送信' : 'Report New Feedback';
 
-  static String get noCommentsYet => _isJa
-      ? 'コメントはまだありません。会話を始めましょう！'
-      : 'No comments yet. Start the conversation!';
+  static String get noCommentsYet => _isJa ? 'コメントはまだありません。会話を始めましょう！' : 'No comments yet. Start the conversation!';
   static String get typeMessage => _isJa ? 'メッセージを入力...' : 'Type a message...';
 
-  static String get describeIssue =>
-      _isJa ? 'バグの詳細を説明してください' : 'Describe the issue';
-  static String get memoHint => _isJa
-      ? '（例: この画面のタイトルのフォントサイズが小さすぎます...）'
-      : 'e.g., The title font size is too small on this screen...';
+  static String get describeIssue => _isJa ? 'フィードバックの詳細を説明してください' : 'Describe your feedback';
+  static String get memoHint => _isJa ? '（例: この画面のタイトルのフォントサイズが小さすぎます...）' : 'e.g., The title font size is too small on this screen...';
   static String get done => _isJa ? '完了' : 'Done';
+
+  static String get analyzingScreen => _isJa ? '画面を解析中...' : 'Analyzing screen...';
 }
