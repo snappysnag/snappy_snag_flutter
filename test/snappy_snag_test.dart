@@ -11,14 +11,17 @@ void main() {
     expect(snappy, isNotNull);
   });
 
-  test('SnappySnag initializes without throwing error when packageName is empty', () {
-    final snappy = SnappySnag();
-    expect(
-      () => snappy.initialize(
-        apiKey: 'test_api_key_123456789',
-        packageName: '   ',
-      ),
-      returnsNormally,
-    );
-  });
+  test(
+    'SnappySnag initializes without throwing error when packageName is empty',
+    () {
+      final snappy = SnappySnag();
+      expect(
+        () => snappy.initialize(
+          apiKey: 'test_api_key_123456789',
+          packageName: '   ',
+        ),
+        returnsNormally,
+      );
+    },
+  );
 }
