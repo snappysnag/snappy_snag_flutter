@@ -6,8 +6,8 @@ repository: https://github.com/snappysnag/snappy_snag_flutter
 issue_tracker: https://github.com/snappysnag/snappy_snag_flutter/issues
 
 environment:
-  sdk: ^3.13.0-228.0.dev
-  flutter: ">=1.17.0"
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.0.0"
 
 dependencies:
   flutter:
