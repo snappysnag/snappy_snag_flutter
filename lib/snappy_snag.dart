@@ -330,7 +330,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: Colors.grey.shade900,
-          title: const Row(
+          title: Row(
             children: [
               Icon(Icons.lightbulb_outline, color: Colors.amber, size: 28),
               SizedBox(width: 8),
@@ -352,7 +352,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   _SdkLocale.duplicateWarningSub,
                   style: TextStyle(color: Colors.white70, fontSize: 13),
                 ),
@@ -421,7 +421,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
               onPressed: () {
                 Navigator.of(dialogContext).pop(false);
               },
-              child: const Text(
+              child: Text(
                 _SdkLocale.checkLater,
                 style: TextStyle(color: Colors.white60),
               ),
@@ -434,7 +434,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
               onPressed: () {
                 Navigator.of(dialogContext).pop(true);
               },
-              child: const Text(
+              child: Text(
                 _SdkLocale.reportNewIssue,
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
@@ -568,7 +568,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                               ),
                             )
                           : comments.isEmpty
-                          ? const Center(
+                          ? Center(
                               child: Text(
                                 _SdkLocale.noCommentsYet,
                                 style: TextStyle(
@@ -820,12 +820,12 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                             Navigator.of(dialogContext).pop();
                             setState(() => _isCapturing = false);
                           },
-                    child: const Text(
+                    child: Text(
                       _SdkLocale.cancel,
                       style: TextStyle(color: Colors.white70),
                     ),
                   ),
-                  title: const Text(
+                  title: Text(
                     _SdkLocale.titleFeedback,
                     style: TextStyle(
                       fontSize: 16,
@@ -843,7 +843,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                               // メモがない場合は警告
                               if (memo.trim().isEmpty) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
+                                  SnackBar(
                                     content: Text(
                                       _SdkLocale.memoPromptSnackBar,
                                     ),
@@ -933,7 +933,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                 color: Colors.amber,
                               ),
                             )
-                          : const Text(
+                          : Text(
                               _SdkLocale.send,
                               style: TextStyle(
                                 color: Colors.amber,
@@ -1128,7 +1128,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
                                     children: [
-                                      const Text(
+                                      Text(
                                         _SdkLocale.describeIssue,
                                         style: TextStyle(
                                           color: Colors.white,
@@ -1180,7 +1180,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                             () => isMemoOpen = false,
                                           );
                                         },
-                                        child: const Text(
+                                        child: Text(
                                           _SdkLocale.done,
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
