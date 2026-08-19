@@ -568,89 +568,89 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                               ),
                             )
                           : comments.isEmpty
-                          ? Center(
-                              child: Text(
-                                _SdkLocale.noCommentsYet,
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            )
-                          : ListView.builder(
-                              itemCount: comments.length,
-                              itemBuilder: (context, index) {
-                                final comment = comments[index];
-                                final isReporter =
-                                    comment['sender_type'] == 'reporter';
-                                final senderName =
-                                    comment['sender_name'] ??
-                                    (isReporter ? 'Reporter' : 'Developer');
-                                final msg = comment['message'] ?? '';
-
-                                return Align(
-                                  alignment: isReporter
-                                      ? Alignment.centerRight
-                                      : Alignment.centerLeft,
-                                  child: Container(
-                                    margin: const EdgeInsets.symmetric(
-                                      vertical: 4,
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 8,
-                                    ),
-                                    constraints: BoxConstraints(
-                                      maxWidth:
-                                          MediaQuery.of(context).size.width *
-                                          0.65,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isReporter
-                                          ? Colors.amber.shade700
-                                          : Colors.grey.shade800,
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: const Radius.circular(12),
-                                        topRight: const Radius.circular(12),
-                                        bottomLeft: Radius.circular(
-                                          isReporter ? 12 : 2,
-                                        ),
-                                        bottomRight: Radius.circular(
-                                          isReporter ? 2 : 12,
-                                        ),
-                                      ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: isReporter
-                                          ? CrossAxisAlignment.end
-                                          : CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          senderName,
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                            color: isReporter
-                                                ? Colors.black87
-                                                : Colors.amber.shade300,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          msg,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: isReporter
-                                                ? Colors.black
-                                                : Colors.white,
-                                          ),
-                                        ),
-                                      ],
+                              ? Center(
+                                  child: Text(
+                                    _SdkLocale.noCommentsYet,
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 12,
                                     ),
                                   ),
-                                );
-                              },
-                            ),
+                                )
+                              : ListView.builder(
+                                  itemCount: comments.length,
+                                  itemBuilder: (context, index) {
+                                    final comment = comments[index];
+                                    final isReporter =
+                                        comment['sender_type'] == 'reporter';
+                                    final senderName = comment['sender_name'] ??
+                                        (isReporter ? 'Reporter' : 'Developer');
+                                    final msg = comment['message'] ?? '';
+
+                                    return Align(
+                                      alignment: isReporter
+                                          ? Alignment.centerRight
+                                          : Alignment.centerLeft,
+                                      child: Container(
+                                        margin: const EdgeInsets.symmetric(
+                                          vertical: 4,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
+                                        constraints: BoxConstraints(
+                                          maxWidth: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.65,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isReporter
+                                              ? Colors.amber.shade700
+                                              : Colors.grey.shade800,
+                                          borderRadius: BorderRadius.only(
+                                            topLeft: const Radius.circular(12),
+                                            topRight: const Radius.circular(12),
+                                            bottomLeft: Radius.circular(
+                                              isReporter ? 12 : 2,
+                                            ),
+                                            bottomRight: Radius.circular(
+                                              isReporter ? 2 : 12,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: isReporter
+                                              ? CrossAxisAlignment.end
+                                              : CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              senderName,
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: isReporter
+                                                    ? Colors.black87
+                                                    : Colors.amber.shade300,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              msg,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: isReporter
+                                                    ? Colors.black
+                                                    : Colors.white,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -872,8 +872,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                               );
 
                               final success = statusCode == 200;
-                              final shouldClose =
-                                  success ||
+                              final shouldClose = success ||
                                   statusCode == 401 ||
                                   statusCode == 403;
 
@@ -892,21 +891,18 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                 // ignore: use_build_context_synchronously
                                 final messengerContext =
                                     SnappySnag().navigatorKey?.currentContext ??
-                                    context;
+                                        context;
                                 String message = _SdkLocale.statusSuccess;
                                 if (!success) {
                                   if (statusCode == 429) {
-                                    message =
-                                        _SdkLocale.statusRateLimit;
+                                    message = _SdkLocale.statusRateLimit;
                                   } else if (statusCode == 401) {
-                                    message =
-                                        _SdkLocale.statusInvalidKey;
+                                    message = _SdkLocale.statusInvalidKey;
                                   } else if (statusCode == 403) {
                                     message =
                                         _SdkLocale.statusUnauthorizedPackage;
                                   } else {
-                                    message =
-                                        _SdkLocale.statusNetworkError;
+                                    message = _SdkLocale.statusNetworkError;
                                   }
                                 }
 
@@ -916,9 +912,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                   ).showSnackBar(
                                     SnackBar(
                                       content: Text(message),
-                                      backgroundColor: success
-                                          ? Colors.green
-                                          : Colors.red,
+                                      backgroundColor:
+                                          success ? Colors.green : Colors.red,
                                     ),
                                   );
                                 }
@@ -951,8 +946,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                         bottom: 80, // 下部ツールバーのスペースを空ける
                         child: Center(
                           child: AspectRatio(
-                            aspectRatio:
-                                MediaQuery.of(context).size.width /
+                            aspectRatio: MediaQuery.of(context).size.width /
                                 (MediaQuery.of(context).size.height - 160),
                             child: Screenshot(
                               controller: canvasScreenshotController,
@@ -979,9 +973,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                   : Colors.black.withValues(
                                                       alpha: 0.95,
                                                     ),
-                                              strokeWidth: isRedPen
-                                                  ? 4.0
-                                                  : 24.0,
+                                              strokeWidth:
+                                                  isRedPen ? 4.0 : 24.0,
                                             ),
                                           );
                                         });
@@ -1051,7 +1044,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                 onPressed: isSending
                                     ? null
                                     : () =>
-                                          setDialogState(() => isRedPen = true),
+                                        setDialogState(() => isRedPen = true),
                               ),
                               IconButton(
                                 icon: Icon(
@@ -1062,8 +1055,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                 onPressed: isSending
                                     ? null
                                     : () => setDialogState(
-                                        () => isRedPen = false,
-                                      ),
+                                          () => isRedPen = false,
+                                        ),
                               ),
                               IconButton(
                                 icon: Icon(
@@ -1076,8 +1069,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                 onPressed: isSending
                                     ? null
                                     : () => setDialogState(
-                                        () => isMemoOpen = true,
-                                      ),
+                                          () => isMemoOpen = true,
+                                        ),
                               ),
                               const SizedBox(width: 10),
                               IconButton(
@@ -1089,8 +1082,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                 onPressed: isSending || points.isEmpty
                                     ? null
                                     : () => setDialogState(
-                                        () => points.removeLast(),
-                                      ),
+                                          () => points.removeLast(),
+                                        ),
                               ),
                               IconButton(
                                 icon: const Icon(
@@ -1101,7 +1094,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                 onPressed: isSending || points.isEmpty
                                     ? null
                                     : () =>
-                                          setDialogState(() => points.clear()),
+                                        setDialogState(() => points.clear()),
                               ),
                             ],
                           ),
@@ -1147,8 +1140,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                           color: Colors.white,
                                         ),
                                         decoration: InputDecoration(
-                                          hintText:
-                                              _SdkLocale.memoHint,
+                                          hintText: _SdkLocale.memoHint,
                                           hintStyle: const TextStyle(
                                             color: Colors.grey,
                                           ),
@@ -1240,14 +1232,14 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                 color: Colors.grey.shade900,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Column(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(color: Color(0xFFF59E0B)),
-                  SizedBox(height: 16),
+                  const CircularProgressIndicator(color: Color(0xFFF59E0B)),
+                  const SizedBox(height: 16),
                   Text(
-                    "Analyzing screen...",
-                    style: TextStyle(
+                    _SdkLocale.analyzingScreen,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -1436,14 +1428,12 @@ class WidgetTreeDumper {
       node['padding'] = widget.padding.toString();
     } else if (widget is SizedBox) {
       if (widget.width != null) {
-        node['width'] = widget.width == double.infinity
-            ? 'infinity'
-            : widget.width;
+        node['width'] =
+            widget.width == double.infinity ? 'infinity' : widget.width;
       }
       if (widget.height != null) {
-        node['height'] = widget.height == double.infinity
-            ? 'infinity'
-            : widget.height;
+        node['height'] =
+            widget.height == double.infinity ? 'infinity' : widget.height;
       }
     }
 
@@ -1596,7 +1586,6 @@ class DrawingPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
-
 /// Internal localization helper for SnappySnag SDK.
 class _SdkLocale {
   static bool get _isJa => Platform.localeName.toLowerCase().startsWith('ja');
@@ -1604,23 +1593,42 @@ class _SdkLocale {
   static String get cancel => _isJa ? 'キャンセル' : 'Cancel';
   static String get send => _isJa ? '送信' : 'Send';
   static String get titleFeedback => _isJa ? 'バグ報告' : 'SnappySnag Feedback';
-  static String get memoPromptSnackBar => _isJa ? '最初にバグ内容のメモを追加してください。' : 'Please add a memo describing the issue first.';
-  
-  static String get statusSuccess => _isJa ? 'フィードバックの送信が成功しました！' : 'Feedback sent successfully!';
-  static String get statusRateLimit => _isJa ? '送信頻度の上限を超えました。1分ほど待って再度お試しください。' : 'Rate limit exceeded. Please wait a minute before retrying.';
-  static String get statusInvalidKey => _isJa ? '送信失敗: APIキーが無効または停止されています。' : 'Failed to send: Invalid or inactive API Key.';
-  static String get statusUnauthorizedPackage => _isJa ? '送信失敗: このアプリパッケージは許可されていません。' : 'Failed to send: This app package is not authorized.';
-  static String get statusNetworkError => _isJa ? 'フィードバックの送信に失敗しました（ネットワークまたはサーバーエラー）。' : 'Failed to send feedback (Network or Server Error).';
+  static String get memoPromptSnackBar => _isJa
+      ? '最初にバグ内容のメモを追加してください。'
+      : 'Please add a memo describing the issue first.';
 
-  static String get duplicateWarningTitle => _isJa ? '類似のバグ報告が見つかりました' : 'Similar Feedbacks Found';
-  static String get duplicateWarningSub => _isJa ? '報告する前に、同様の不具合が既に報告されていないか確認してください。' : 'Before submitting, check if your issue is already reported:';
+  static String get statusSuccess =>
+      _isJa ? 'フィードバックの送信が成功しました！' : 'Feedback sent successfully!';
+  static String get statusRateLimit => _isJa
+      ? '送信頻度の上限を超えました。1分ほど待って再度お試しください。'
+      : 'Rate limit exceeded. Please wait a minute before retrying.';
+  static String get statusInvalidKey => _isJa
+      ? '送信失敗: APIキーが無効または停止されています。'
+      : 'Failed to send: Invalid or inactive API Key.';
+  static String get statusUnauthorizedPackage => _isJa
+      ? '送信失敗: このアプリパッケージは許可されていません。'
+      : 'Failed to send: This app package is not authorized.';
+  static String get statusNetworkError => _isJa
+      ? 'フィードバックの送信に失敗しました（ネットワークまたはサーバーエラー）。'
+      : 'Failed to send feedback (Network or Server Error).';
+
+  static String get duplicateWarningTitle =>
+      _isJa ? '類似のバグ報告が見つかりました' : 'Similar Feedbacks Found';
+  static String get duplicateWarningSub => _isJa
+      ? '報告する前に、同様の不具合が既に報告されていないか確認してください。'
+      : 'Before submitting, check if your issue is already reported:';
   static String get checkLater => _isJa ? '後で確認する' : 'I will check later';
   static String get reportNewIssue => _isJa ? '新規に報告する' : 'Report New Issue';
 
-  static String get noCommentsYet => _isJa ? 'コメントはまだありません。会話を始めましょう！' : 'No comments yet. Start the conversation!';
+  static String get noCommentsYet => _isJa
+      ? 'コメントはまだありません。会話を始めましょう！'
+      : 'No comments yet. Start the conversation!';
   static String get typeMessage => _isJa ? 'メッセージを入力...' : 'Type a message...';
 
-  static String get describeIssue => _isJa ? 'バグの詳細を説明してください' : 'Describe the issue';
-  static String get memoHint => _isJa ? '（例: この画面のタイトルのフォントサイズが小さすぎます...）' : 'e.g., The title font size is too small on this screen...';
+  static String get describeIssue =>
+      _isJa ? 'バグの詳細を説明してください' : 'Describe the issue';
+  static String get memoHint => _isJa
+      ? '（例: この画面のタイトルのフォントサイズが小さすぎます...）'
+      : 'e.g., The title font size is too small on this screen...';
   static String get done => _isJa ? '完了' : 'Done';
 }
