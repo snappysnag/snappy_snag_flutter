@@ -228,7 +228,12 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       // ignore: use_build_context_synchronously
       targetContext,
     );
-    debugPrint('🎬 SnappySnag: Captured Screen ID: $screenClassName');
+    final String screenSignature = WidgetTreeDumper.findScreenSignature(
+      // ignore: use_build_context_synchronously
+      targetContext,
+      screenClassName,
+    );
+    debugPrint('🎬 SnappySnag: Captured Screen ID: $screenClassName, Signature: $screenSignature');
 
     // 即座にスクリーンショットを撮影 (ディレイなしで押した瞬間をキャプチャ)
     final Uint8List? imageBytes = await _screenshotController.capture();
@@ -242,7 +247,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
     if (imageBytes != null && mounted) {
       try {
-        final duplicates = await _fetchExistingFeedbacks(screenClassName);
+        final duplicates = await _fetchExistingFeedbacks(screenClassName, screenSignature);
         _hideLoadingOverlay();
         if (!mounted) return;
 
@@ -258,6 +263,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
               imageBytes,
               widgetTree,
               screenClassName: screenClassName,
+              screenSignature: screenSignature,
             );
           }
         } else {
@@ -265,6 +271,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
             imageBytes,
             widgetTree,
             screenClassName: screenClassName,
+            screenSignature: screenSignature,
           );
         }
       } on SnappySnagException catch (se) {
@@ -284,12 +291,14 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     }
   }
 
-  Future<List<dynamic>> _fetchExistingFeedbacks(String screenClassName) async {
+  Future<List<dynamic>> _fetchExistingFeedbacks(String screenClassName, String screenSignature) async {
     final apiKey = SnappySnag()._apiKey;
     if (apiKey == null) throw SnappySnagException('API Key is not configured.');
 
     final String url =
-        '${SnappySnag().supabaseUrl}/functions/v1/get-existing-feedbacks?screen_class_name=${Uri.encodeComponent(screenClassName)}';
+        '${SnappySnag().supabaseUrl}/functions/v1/get-existing-feedbacks'
+        '?screen_class_name=${Uri.encodeComponent(screenClassName)}'
+        '&screen_signature=${Uri.encodeComponent(screenSignature)}';
 
     try {
       final response = await http.get(
@@ -741,6 +750,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     required Map<String, dynamic> widgetTree,
     required String memo,
     required String screenClassName,
+    required String screenSignature,
   }) async {
     final apiKey = SnappySnag()._apiKey;
     if (apiKey == null) {
@@ -766,6 +776,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
           'widget_tree': widgetTree,
           'memo': memo,
           'screen_class_name': screenClassName,
+          'screen_signature': screenSignature,
           'tags': ['debug', 'feedback'],
           'metadata': {
             'platform': 'flutter',
@@ -791,6 +802,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     Uint8List imageBytes,
     Map<String, dynamic> widgetTree, {
     required String screenClassName,
+    required String screenSignature,
   }) async {
     final textController = TextEditingController();
     final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
@@ -869,6 +881,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                 widgetTree: widgetTree,
                                 memo: memo,
                                 screenClassName: screenClassName,
+                                screenSignature: screenSignature,
                               );
 
                               final success = statusCode == 200;
@@ -1343,6 +1356,59 @@ class WidgetTreeDumper {
     return detectedScreenName;
   }
 
+  // ★ 画面構成シグネチャの自動生成 (Scaffold 以下のカスタムウィジェットを収集)
+  static String findScreenSignature(BuildContext context, String screenClassName) {
+    Element? scaffoldElement;
+
+    void findScaffold(Element element) {
+      if (element.widget.runtimeType.toString() == 'Scaffold') {
+        scaffoldElement = element;
+      }
+      element.visitChildren((child) {
+        findScaffold(child);
+      });
+    }
+
+    context.visitChildElements((element) {
+      findScaffold(element);
+    });
+
+    if (scaffoldElement == null) {
+      return screenClassName;
+    }
+
+    final Set<String> customWidgets = {};
+
+    void collectCustomWidgets(Element element, int currentDepth) {
+      if (currentDepth > 8 || customWidgets.length >= 2) return;
+
+      final typeStr = element.widget.runtimeType.toString();
+      final clean = _cleanType(typeStr);
+
+      if (!_isNoiseWidget(clean) &&
+          !_isStandardOrFrameworkWidget(clean) &&
+          clean != screenClassName &&
+          !clean.startsWith('_')) {
+        customWidgets.add(clean);
+      }
+
+      element.visitChildren((child) {
+        collectCustomWidgets(child, currentDepth + 1);
+      });
+    }
+
+    scaffoldElement!.visitChildren((child) {
+      collectCustomWidgets(child, 0);
+    });
+
+    if (customWidgets.isEmpty) {
+      return screenClassName;
+    }
+
+    final sortedList = customWidgets.toList()..sort();
+    return '$screenClassName#${sortedList.join('_')}';
+  }
+
   static String _cleanType(String type) {
     return type.contains('<') ? type.split('<')[0] : type;
   }
@@ -1592,26 +1658,48 @@ class _SdkLocale {
 
   static String get cancel => _isJa ? 'キャンセル' : 'Cancel';
   static String get send => _isJa ? '送信' : 'Send';
-  static String get titleFeedback => _isJa ? 'フィードバック送信' : 'SnappySnag Feedback';
-  static String get memoPromptSnackBar => _isJa ? '最初に内容のメモを追加してください。' : 'Please add a memo describing your feedback first.';
-  
-  static String get statusSuccess => _isJa ? 'フィードバックの送信が成功しました！' : 'Feedback sent successfully!';
-  static String get statusRateLimit => _isJa ? '送信頻度の上限を超えました。1分ほど待って再度お試しください。' : 'Rate limit exceeded. Please wait a minute before retrying.';
-  static String get statusInvalidKey => _isJa ? '送信失敗: APIキーが無効または停止されています。' : 'Failed to send: Invalid or inactive API Key.';
-  static String get statusUnauthorizedPackage => _isJa ? '送信失敗: このアプリパッケージは許可されていません。' : 'Failed to send: This app package is not authorized.';
-  static String get statusNetworkError => _isJa ? 'フィードバックの送信に失敗しました（ネットワークまたはサーバーエラー）。' : 'Failed to send feedback (Network or Server Error).';
+  static String get titleFeedback =>
+      _isJa ? 'フィードバック送信' : 'SnappySnag Feedback';
+  static String get memoPromptSnackBar => _isJa
+      ? '最初に内容のメモを追加してください。'
+      : 'Please add a memo describing your feedback first.';
 
-  static String get duplicateWarningTitle => _isJa ? 'この画面で報告されているフィードバック' : 'Feedbacks reported on this screen';
-  static String get duplicateWarningSub => _isJa ? '送信する前に、同様の内容が既に報告されていないか確認してください。' : 'Before submitting, check if your issue is already reported:';
+  static String get statusSuccess =>
+      _isJa ? 'フィードバックの送信が成功しました！' : 'Feedback sent successfully!';
+  static String get statusRateLimit => _isJa
+      ? '送信頻度の上限を超えました。1分ほど待って再度お試しください。'
+      : 'Rate limit exceeded. Please wait a minute before retrying.';
+  static String get statusInvalidKey => _isJa
+      ? '送信失敗: APIキーが無効または停止されています。'
+      : 'Failed to send: Invalid or inactive API Key.';
+  static String get statusUnauthorizedPackage => _isJa
+      ? '送信失敗: このアプリパッケージは許可されていません。'
+      : 'Failed to send: This app package is not authorized.';
+  static String get statusNetworkError => _isJa
+      ? 'フィードバックの送信に失敗しました（ネットワークまたはサーバーエラー）。'
+      : 'Failed to send feedback (Network or Server Error).';
+
+  static String get duplicateWarningTitle =>
+      _isJa ? 'この画面で報告されているフィードバック' : 'Feedbacks reported on this screen';
+  static String get duplicateWarningSub => _isJa
+      ? '送信する前に、同様の内容が既に報告されていないか確認してください。'
+      : 'Before submitting, check if your issue is already reported:';
   static String get checkLater => _isJa ? '後で確認する' : 'I will check later';
-  static String get reportNewIssue => _isJa ? '新規にフィードバックを送信' : 'Report New Feedback';
+  static String get reportNewIssue =>
+      _isJa ? '新規にフィードバックを送信' : 'Report New Feedback';
 
-  static String get noCommentsYet => _isJa ? 'コメントはまだありません。会話を始めましょう！' : 'No comments yet. Start the conversation!';
+  static String get noCommentsYet => _isJa
+      ? 'コメントはまだありません。会話を始めましょう！'
+      : 'No comments yet. Start the conversation!';
   static String get typeMessage => _isJa ? 'メッセージを入力...' : 'Type a message...';
 
-  static String get describeIssue => _isJa ? 'フィードバックの詳細を説明してください' : 'Describe your feedback';
-  static String get memoHint => _isJa ? '（例: この画面のタイトルのフォントサイズが小さすぎます...）' : 'e.g., The title font size is too small on this screen...';
+  static String get describeIssue =>
+      _isJa ? 'フィードバックの詳細を説明してください' : 'Describe your feedback';
+  static String get memoHint => _isJa
+      ? '（例: この画面のタイトルのフォントサイズが小さすぎます...）'
+      : 'e.g., The title font size is too small on this screen...';
   static String get done => _isJa ? '完了' : 'Done';
 
-  static String get analyzingScreen => _isJa ? '画面を解析中...' : 'Analyzing screen...';
+  static String get analyzingScreen =>
+      _isJa ? '画面を解析中...' : 'Analyzing screen...';
 }
