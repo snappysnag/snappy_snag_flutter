@@ -1442,6 +1442,23 @@ class WidgetTreeDumper {
       'SafeArea',
       'Visibility',
       'Material',
+      'AnimatedPhysicalModel',
+      'PhysicalModel',
+      'CustomMultiChildLayout',
+      'LayoutId',
+      'Semantics',
+      'Offstage',
+      'TickerMode',
+      'KeyedSubtree',
+      'MouseRegion',
+      'Actions',
+      'Shortcuts',
+      'Tooltip',
+      'ClipRRect',
+      'ClipRect',
+      'ClipPath',
+      'InkWell',
+      'InkResponse',
     ];
     if (standards.contains(clean)) return true;
 
@@ -1469,6 +1486,10 @@ class WidgetTreeDumper {
       'Barrier',
       'Modal',
       'Ticker',
+      'Model',
+      'Physical',
+      'Layout',
+      'Button',
     ];
     for (final keyword in frameworkKeywords) {
       if (clean.contains(keyword)) {
