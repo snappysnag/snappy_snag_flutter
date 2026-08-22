@@ -1473,6 +1473,13 @@ class WidgetTreeDumper {
       'AnimatedDefaultTextStyle',
       'DefaultTextStyle',
       'MediaQuery',
+      'ConstrainedBox',
+      'UnconstrainedBox',
+      'OverflowBox',
+      'LimitedBox',
+      'FlexibleSpaceBarSettings',
+      'FlexibleSpaceBar',
+      'DecoratedBox',
     ];
     if (standards.contains(clean)) return true;
 
