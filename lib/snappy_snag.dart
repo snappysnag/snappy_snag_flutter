@@ -1380,7 +1380,7 @@ class WidgetTreeDumper {
     final Set<String> customWidgets = {};
 
     void collectCustomWidgets(Element element, int currentDepth) {
-      if (currentDepth > 8 || customWidgets.length >= 2) return;
+      if (currentDepth > 20 || customWidgets.length >= 2) return;
 
       final typeStr = element.widget.runtimeType.toString();
       final clean = _cleanType(typeStr);
