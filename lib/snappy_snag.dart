@@ -1459,6 +1459,17 @@ class WidgetTreeDumper {
       'ClipPath',
       'InkWell',
       'InkResponse',
+      'ElevatedButton',
+      'TextButton',
+      'OutlinedButton',
+      'IconButton',
+      'DropdownButton',
+      'FloatingActionButton',
+      'RawMaterialButton',
+      'BackButton',
+      'CloseButton',
+      'PopupMenuButton',
+      'ToggleButtons',
     ];
     if (standards.contains(clean)) return true;
 
@@ -1486,10 +1497,6 @@ class WidgetTreeDumper {
       'Barrier',
       'Modal',
       'Ticker',
-      'Model',
-      'Physical',
-      'Layout',
-      'Button',
     ];
     for (final keyword in frameworkKeywords) {
       if (clean.contains(keyword)) {
