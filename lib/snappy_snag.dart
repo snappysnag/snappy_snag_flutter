@@ -1470,6 +1470,9 @@ class WidgetTreeDumper {
       'CloseButton',
       'PopupMenuButton',
       'ToggleButtons',
+      'AnimatedDefaultTextStyle',
+      'DefaultTextStyle',
+      'MediaQuery',
     ];
     if (standards.contains(clean)) return true;
 
@@ -1497,6 +1500,9 @@ class WidgetTreeDumper {
       'Barrier',
       'Modal',
       'Ticker',
+      'Style',
+      'Query',
+      'Media',
     ];
     for (final keyword in frameworkKeywords) {
       if (clean.contains(keyword)) {
