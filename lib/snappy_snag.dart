@@ -1315,12 +1315,14 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       children: [
         // Screenshot wrapper
         Screenshot(controller: _screenshotController, child: widget.child),
-        // ⚡️ キャプチャ（撮影）中かつ静止画データがある場合、ライブ画面の上にフリーズ静止画を固定表示
+        // ⚡️ キャプチャ（撮影）中かつ静止画データがある場合、ライブ画面の上にフリーズ静止画を固定表示（タッチはIgnorePointerで透過）
         if (_isCapturing && _capturedImageForFreeze != null)
           Positioned.fill(
-            child: Image.memory(
-              _capturedImageForFreeze!,
-              fit: BoxFit.fill,
+            child: IgnorePointer(
+              child: Image.memory(
+                _capturedImageForFreeze!,
+                fit: BoxFit.fill,
+              ),
             ),
           ),
         // Tiny Floating Trigger Button
