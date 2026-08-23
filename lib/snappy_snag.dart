@@ -98,6 +98,7 @@ enum _SnappyOverlayMode {
   none,
   loading,
   duplicateWarning,
+  commentsThread,
 }
 
 class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
@@ -108,6 +109,15 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   _SnappyOverlayMode _overlayMode = _SnappyOverlayMode.none;
   List<dynamic> _currentDuplicates = [];
   Completer<bool>? _duplicateWarningCompleter;
+
+  // コメントスレッド用ステート
+  String _commentsFeedbackId = '';
+  String _commentsBugTitle = '';
+  List<dynamic> _commentsList = [];
+  bool _commentsLoading = false;
+  bool _isSendingComment = false;
+  final TextEditingController _commentTextController = TextEditingController();
+
   DateTime? _lastShakeTime;
 
   @override
@@ -430,249 +440,62 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     }
   }
 
-  void _showCommentsThreadSheet(String feedbackId, String bugTitle) {
-    final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
-    final textController = TextEditingController();
+  void _showCommentsThreadSheet(String feedbackId, String bugTitle) async {
+    _commentTextController.clear();
+    if (mounted) {
+      setState(() {
+        _commentsFeedbackId = feedbackId;
+        _commentsBugTitle = bugTitle;
+        _commentsList = [];
+        _commentsLoading = true;
+        _isSendingComment = false;
+        _overlayMode = _SnappyOverlayMode.commentsThread;
+      });
+    }
 
-    showDialog(
-      context: targetContext,
-      builder: (dialogContext) {
-        List<dynamic> comments = [];
-        bool isLoading = true;
-        bool isSendingComment = false;
+    try {
+      final result = await _fetchComments(feedbackId);
+      if (mounted && _commentsFeedbackId == feedbackId) {
+        setState(() {
+          _commentsList = result;
+          _commentsLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _commentsLoading = false);
+      }
+    }
+  }
 
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            void loadComments() async {
-              final result = await _fetchComments(feedbackId);
-              setSheetState(() {
-                comments = result;
-                isLoading = false;
-              });
-            }
+  Future<void> _sendCommentInline() async {
+    final text = _commentTextController.text.trim();
+    if (text.isEmpty || _isSendingComment) return;
 
-            if (isLoading && comments.isEmpty) {
-              loadComments();
-            }
+    if (mounted) {
+      setState(() => _isSendingComment = true);
+    }
 
-            return Dialog(
-              backgroundColor: Colors.grey.shade900,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: Colors.grey.shade800),
-              ),
-              child: Container(
-                width: double.maxFinite,
-                height: 450,
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.white70),
-                          onPressed: () => Navigator.of(context).pop(), // 戻って重複警告画面に戻る
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                        const SizedBox(width: 8),
-                        const Icon(Icons.chat, color: Colors.amber, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            bugTitle,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close, color: Colors.white70),
-                          onPressed: () => Navigator.of(dialogContext).pop(),
-                        ),
-                      ],
-                    ),
-                    const Divider(color: Colors.white10),
-                    Expanded(
-                      child: isLoading
-                          ? const Center(
-                              child: CircularProgressIndicator(
-                                color: Colors.amber,
-                              ),
-                            )
-                          : comments.isEmpty
-                              ? Center(
-                                  child: Text(
-                                    _SdkLocale.noCommentsYet,
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                )
-                              : ListView.builder(
-                                  itemCount: comments.length,
-                                  itemBuilder: (context, index) {
-                                    final comment = comments[index];
-                                    final isReporter =
-                                        comment['sender_type'] == 'reporter';
-                                    final senderName = comment['sender_name'] ??
-                                        (isReporter ? 'Reporter' : 'Developer');
-                                    final msg = comment['message'] ?? '';
-
-                                    return Align(
-                                      alignment: isReporter
-                                          ? Alignment.centerRight
-                                          : Alignment.centerLeft,
-                                      child: Container(
-                                        margin: const EdgeInsets.symmetric(
-                                          vertical: 4,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 8,
-                                        ),
-                                        constraints: BoxConstraints(
-                                          maxWidth: MediaQuery.of(context)
-                                                  .size
-                                                  .width *
-                                              0.65,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: isReporter
-                                              ? Colors.amber.shade700
-                                              : Colors.grey.shade800,
-                                          borderRadius: BorderRadius.only(
-                                            topLeft: const Radius.circular(12),
-                                            topRight: const Radius.circular(12),
-                                            bottomLeft: Radius.circular(
-                                              isReporter ? 12 : 2,
-                                            ),
-                                            bottomRight: Radius.circular(
-                                              isReporter ? 2 : 12,
-                                            ),
-                                          ),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment: isReporter
-                                              ? CrossAxisAlignment.end
-                                              : CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              senderName,
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                                color: isReporter
-                                                    ? Colors.black87
-                                                    : Colors.amber.shade300,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              msg,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: isReporter
-                                                    ? Colors.black
-                                                    : Colors.white,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: textController,
-                            maxLength: 500,
-                            maxLengthEnforcement: MaxLengthEnforcement.enforced,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                            ),
-                            decoration: InputDecoration(
-                              counterText: "", // 下部の文字カウンターを消してコンパクトにする
-                              hintText: _SdkLocale.typeMessage,
-                              hintStyle: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 13,
-                              ),
-                              fillColor: Colors.black26,
-                              filled: true,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: BorderSide(
-                                  color: Colors.grey.shade800,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: isSendingComment
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.amber,
-                                  ),
-                                )
-                              : const Icon(Icons.send, color: Colors.amber),
-                          onPressed: isSendingComment
-                              ? null
-                              : () async {
-                                  final text = textController.text.trim();
-                                  if (text.isEmpty) return;
-
-                                  setSheetState(() => isSendingComment = true);
-                                  final success = await _postComment(
-                                    feedbackLogId: feedbackId,
-                                    message: text,
-                                  );
-
-                                  if (success) {
-                                    textController.clear();
-                                    final updatedComments =
-                                        await _fetchComments(feedbackId);
-                                    setSheetState(() {
-                                      comments = updatedComments;
-                                      isSendingComment = false;
-                                    });
-                                  } else {
-                                    setSheetState(
-                                      () => isSendingComment = false,
-                                    );
-                                  }
-                                },
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+    final success = await _postComment(
+      feedbackLogId: _commentsFeedbackId,
+      message: text,
     );
+
+    if (success) {
+      _commentTextController.clear();
+      final updatedComments = await _fetchComments(_commentsFeedbackId);
+      if (mounted) {
+        setState(() {
+          _commentsList = updatedComments;
+          _isSendingComment = false;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() => _isSendingComment = false);
+      }
+    }
+  }
   }
 
   Future<int> _sendFeedback({
@@ -1372,6 +1195,216 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                           ],
                         ),
                       )
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        if (_overlayMode == _SnappyOverlayMode.commentsThread)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black54, // 半透明のバリア
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+              child: Center(
+                child: Material(
+                  color: Colors.grey.shade900,
+                  borderRadius: BorderRadius.circular(16),
+                  elevation: 24,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    constraints: const BoxConstraints(maxWidth: 400, maxHeight: 480),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.arrow_back, color: Colors.white70),
+                              onPressed: () {
+                                if (mounted) {
+                                  setState(() {
+                                    _overlayMode = _SnappyOverlayMode.duplicateWarning;
+                                  });
+                                }
+                              },
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.chat, color: Colors.amber, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _commentsBugTitle,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, color: Colors.white70),
+                              onPressed: () {
+                                if (mounted) {
+                                  setState(() {
+                                    _overlayMode = _SnappyOverlayMode.none;
+                                  });
+                                }
+                                _duplicateWarningCompleter?.complete(false);
+                              },
+                            ),
+                          ],
+                        ),
+                        const Divider(color: Colors.white10),
+                        Expanded(
+                          child: _commentsLoading
+                              ? const Center(
+                                  child: CircularProgressIndicator(
+                                    color: Colors.amber,
+                                  ),
+                                )
+                              : _commentsList.isEmpty
+                                  ? Center(
+                                      child: Text(
+                                        _SdkLocale.noCommentsYet,
+                                        style: const TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      itemCount: _commentsList.length,
+                                      itemBuilder: (context, index) {
+                                        final comment = _commentsList[index];
+                                        final isReporter =
+                                            comment['sender_type'] == 'reporter';
+                                        final senderName = comment['sender_name'] ??
+                                            (isReporter ? 'Reporter' : 'Developer');
+                                        final msg = comment['message'] ?? '';
+
+                                        return Align(
+                                          alignment: isReporter
+                                              ? Alignment.centerRight
+                                              : Alignment.centerLeft,
+                                          child: Container(
+                                            margin: const EdgeInsets.symmetric(
+                                              vertical: 4,
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 8,
+                                            ),
+                                            constraints: BoxConstraints(
+                                              maxWidth: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  0.65,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: isReporter
+                                                  ? Colors.amber.shade700
+                                                  : Colors.grey.shade800,
+                                              borderRadius: BorderRadius.only(
+                                                topLeft: const Radius.circular(12),
+                                                topRight: const Radius.circular(12),
+                                                bottomLeft: Radius.circular(
+                                                  isReporter ? 12 : 2,
+                                                ),
+                                                bottomRight: Radius.circular(
+                                                  isReporter ? 2 : 12,
+                                                ),
+                                              ),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment: isReporter
+                                                  ? CrossAxisAlignment.end
+                                                  : CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  senderName,
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: isReporter
+                                                        ? Colors.black87
+                                                        : Colors.amber.shade300,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  msg,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: isReporter
+                                                        ? Colors.black
+                                                        : Colors.white,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _commentTextController,
+                                maxLength: 500,
+                                maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                ),
+                                decoration: InputDecoration(
+                                  counterText: "", // 下部の文字カウンターを消してコンパクトにする
+                                  hintText: _SdkLocale.typeMessage,
+                                  hintStyle: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 13,
+                                  ),
+                                  fillColor: Colors.black26,
+                                  filled: true,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade800,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: _isSendingComment
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.amber,
+                                      ),
+                                    )
+                                  : const Icon(Icons.send, color: Colors.amber),
+                              onPressed: _isSendingComment
+                                  ? null
+                                  : () => _sendCommentInline(),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
