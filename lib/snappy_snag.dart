@@ -496,7 +496,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       }
     }
   }
-  }
 
   Future<int> _sendFeedback({
     required Uint8List imageBytes,
