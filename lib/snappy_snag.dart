@@ -469,6 +469,13 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                   children: [
                     Row(
                       children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white70),
+                          onPressed: () => Navigator.of(context).pop(), // 戻って重複警告画面に戻る
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                        const SizedBox(width: 8),
                         const Icon(Icons.chat, color: Colors.amber, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
@@ -584,6 +591,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                     ),
                     const SizedBox(height: 8),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
                           child: TextField(
@@ -595,6 +603,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                               fontSize: 13,
                             ),
                             decoration: InputDecoration(
+                              counterText: "", // 下部の文字カウンターを消してコンパクトにする
                               hintText: _SdkLocale.typeMessage,
                               hintStyle: const TextStyle(
                                 color: Colors.grey,
@@ -1281,12 +1290,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
                                 return InkWell(
                                   onTap: () {
-                                    if (mounted) {
-                                      setState(() {
-                                        _overlayMode = _SnappyOverlayMode.none;
-                                      });
-                                    }
-                                    _duplicateWarningCompleter?.complete(false);
                                     _showCommentsThreadSheet(
                                       item['id'].toString(),
                                       memo,
@@ -1327,11 +1330,13 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          alignment: WrapAlignment.end,
-                          children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            alignment: WrapAlignment.center,
+                            children: [
                             TextButton(
                               onPressed: () {
                                 if (mounted) {
@@ -1365,7 +1370,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                               ),
                             ),
                           ],
-                        )
+                        ),
+                      )
                       ],
                     ),
                   ),
