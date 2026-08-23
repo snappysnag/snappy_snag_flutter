@@ -837,13 +837,27 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                       style: TextStyle(color: Colors.white70),
                     ),
                   ),
-                  title: Text(
-                    _SdkLocale.titleFeedback,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                   title: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _SdkLocale.titleFeedback,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Screen: $screenSignature',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey.shade400,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                    ],
                   ),
                   centerTitle: true,
                   actions: [
@@ -1480,6 +1494,8 @@ class WidgetTreeDumper {
       'FlexibleSpaceBarSettings',
       'FlexibleSpaceBar',
       'DecoratedBox',
+      'AppBar',
+      'SliverAppBar',
     ];
     if (standards.contains(clean)) return true;
 
