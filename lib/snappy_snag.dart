@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:screenshot/screenshot.dart';
@@ -132,6 +133,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   final TextEditingController _feedbackMemoController = TextEditingController();
   final ScreenshotController _canvasScreenshotController = ScreenshotController();
   Completer<void>? _drawingCompleter;
+  double? _drawingAspectRatio;
 
   DateTime? _lastShakeTime;
 
@@ -561,8 +563,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
           'tags': ['debug', 'feedback'],
           'metadata': {
             'platform': 'flutter',
-            'os_name': Platform.operatingSystem,
-            'os_version': Platform.operatingSystemVersion,
+            'os_name': kIsWeb ? 'Web' : Platform.operatingSystem,
+            'os_version': kIsWeb ? 'Browser' : Platform.operatingSystemVersion,
             'package_name': SnappySnag()._packageName,
             'reporter_user_id': SnappySnag()._reporterUserId ?? 'anonymous',
             'reporter_email': SnappySnag()._reporterEmail ?? 'anonymous',
@@ -587,6 +589,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   }) async {
     if (!mounted) return;
     _drawingCompleter = Completer<void>();
+    final mediaSize = MediaQuery.of(context).size;
+    final capturedAspect = mediaSize.height > 0 ? (mediaSize.width / mediaSize.height) : (9 / 16);
     setState(() {
       _drawingImageBytes = imageBytes;
       _drawingWidgetTree = widgetTree;
@@ -597,6 +601,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       _isSendingFeedback = false;
       _isMemoOpen = false;
       _feedbackMemoController.clear();
+      _drawingAspectRatio = capturedAspect;
       _overlayMode = _SnappyOverlayMode.drawing;
     });
     return _drawingCompleter!.future;
@@ -1126,11 +1131,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
               initialEntries: [
                 OverlayEntry(
                   builder: (overlayContext) {
-                    final mediaQuery = MediaQuery.of(overlayContext);
-                    double canvasRatio = 9 / 16;
-                    if (mediaQuery.size.height > 180) {
-                      canvasRatio = mediaQuery.size.width / (mediaQuery.size.height - 180);
-                    }
+                    final canvasRatio = _drawingAspectRatio ?? (9 / 16);
                     return Material(
                       type: MaterialType.transparency,
                       child: Scaffold(
@@ -1362,13 +1363,15 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                           color: Colors.black.withValues(alpha: 0.75),
                           padding: const EdgeInsets.all(24),
                           child: Center(
-                            child: Card(
-                              color: Colors.grey.shade900,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                side: BorderSide(color: Colors.grey.shade800),
-                              ),
-                              child: Padding(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 480),
+                              child: Card(
+                                color: Colors.grey.shade900,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: BorderSide(color: Colors.grey.shade800),
+                                ),
+                                child: Padding(
                                 padding: const EdgeInsets.all(16),
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
@@ -1436,6 +1439,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                   ],
                                 ),
                               ),
+                            ),
                             ),
                           ),
                         ),
