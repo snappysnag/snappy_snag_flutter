@@ -272,6 +272,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
             screenClassName: screenClassName,
           );
           if (shouldReportNew && mounted) {
+            setState(() {
+              _isCapturing = false;
+              _capturedImageForFreeze = null;
+            });
             await _showFeedbackDialog(
               imageBytes,
               widgetTree,
@@ -280,6 +284,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
             );
           }
         } else {
+          setState(() {
+            _isCapturing = false;
+            _capturedImageForFreeze = null;
+          });
           await _showFeedbackDialog(
             imageBytes,
             widgetTree,
@@ -1319,8 +1327,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.end,
                           children: [
                             TextButton(
                               onPressed: () {
@@ -1336,7 +1346,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                 style: const TextStyle(color: Colors.white60),
                               ),
                             ),
-                            const SizedBox(width: 8),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.amber,
