@@ -352,6 +352,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
     final result = await showDialog<bool>(
       context: targetContext,
+      barrierDismissible: false,
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: Colors.grey.shade900,
