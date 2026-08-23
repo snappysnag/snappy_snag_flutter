@@ -98,6 +98,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   final ScreenshotController _screenshotController = ScreenshotController();
   StreamSubscription<UserAccelerometerEvent>? _accelerometerSubscription;
   bool _isCapturing = false;
+  Uint8List? _capturedImageForFreeze;
   DateTime? _lastShakeTime;
 
   @override
@@ -240,7 +241,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
     // 撮影完了後に、ボタンを隠すためのState変更とローディングオーバーレイの表示へ移行
     if (mounted) {
-      setState(() => _isCapturing = true);
+      setState(() {
+        _isCapturing = true;
+        _capturedImageForFreeze = imageBytes;
+      });
     }
     await Future.delayed(const Duration(milliseconds: 150));
     _showLoadingOverlay();
@@ -278,16 +282,28 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         _hideLoadingOverlay();
         if (mounted) {
           _showErrorDialog(se.message);
-          setState(() => _isCapturing = false);
+          setState(() {
+            _isCapturing = false;
+            _capturedImageForFreeze = null;
+          });
         }
         return;
       }
 
       if (mounted) {
-        setState(() => _isCapturing = false);
+        setState(() {
+          _isCapturing = false;
+          _capturedImageForFreeze = null;
+        });
       }
     } else {
       _hideLoadingOverlay();
+      if (mounted) {
+        setState(() {
+          _isCapturing = false;
+          _capturedImageForFreeze = null;
+        });
+      }
     }
   }
 
@@ -1299,6 +1315,14 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       children: [
         // Screenshot wrapper
         Screenshot(controller: _screenshotController, child: widget.child),
+        // ⚡️ キャプチャ（撮影）中かつ静止画データがある場合、ライブ画面の上にフリーズ静止画を固定表示
+        if (_isCapturing && _capturedImageForFreeze != null)
+          Positioned.fill(
+            child: Image.memory(
+              _capturedImageForFreeze!,
+              fit: BoxFit.fill,
+            ),
+          ),
         // Tiny Floating Trigger Button
         if (widget.showTriggerButton && !_isCapturing)
           Positioned(
