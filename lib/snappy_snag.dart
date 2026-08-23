@@ -1270,7 +1270,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                     ),
                   ),
                 ),
-              ),
 
                     // 2. 下部フローティングツールバー
                     Positioned(
