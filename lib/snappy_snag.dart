@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:screenshot/screenshot.dart';
@@ -563,8 +563,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
           'tags': ['debug', 'feedback'],
           'metadata': {
             'platform': 'flutter',
-            'os_name': kIsWeb ? 'Web' : Platform.operatingSystem,
-            'os_version': kIsWeb ? 'Browser' : Platform.operatingSystemVersion,
+            'os_name': kIsWeb ? 'web_${defaultTargetPlatform.name.toLowerCase()}' : Platform.operatingSystem,
+            'os_version': kIsWeb ? 'browser' : Platform.operatingSystemVersion,
             'package_name': SnappySnag()._packageName,
             'reporter_user_id': SnappySnag()._reporterUserId ?? 'anonymous',
             'reporter_email': SnappySnag()._reporterEmail ?? 'anonymous',
@@ -1205,35 +1205,39 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                     aspectRatio: canvasRatio,
                                     child: Screenshot(
                                       controller: _canvasScreenshotController,
-                            child: Stack(
-                              children: [
-                                // 背景画像
-                                Positioned.fill(
-                                  child: Image.memory(
-                                    _drawingImageBytes!,
-                                    fit: BoxFit.contain,
-                                  ),
-                                ),
-                                // 描画キャンバス
-                                Positioned.fill(
-                                  child: GestureDetector(
-                                    onPanStart: (details) {
-                                      if (_isSendingFeedback || _isMemoOpen) return;
-                                      setState(() {
-                                        _drawingPoints.add(
-                                          DrawingPoint(
-                                            offsets: [details.localPosition],
-                                            color: _isRedPen
-                                                ? Colors.red
-                                                : Colors.black.withValues(
-                                                    alpha: 0.95,
-                                                  ),
-                                            strokeWidth:
-                                                _isRedPen ? 4.0 : 24.0,
-                                          ),
-                                        );
-                                      });
-                                    },
+                                      child: LayoutBuilder(
+                                        builder: (layoutContext, constraints) {
+                                          final canvasSize = Size(constraints.maxWidth, constraints.maxHeight);
+                                          return Stack(
+                                            children: [
+                                              // 背景画像
+                                              Positioned.fill(
+                                                child: Image.memory(
+                                                  _drawingImageBytes!,
+                                                  fit: BoxFit.contain,
+                                                ),
+                                              ),
+                                              // 描画キャンバス
+                                              Positioned.fill(
+                                                child: GestureDetector(
+                                                  onPanStart: (details) {
+                                                    if (_isSendingFeedback || _isMemoOpen) return;
+                                                    setState(() {
+                                                      _drawingPoints.add(
+                                                        DrawingPoint(
+                                                          offsets: [details.localPosition],
+                                                          color: _isRedPen
+                                                              ? Colors.red
+                                                              : Colors.black.withValues(
+                                                                  alpha: 0.95,
+                                                                ),
+                                                          strokeWidth:
+                                                              _isRedPen ? 4.0 : 24.0,
+                                                          recordedSize: canvasSize,
+                                                        ),
+                                                      );
+                                                    });
+                                                  },
                                     onPanUpdate: (details) {
                                       if (_isSendingFeedback || _isMemoOpen) return;
                                       setState(() {
@@ -1259,11 +1263,14 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                   ),
                                 ),
                               ],
-                            ),
-                          ),
+                            );
+                          },
                         ),
                       ),
                     ),
+                  ),
+                ),
+              ),
 
                     // 2. 下部フローティングツールバー
                     Positioned(
@@ -1820,11 +1827,13 @@ class DrawingPoint {
   final List<Offset?> offsets;
   final Color color;
   final double strokeWidth;
+  final Size recordedSize;
 
   DrawingPoint({
     required this.offsets,
     required this.color,
     required this.strokeWidth,
+    required this.recordedSize,
   });
 }
 
@@ -1835,7 +1844,6 @@ class SnappySnagException implements Exception {
   String toString() => message;
 }
 
-/// Canvas上に線を描画するための CustomPainter
 class DrawingPainter extends CustomPainter {
   final List<DrawingPoint> points;
 
@@ -1844,17 +1852,23 @@ class DrawingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (final point in points) {
+      final double scaleX = point.recordedSize.width > 0 ? size.width / point.recordedSize.width : 1.0;
+      final double scaleY = point.recordedSize.height > 0 ? size.height / point.recordedSize.height : 1.0;
+
       final paint = Paint()
         ..color = point.color
         ..strokeCap = StrokeCap.round
-        ..strokeWidth = point.strokeWidth
+        ..strokeWidth = point.strokeWidth * scaleX
         ..style = PaintingStyle.stroke;
 
       for (int i = 0; i < point.offsets.length - 1; i++) {
         if (point.offsets[i] != null && point.offsets[i + 1] != null) {
-          canvas.drawLine(point.offsets[i]!, point.offsets[i + 1]!, paint);
+          final p1 = Offset(point.offsets[i]!.dx * scaleX, point.offsets[i]!.dy * scaleY);
+          final p2 = Offset(point.offsets[i + 1]!.dx * scaleX, point.offsets[i + 1]!.dy * scaleY);
+          canvas.drawLine(p1, p2, paint);
         } else if (point.offsets[i] != null && point.offsets[i + 1] == null) {
-          canvas.drawPoints(ui.PointMode.points, [point.offsets[i]!], paint);
+          final p1 = Offset(point.offsets[i]!.dx * scaleX, point.offsets[i]!.dy * scaleY);
+          canvas.drawPoints(ui.PointMode.points, [p1], paint);
         }
       }
     }
