@@ -1847,7 +1847,7 @@ class DrawingPainter extends CustomPainter {
 
 /// Internal localization helper for SnappySnag SDK.
 class _SdkLocale {
-  static bool get _isJa => ui.platformDispatcher.locale.languageCode.toLowerCase().startsWith('ja');
+  static bool get _isJa => ui.PlatformDispatcher.instance.locale.languageCode.toLowerCase().startsWith('ja');
 
   static String get cancel => _isJa ? 'キャンセル' : 'Cancel';
   static String get send => _isJa ? '送信' : 'Send';
