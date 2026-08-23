@@ -99,6 +99,7 @@ enum _SnappyOverlayMode {
   loading,
   duplicateWarning,
   commentsThread,
+  drawing,
 }
 
 class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
@@ -118,6 +119,19 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   bool _isSendingComment = false;
   final TextEditingController _commentTextController = TextEditingController();
   bool _isFeedbackDialogOpen = false;
+
+  // お絵描きキャンバス用ステート
+  Uint8List? _drawingImageBytes;
+  Map<String, dynamic> _drawingWidgetTree = {};
+  String _drawingScreenClassName = '';
+  String _drawingScreenSignature = '';
+  List<DrawingPoint> _drawingPoints = [];
+  bool _isRedPen = true;
+  bool _isSendingFeedback = false;
+  bool _isMemoOpen = false;
+  final TextEditingController _feedbackMemoController = TextEditingController();
+  final ScreenshotController _canvasScreenshotController = ScreenshotController();
+  Completer<void>? _drawingCompleter;
 
   DateTime? _lastShakeTime;
 
@@ -289,7 +303,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
               _isFeedbackDialogOpen = true;
             });
             try {
-              await _showFeedbackDialog(
+              await _startDrawingFlow(
                 imageBytes,
                 widgetTree,
                 screenClassName: screenClassName,
@@ -308,7 +322,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
             _isFeedbackDialogOpen = true;
           });
           try {
-            await _showFeedbackDialog(
+            await _startDrawingFlow(
               imageBytes,
               widgetTree,
               screenClassName: screenClassName,
@@ -565,430 +579,109 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     }
   }
 
-  Future<void> _showFeedbackDialog(
+  Future<void> _startDrawingFlow(
     Uint8List imageBytes,
     Map<String, dynamic> widgetTree, {
     required String screenClassName,
     required String screenSignature,
   }) async {
-    final textController = TextEditingController();
-    final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
+    if (!mounted) return;
+    _drawingCompleter = Completer<void>();
+    setState(() {
+      _drawingImageBytes = imageBytes;
+      _drawingWidgetTree = widgetTree;
+      _drawingScreenClassName = screenClassName;
+      _drawingScreenSignature = screenSignature;
+      _drawingPoints = [];
+      _isRedPen = true;
+      _isSendingFeedback = false;
+      _isMemoOpen = false;
+      _feedbackMemoController.clear();
+      _overlayMode = _SnappyOverlayMode.drawing;
+    });
+    return _drawingCompleter!.future;
+  }
 
-    // キャンバス編集用のステート
-    final canvasScreenshotController = ScreenshotController();
-    List<DrawingPoint> points = [];
-    bool isRedPen = true; // true: 赤ペン, false: 黒塗りマスク
-    bool isSending = false;
-    bool isMemoOpen = false; // メモ入力パネルの開閉フラグ
+  void _cancelDrawingFlow() {
+    setState(() {
+      _overlayMode = _SnappyOverlayMode.none;
+      _isCapturing = false;
+    });
+    _drawingCompleter?.complete();
+  }
 
-    await showDialog(
-      context: targetContext,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return Dialog.fullscreen(
-              child: Scaffold(
-                backgroundColor: Colors.black,
-                appBar: AppBar(
-                  backgroundColor: Colors.grey.shade900,
-                  leading: TextButton(
-                    onPressed: isSending
-                        ? null
-                        : () {
-                            Navigator.of(dialogContext).pop();
-                            setState(() => _isCapturing = false);
-                          },
-                    child: Text(
-                      _SdkLocale.cancel,
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                  ),
-                   title: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _SdkLocale.titleFeedback,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Screen: $screenSignature',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey.shade400,
-                          fontWeight: FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  ),
-                  centerTitle: true,
-                  actions: [
-                    TextButton(
-                      onPressed: isSending
-                          ? null
-                          : () async {
-                              final memo = textController.text;
-                              // メモがない場合は警告
-                              if (memo.trim().isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      _SdkLocale.memoPromptSnackBar,
-                                    ),
-                                    backgroundColor: Colors.orange,
-                                  ),
-                                );
-                                setDialogState(
-                                  () => isMemoOpen = true,
-                                ); // メモを開いてあげる
-                                return;
-                              }
-
-                              setDialogState(() => isSending = true);
-
-                              // ⚡️ 1. 赤ペンとマスキングが載ったキャンバスを再キャプチャする
-                              final Uint8List? editedBytes =
-                                  await canvasScreenshotController.capture();
-                              final finalBytes = editedBytes ?? imageBytes;
-
-                              // 2. 送信処理
-                              final statusCode = await _sendFeedback(
-                                imageBytes: finalBytes,
-                                widgetTree: widgetTree,
-                                memo: memo,
-                                screenClassName: screenClassName,
-                                screenSignature: screenSignature,
-                              );
-
-                              final success = statusCode == 200;
-                              final shouldClose = success ||
-                                  statusCode == 401 ||
-                                  statusCode == 403;
-
-                              if (shouldClose) {
-                                if (dialogContext.mounted) {
-                                  Navigator.of(dialogContext).pop();
-                                }
-                                if (mounted) {
-                                  setState(() => _isCapturing = false);
-                                }
-                              } else {
-                                setDialogState(() => isSending = false);
-                              }
-
-                              if (mounted) {
-                                // ignore: use_build_context_synchronously
-                                final messengerContext =
-                                    SnappySnag().navigatorKey?.currentContext ??
-                                        context;
-                                String message = _SdkLocale.statusSuccess;
-                                if (!success) {
-                                  if (statusCode == 429) {
-                                    message = _SdkLocale.statusRateLimit;
-                                  } else if (statusCode == 401) {
-                                    message = _SdkLocale.statusInvalidKey;
-                                  } else if (statusCode == 403) {
-                                    message =
-                                        _SdkLocale.statusUnauthorizedPackage;
-                                  } else {
-                                    message = _SdkLocale.statusNetworkError;
-                                  }
-                                }
-
-                                if (messengerContext.mounted) {
-                                  ScaffoldMessenger.of(
-                                    messengerContext,
-                                  ).showSnackBar(
-                                    SnackBar(
-                                      content: Text(message),
-                                      backgroundColor:
-                                          success ? Colors.green : Colors.red,
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                      child: isSending
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.amber,
-                              ),
-                            )
-                          : Text(
-                              _SdkLocale.send,
-                              style: TextStyle(
-                                color: Colors.amber,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
-                  ],
-                ),
-                body: SafeArea(
-                  child: Stack(
-                    children: [
-                      // 1. お絵描きエリア（画面一杯に表示）
-                      Positioned.fill(
-                        bottom: 80, // 下部ツールバーのスペースを空ける
-                        child: Center(
-                          child: AspectRatio(
-                            aspectRatio: MediaQuery.of(context).size.width /
-                                (MediaQuery.of(context).size.height - 160),
-                            child: Screenshot(
-                              controller: canvasScreenshotController,
-                              child: Stack(
-                                children: [
-                                  // 背景画像
-                                  Positioned.fill(
-                                    child: Image.memory(
-                                      imageBytes,
-                                      fit: BoxFit.contain,
-                                    ),
-                                  ),
-                                  // 描画キャンバス
-                                  Positioned.fill(
-                                    child: GestureDetector(
-                                      onPanStart: (details) {
-                                        if (isSending || isMemoOpen) return;
-                                        setDialogState(() {
-                                          points.add(
-                                            DrawingPoint(
-                                              offsets: [details.localPosition],
-                                              color: isRedPen
-                                                  ? Colors.red
-                                                  : Colors.black.withValues(
-                                                      alpha: 0.95,
-                                                    ),
-                                              strokeWidth:
-                                                  isRedPen ? 4.0 : 24.0,
-                                            ),
-                                          );
-                                        });
-                                      },
-                                      onPanUpdate: (details) {
-                                        if (isSending || isMemoOpen) return;
-                                        setDialogState(() {
-                                          if (points.isNotEmpty) {
-                                            points.last.offsets.add(
-                                              details.localPosition,
-                                            );
-                                          }
-                                        });
-                                      },
-                                      onPanEnd: (details) {
-                                        if (isSending || isMemoOpen) return;
-                                        setDialogState(() {
-                                          if (points.isNotEmpty) {
-                                            points.last.offsets.add(null);
-                                          }
-                                        });
-                                      },
-                                      child: CustomPaint(
-                                        painter: DrawingPainter(points: points),
-                                        size: Size.infinite,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // 2. 下部フローティングツールバー
-                      Positioned(
-                        bottom: 16,
-                        left: 16,
-                        right: 16,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade900.withValues(alpha: 0.9),
-                            borderRadius: BorderRadius.circular(30),
-                            border: Border.all(color: Colors.grey.shade800),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black54,
-                                blurRadius: 10,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              IconButton(
-                                icon: Icon(
-                                  Icons.edit,
-                                  color: isRedPen ? Colors.red : Colors.grey,
-                                ),
-                                tooltip: 'Red Pen',
-                                onPressed: isSending
-                                    ? null
-                                    : () =>
-                                        setDialogState(() => isRedPen = true),
-                              ),
-                              IconButton(
-                                icon: Icon(
-                                  Icons.blur_on,
-                                  color: !isRedPen ? Colors.white : Colors.grey,
-                                ),
-                                tooltip: 'Masking',
-                                onPressed: isSending
-                                    ? null
-                                    : () => setDialogState(
-                                          () => isRedPen = false,
-                                        ),
-                              ),
-                              IconButton(
-                                icon: Icon(
-                                  Icons.comment,
-                                  color: textController.text.trim().isNotEmpty
-                                      ? Colors.amber
-                                      : Colors.grey,
-                                ),
-                                tooltip: 'Memo',
-                                onPressed: isSending
-                                    ? null
-                                    : () => setDialogState(
-                                          () => isMemoOpen = true,
-                                        ),
-                              ),
-                              const SizedBox(width: 10),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.undo,
-                                  color: Colors.white70,
-                                ),
-                                tooltip: 'Undo',
-                                onPressed: isSending || points.isEmpty
-                                    ? null
-                                    : () => setDialogState(
-                                          () => points.removeLast(),
-                                        ),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  color: Colors.redAccent,
-                                ),
-                                tooltip: 'Clear',
-                                onPressed: isSending || points.isEmpty
-                                    ? null
-                                    : () =>
-                                        setDialogState(() => points.clear()),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      // 3. メモ入力用フローティングオーバーレイ
-                      if (isMemoOpen)
-                        Positioned.fill(
-                          child: Container(
-                            color: Colors.black.withValues(alpha: 0.75),
-                            padding: const EdgeInsets.all(24),
-                            child: Center(
-                              child: Card(
-                                color: Colors.grey.shade900,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  side: BorderSide(color: Colors.grey.shade800),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      Text(
-                                        _SdkLocale.describeIssue,
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      TextField(
-                                        controller: textController,
-                                        maxLength: 500,
-                                        maxLengthEnforcement:
-                                            MaxLengthEnforcement.enforced,
-                                        maxLines: 4,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                        ),
-                                        decoration: InputDecoration(
-                                          hintText: _SdkLocale.memoHint,
-                                          hintStyle: const TextStyle(
-                                            color: Colors.grey,
-                                          ),
-                                          fillColor: Colors.black26,
-                                          filled: true,
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                            borderSide: BorderSide(
-                                              color: Colors.grey.shade800,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.amber,
-                                          foregroundColor: Colors.black,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                        ),
-                                        onPressed: () {
-                                          setDialogState(
-                                            () => isMemoOpen = false,
-                                          );
-                                        },
-                                        child: Text(
-                                          _SdkLocale.done,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
+  Future<void> _sendFeedbackInlineFlow() async {
+    final memo = _feedbackMemoController.text;
+    if (memo.trim().isEmpty) {
+      if (mounted) {
+        final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
+        ScaffoldMessenger.of(messengerContext).showSnackBar(
+          SnackBar(
+            content: Text(_SdkLocale.memoPromptSnackBar),
+            backgroundColor: Colors.orange,
+          ),
         );
-      },
+      }
+      setState(() {
+        _isMemoOpen = true;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSendingFeedback = true;
+    });
+
+    // 1. 赤ペンとマスキングが載ったキャンバスを再キャプチャする
+    final Uint8List? editedBytes = await _canvasScreenshotController.capture();
+    final finalBytes = editedBytes ?? _drawingImageBytes!;
+
+    // 2. 送信処理
+    final statusCode = await _sendFeedback(
+      imageBytes: finalBytes,
+      widgetTree: _drawingWidgetTree,
+      memo: memo,
+      screenClassName: _drawingScreenClassName,
+      screenSignature: _drawingScreenSignature,
     );
+
+    final success = statusCode == 200;
+    final shouldClose = success || statusCode == 401 || statusCode == 403;
+
+    if (shouldClose) {
+      setState(() {
+        _overlayMode = _SnappyOverlayMode.none;
+        _isCapturing = false;
+      });
+      _drawingCompleter?.complete();
+    } else {
+      setState(() {
+        _isSendingFeedback = false;
+      });
+    }
+
+    if (mounted) {
+      final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
+      String message = _SdkLocale.statusSuccess;
+      if (!success) {
+        if (statusCode == 429) {
+          message = _SdkLocale.statusRateLimit;
+        } else if (statusCode == 401) {
+          message = _SdkLocale.statusInvalidKey;
+        } else if (statusCode == 403) {
+          message = _SdkLocale.statusUnauthorizedPackage;
+        } else {
+          message = _SdkLocale.statusNetworkError;
+        }
+      }
+
+      ScaffoldMessenger.of(messengerContext).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: success ? Colors.green : Colors.red,
+        ),
+      );
+    }
   }
 
   Future<Uint8List> _resizeAndCompressScreenshot(Uint8List rawPng) async {
@@ -1426,6 +1119,322 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
               ),
             ),
           ),
+        // ⚡️ インラインお絵描き・送信画面
+        if (_overlayMode == _SnappyOverlayMode.drawing && _drawingImageBytes != null)
+          Positioned.fill(
+            child: Scaffold(
+              backgroundColor: Colors.black,
+              appBar: AppBar(
+                backgroundColor: Colors.grey.shade900,
+                leading: TextButton(
+                  onPressed: _isSendingFeedback
+                      ? null
+                      : () => _cancelDrawingFlow(),
+                  child: Text(
+                    _SdkLocale.cancel,
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                ),
+                title: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _SdkLocale.titleFeedback,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Screen: $_drawingScreenSignature',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey.shade400,
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+                centerTitle: true,
+                actions: [
+                  TextButton(
+                    onPressed: _isSendingFeedback
+                        ? null
+                        : () => _sendFeedbackInlineFlow(),
+                    child: _isSendingFeedback
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.amber,
+                            ),
+                          )
+                        : Text(
+                            _SdkLocale.send,
+                            style: const TextStyle(
+                              color: Colors.amber,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+              body: SafeArea(
+                child: Stack(
+                  children: [
+                    // 1. お絵描きエリア（画面一杯に表示）
+                    Positioned.fill(
+                      bottom: 80, // 下部ツールバーのスペースを空ける
+                      child: Center(
+                        child: AspectRatio(
+                          aspectRatio: MediaQuery.of(context).size.width /
+                              (MediaQuery.of(context).size.height - 160),
+                          child: Screenshot(
+                            controller: _canvasScreenshotController,
+                            child: Stack(
+                              children: [
+                                // 背景画像
+                                Positioned.fill(
+                                  child: Image.memory(
+                                    _drawingImageBytes!,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                                // 描画キャンバス
+                                Positioned.fill(
+                                  child: GestureDetector(
+                                    onPanStart: (details) {
+                                      if (_isSendingFeedback || _isMemoOpen) return;
+                                      setState(() {
+                                        _drawingPoints.add(
+                                          DrawingPoint(
+                                            offsets: [details.localPosition],
+                                            color: _isRedPen
+                                                ? Colors.red
+                                                : Colors.black.withValues(
+                                                    alpha: 0.95,
+                                                  ),
+                                            strokeWidth:
+                                                _isRedPen ? 4.0 : 24.0,
+                                          ),
+                                        );
+                                      });
+                                    },
+                                    onPanUpdate: (details) {
+                                      if (_isSendingFeedback || _isMemoOpen) return;
+                                      setState(() {
+                                        if (_drawingPoints.isNotEmpty) {
+                                          _drawingPoints.last.offsets.add(
+                                            details.localPosition,
+                                          );
+                                        }
+                                      });
+                                    },
+                                    onPanEnd: (details) {
+                                      if (_isSendingFeedback || _isMemoOpen) return;
+                                      setState(() {
+                                        if (_drawingPoints.isNotEmpty) {
+                                          _drawingPoints.last.offsets.add(null);
+                                        }
+                                      });
+                                    },
+                                    child: CustomPaint(
+                                      painter: DrawingPainter(points: _drawingPoints),
+                                      size: Size.infinite,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // 2. 下部フローティングツールバー
+                    Positioned(
+                      bottom: 16,
+                      left: 16,
+                      right: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade900.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(color: Colors.grey.shade800),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black54,
+                              blurRadius: 10,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                Icons.edit,
+                                color: _isRedPen ? Colors.red : Colors.grey,
+                              ),
+                              tooltip: 'Red Pen',
+                              onPressed: _isSendingFeedback
+                                  ? null
+                                  : () =>
+                                      setState(() => _isRedPen = true),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.blur_on,
+                                color: !_isRedPen ? Colors.white : Colors.grey,
+                              ),
+                              tooltip: 'Masking',
+                              onPressed: _isSendingFeedback
+                                  ? null
+                                  : () => setState(
+                                        () => _isRedPen = false,
+                                      ),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.comment,
+                                color: _feedbackMemoController.text.trim().isNotEmpty
+                                    ? Colors.amber
+                                    : Colors.grey,
+                              ),
+                              tooltip: 'Memo',
+                              onPressed: _isSendingFeedback
+                                  ? null
+                                  : () => setState(
+                                        () => _isMemoOpen = true,
+                                      ),
+                            ),
+                            const SizedBox(width: 10),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.undo,
+                                color: Colors.white70,
+                              ),
+                              tooltip: 'Undo',
+                              onPressed: _isSendingFeedback || _drawingPoints.isEmpty
+                                  ? null
+                                  : () => setState(
+                                        () => _drawingPoints.removeLast(),
+                                      ),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.redAccent,
+                              ),
+                              tooltip: 'Clear',
+                              onPressed: _isSendingFeedback || _drawingPoints.isEmpty
+                                  ? null
+                                  : () =>
+                                      setState(() => _drawingPoints.clear()),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // 3. メモ入力用フローティングオーバーレイ
+                    if (_isMemoOpen)
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.75),
+                          padding: const EdgeInsets.all(24),
+                          child: Center(
+                            child: Card(
+                              color: Colors.grey.shade900,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                side: BorderSide(color: Colors.grey.shade800),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Text(
+                                      _SdkLocale.describeIssue,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    TextField(
+                                      controller: _feedbackMemoController,
+                                      maxLength: 500,
+                                      maxLengthEnforcement:
+                                          MaxLengthEnforcement.enforced,
+                                      maxLines: 4,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                      decoration: InputDecoration(
+                                        hintText: _SdkLocale.memoHint,
+                                        hintStyle: const TextStyle(
+                                          color: Colors.grey,
+                                        ),
+                                        fillColor: Colors.black26,
+                                        filled: true,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          borderSide: BorderSide(
+                                            color: Colors.grey.shade800,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.amber,
+                                        foregroundColor: Colors.black,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        setState(
+                                          () => _isMemoOpen = false,
+                                        );
+                                      },
+                                      child: Text(
+                                        _SdkLocale.done,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         // Tiny Floating Trigger Button
         if (widget.showTriggerButton && !_isCapturing && !_isFeedbackDialogOpen)
           Positioned(
@@ -1838,7 +1847,7 @@ class DrawingPainter extends CustomPainter {
 
 /// Internal localization helper for SnappySnag SDK.
 class _SdkLocale {
-  static bool get _isJa => Platform.localeName.toLowerCase().startsWith('ja');
+  static bool get _isJa => ui.platformDispatcher.locale.languageCode.toLowerCase().startsWith('ja');
 
   static String get cancel => _isJa ? 'キャンセル' : 'Cancel';
   static String get send => _isJa ? '送信' : 'Send';
