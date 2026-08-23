@@ -117,6 +117,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   bool _commentsLoading = false;
   bool _isSendingComment = false;
   final TextEditingController _commentTextController = TextEditingController();
+  bool _isFeedbackDialogOpen = false;
 
   DateTime? _lastShakeTime;
 
@@ -285,25 +286,39 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
             setState(() {
               _isCapturing = false;
               _capturedImageForFreeze = null;
+              _isFeedbackDialogOpen = true;
             });
+            try {
+              await _showFeedbackDialog(
+                imageBytes,
+                widgetTree,
+                screenClassName: screenClassName,
+                screenSignature: screenSignature,
+              );
+            } finally {
+              if (mounted) {
+                setState(() => _isFeedbackDialogOpen = false);
+              }
+            }
+          }
+        } else {
+          setState(() {
+            _isCapturing = false;
+            _capturedImageForFreeze = null;
+            _isFeedbackDialogOpen = true;
+          });
+          try {
             await _showFeedbackDialog(
               imageBytes,
               widgetTree,
               screenClassName: screenClassName,
               screenSignature: screenSignature,
             );
+          } finally {
+            if (mounted) {
+              setState(() => _isFeedbackDialogOpen = false);
+            }
           }
-        } else {
-          setState(() {
-            _isCapturing = false;
-            _capturedImageForFreeze = null;
-          });
-          await _showFeedbackDialog(
-            imageBytes,
-            widgetTree,
-            screenClassName: screenClassName,
-            screenSignature: screenSignature,
-          );
         }
       } on SnappySnagException catch (se) {
         _hideLoadingOverlay();
@@ -1412,7 +1427,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
             ),
           ),
         // Tiny Floating Trigger Button
-        if (widget.showTriggerButton && !_isCapturing)
+        if (widget.showTriggerButton && !_isCapturing && !_isFeedbackDialogOpen)
           Positioned(
             bottom: 80,
             right: 16,
