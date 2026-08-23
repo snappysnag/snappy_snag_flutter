@@ -1439,17 +1439,17 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                             ),
                           ),
                         ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
+          );
+        },
+      ),
+    ],
+  ),
+),
         // Tiny Floating Trigger Button
         if (widget.showTriggerButton && !_isCapturing && !_isFeedbackDialogOpen)
           Positioned(
