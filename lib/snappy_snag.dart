@@ -1122,78 +1122,88 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         // ⚡️ インラインお絵描き・送信画面
         if (_overlayMode == _SnappyOverlayMode.drawing && _drawingImageBytes != null)
           Positioned.fill(
-            child: Scaffold(
-              backgroundColor: Colors.black,
-              appBar: AppBar(
-                backgroundColor: Colors.grey.shade900,
-                leading: TextButton(
-                  onPressed: _isSendingFeedback
-                      ? null
-                      : () => _cancelDrawingFlow(),
-                  child: Text(
-                    _SdkLocale.cancel,
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                ),
-                title: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _SdkLocale.titleFeedback,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Screen: $_drawingScreenSignature',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey.shade400,
-                        fontWeight: FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-                centerTitle: true,
-                actions: [
-                  TextButton(
-                    onPressed: _isSendingFeedback
-                        ? null
-                        : () => _sendFeedbackInlineFlow(),
-                    child: _isSendingFeedback
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.amber,
-                            ),
-                          )
-                        : Text(
-                            _SdkLocale.send,
-                            style: const TextStyle(
-                              color: Colors.amber,
-                              fontWeight: FontWeight.bold,
+            child: Overlay(
+              initialEntries: [
+                OverlayEntry(
+                  builder: (overlayContext) {
+                    final mediaQuery = MediaQuery.of(overlayContext);
+                    double canvasRatio = 9 / 16;
+                    if (mediaQuery.size.height > 180) {
+                      canvasRatio = mediaQuery.size.width / (mediaQuery.size.height - 180);
+                    }
+                    return Material(
+                      type: MaterialType.transparency,
+                      child: Scaffold(
+                        backgroundColor: Colors.black,
+                        appBar: AppBar(
+                          backgroundColor: Colors.grey.shade900,
+                          leading: TextButton(
+                            onPressed: _isSendingFeedback
+                                ? null
+                                : () => _cancelDrawingFlow(),
+                            child: Text(
+                              _SdkLocale.cancel,
+                              style: const TextStyle(color: Colors.white70),
                             ),
                           ),
-                  ),
-                ],
-              ),
-              body: SafeArea(
-                child: Stack(
-                  children: [
-                    // 1. お絵描きエリア（画面一杯に表示）
-                    Positioned.fill(
-                      bottom: 80, // 下部ツールバーのスペースを空ける
-                      child: Center(
-                        child: AspectRatio(
-                          aspectRatio: MediaQuery.of(context).size.width /
-                              (MediaQuery.of(context).size.height - 160),
-                          child: Screenshot(
-                            controller: _canvasScreenshotController,
+                          title: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _SdkLocale.titleFeedback,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Screen: $_drawingScreenSignature',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey.shade400,
+                                  fontWeight: FontWeight.normal,
+                                ),
+                              ),
+                            ],
+                          ),
+                          centerTitle: true,
+                          actions: [
+                            TextButton(
+                              onPressed: _isSendingFeedback
+                                  ? null
+                                  : () => _sendFeedbackInlineFlow(),
+                              child: _isSendingFeedback
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.amber,
+                                      ),
+                                    )
+                                  : Text(
+                                      _SdkLocale.send,
+                                      style: const TextStyle(
+                                        color: Colors.amber,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                            ),
+                          ],
+                        ),
+                        body: SafeArea(
+                          child: Stack(
+                            children: [
+                              // 1. お絵描きエリア（画面一杯に表示）
+                              Positioned.fill(
+                                bottom: 80, // 下部ツールバーのスペースを空ける
+                                child: Center(
+                                  child: AspectRatio(
+                                    aspectRatio: canvasRatio,
+                                    child: Screenshot(
+                                      controller: _canvasScreenshotController,
                             child: Stack(
                               children: [
                                 // 背景画像
@@ -1429,9 +1439,14 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                             ),
                           ),
                         ),
-                      ),
-                  ],
-                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ),
