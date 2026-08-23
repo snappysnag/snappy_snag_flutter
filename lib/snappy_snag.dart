@@ -94,11 +94,20 @@ class SnappySnagOverlay extends StatefulWidget {
   State<SnappySnagOverlay> createState() => _SnappySnagOverlayState();
 }
 
+enum _SnappyOverlayMode {
+  none,
+  loading,
+  duplicateWarning,
+}
+
 class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   final ScreenshotController _screenshotController = ScreenshotController();
   StreamSubscription<UserAccelerometerEvent>? _accelerometerSubscription;
   bool _isCapturing = false;
   Uint8List? _capturedImageForFreeze;
+  _SnappyOverlayMode _overlayMode = _SnappyOverlayMode.none;
+  List<dynamic> _currentDuplicates = [];
+  Completer<bool>? _duplicateWarningCompleter;
   DateTime? _lastShakeTime;
 
   @override
@@ -349,127 +358,14 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     required Map<String, dynamic> widgetTree,
     required String screenClassName,
   }) async {
-    final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
-    final result = await showDialog<bool>(
-      context: targetContext,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: Colors.grey.shade900,
-          title: Row(
-            children: [
-              Icon(Icons.lightbulb_outline, color: Colors.amber, size: 28),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _SdkLocale.duplicateWarningTitle,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _SdkLocale.duplicateWarningSub,
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-                const SizedBox(height: 12),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 200),
-                  child: Scrollbar(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: duplicates.length,
-                      itemBuilder: (context, index) {
-                        final item = duplicates[index];
-                        final memo = item['user_memo'] ?? '';
-                        final severity = item['severity'] ?? 'low';
-                        final emoji = severity == 'high'
-                            ? '🔴'
-                            : (severity == 'medium' ? '🟡' : '🔵');
-
-                        return InkWell(
-                          onTap: () {
-                            Navigator.of(dialogContext).pop(false);
-                            _showCommentsThreadSheet(
-                              item['id'].toString(),
-                              memo,
-                            );
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.black26,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.white12),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    '$emoji $memo',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                ),
-                                Icon(
-                                  item['has_comments'] == true
-                                      ? Icons.chat_bubble
-                                      : Icons.chat_bubble_outline,
-                                  size: 16,
-                                  color: Colors.amber,
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop(false);
-              },
-              child: Text(
-                _SdkLocale.checkLater,
-                style: TextStyle(color: Colors.white60),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber,
-                foregroundColor: Colors.black,
-              ),
-              onPressed: () {
-                Navigator.of(dialogContext).pop(true);
-              },
-              child: Text(
-                _SdkLocale.reportNewIssue,
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-    return result ?? false;
+    _duplicateWarningCompleter = Completer<bool>();
+    if (mounted) {
+      setState(() {
+        _currentDuplicates = duplicates;
+        _overlayMode = _SnappyOverlayMode.duplicateWarning;
+      });
+    }
+    return _duplicateWarningCompleter!.future;
   }
 
   Future<List<dynamic>> _fetchComments(String feedbackLogId) async {
@@ -1258,52 +1154,17 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     }
   }
 
-  BuildContext? _loadingDialogContext;
-
   void _showLoadingOverlay() {
-    final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
-    showDialog(
-      context: targetContext,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        _loadingDialogContext = dialogContext;
-        return PopScope(
-          canPop: false, // 戻るボタンでの手動キャンセルを防止
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade900,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircularProgressIndicator(color: Color(0xFFF59E0B)),
-                  const SizedBox(height: 16),
-                  Text(
-                    _SdkLocale.analyzingScreen,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      decoration: TextDecoration.none,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
+    if (mounted) {
+      setState(() => _overlayMode = _SnappyOverlayMode.loading);
+    }
   }
 
   void _hideLoadingOverlay() {
-    if (_loadingDialogContext != null) {
-      Navigator.of(_loadingDialogContext!).pop();
-      _loadingDialogContext = null;
+    if (mounted) {
+      setState(() => _overlayMode = _SnappyOverlayMode.none);
     }
+  }
   }
 
   @override
@@ -1323,6 +1184,184 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
               child: Image.memory(
                 _capturedImageForFreeze!,
                 fit: BoxFit.fill,
+              ),
+            ),
+          ),
+        // ⚡️ インライン・オーバーレイダイアログ (Z-Indexの解決策)
+        if (_overlayMode == _SnappyOverlayMode.loading)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black45, // 半透明のバリア (元のアプリ画面やフリーズ画像を覆ってタッチをブロック)
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade900,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(color: Color(0xFFF59E0B)),
+                      const SizedBox(height: 16),
+                      Text(
+                        _SdkLocale.analyzingScreen,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        if (_overlayMode == _SnappyOverlayMode.duplicateWarning)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black54, // 半透明のバリア
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+              child: Center(
+                child: Material(
+                  color: Colors.grey.shade900,
+                  borderRadius: BorderRadius.circular(16),
+                  elevation: 24,
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    constraints: const BoxConstraints(maxWidth: 400),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.lightbulb_outline, color: Colors.amber, size: 28),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _SdkLocale.duplicateWarningTitle,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          _SdkLocale.duplicateWarningSub,
+                          style: const TextStyle(color: Colors.white70, fontSize: 13),
+                        ),
+                        const SizedBox(height: 12),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          child: Scrollbar(
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: _currentDuplicates.length,
+                              itemBuilder: (context, index) {
+                                final item = _currentDuplicates[index];
+                                final memo = item['user_memo'] ?? '';
+                                final severity = item['severity'] ?? 'low';
+                                final emoji = severity == 'high'
+                                    ? '🔴'
+                                    : (severity == 'medium' ? '🟡' : '🔵');
+
+                                return InkWell(
+                                  onTap: () {
+                                    if (mounted) {
+                                      setState(() {
+                                        _overlayMode = _SnappyOverlayMode.none;
+                                      });
+                                    }
+                                    _duplicateWarningCompleter?.complete(false);
+                                    _showCommentsThreadSheet(
+                                      item['id'].toString(),
+                                      memo,
+                                    );
+                                  },
+                                  child: Container(
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black26,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.white12),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            '$emoji $memo',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.white70,
+                                            ),
+                                          ),
+                                        ),
+                                        Icon(
+                                          item['has_comments'] == true
+                                              ? Icons.chat_bubble
+                                              : Icons.chat_bubble_outline,
+                                          size: 16,
+                                          color: Colors.amber,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                if (mounted) {
+                                  setState(() {
+                                    _overlayMode = _SnappyOverlayMode.none;
+                                  });
+                                }
+                                _duplicateWarningCompleter?.complete(false);
+                              },
+                              child: Text(
+                                _SdkLocale.checkLater,
+                                style: const TextStyle(color: Colors.white60),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.amber,
+                                foregroundColor: Colors.black,
+                              ),
+                              onPressed: () {
+                                if (mounted) {
+                                  setState(() {
+                                    _overlayMode = _SnappyOverlayMode.none;
+                                  });
+                                }
+                                _duplicateWarningCompleter?.complete(true);
+                              },
+                              child: Text(
+                                _SdkLocale.reportNewIssue,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
