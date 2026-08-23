@@ -1165,7 +1165,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       setState(() => _overlayMode = _SnappyOverlayMode.none);
     }
   }
-  }
 
   @override
   Widget build(BuildContext context) {
