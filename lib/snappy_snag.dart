@@ -147,6 +147,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   void _initShakeDetection() {
     // SDKが無効の場合はセンサー登録をスキップしてリソースを節約する
     if (!SnappySnag().isEnabled) return;
+
+    // Webやデスクトップ（macOS/Windows/Linux）などの非モバイルプラットフォームではシェイク検知を無効化
+    final isMobile = !kIsWeb && (Platform.isIOS || Platform.isAndroid);
+    if (!isMobile) return;
+
     // しきい値（Gフォース）。一般的なシェイクの強さ
     const double shakeThreshold = 12.0;
 
