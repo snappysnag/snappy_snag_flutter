@@ -392,12 +392,22 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return (data['duplicates'] as List<dynamic>?) ?? [];
-      } else if (response.statusCode == 401) {
-        throw SnappySnagException('Invalid API Key');
-      } else if (response.statusCode == 403) {
-        throw SnappySnagException(
-          'This API Key is locked to a different application package',
-        );
+      } else {
+        String serverError = '';
+        try {
+          final data = jsonDecode(response.body);
+          serverError = data['error'] as String? ?? '';
+        } catch (_) {}
+
+        if (response.statusCode == 401) {
+          throw SnappySnagException(serverError.isNotEmpty ? serverError : 'Invalid API Key');
+        } else if (response.statusCode == 403) {
+          throw SnappySnagException(
+            serverError.isNotEmpty
+                ? serverError
+                : 'This API Key is locked to a different application package',
+          );
+        }
       }
     } on SnappySnagException {
       rethrow;
