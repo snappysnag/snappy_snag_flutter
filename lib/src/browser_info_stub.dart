@@ -1,0 +1,3 @@
+String getBrowserInfo() {
+  return 'Browser';
+}

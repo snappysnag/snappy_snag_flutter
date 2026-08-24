@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:js' as js;
+import 'src/browser_info_helper.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
@@ -529,29 +529,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     }
   }
 
-  String _getBrowserInfo() {
-    try {
-      final userAgent = js.context['navigator']['userAgent'] as String? ?? '';
-      final ua = userAgent.toLowerCase();
-
-      if (ua.contains('edg')) {
-        final match = RegExp(r'edg/([0-9\.]+)').firstMatch(ua);
-        return 'Edge ${match?.group(1) ?? ""}';
-      } else if (ua.contains('chrome')) {
-        final match = RegExp(r'chrome/([0-9\.]+)').firstMatch(ua);
-        return 'Chrome ${match?.group(1) ?? ""}';
-      } else if (ua.contains('safari') && !ua.contains('chrome') && !ua.contains('android')) {
-        final match = RegExp(r'version/([0-9\.]+)').firstMatch(ua);
-        return 'Safari ${match?.group(1) ?? ""}';
-      } else if (ua.contains('firefox')) {
-        final match = RegExp(r'firefox/([0-9\.]+)').firstMatch(ua);
-        return 'Firefox ${match?.group(1) ?? ""}';
-      }
-      return userAgent.length > 30 ? '${userAgent.substring(0, 30)}...' : userAgent;
-    } catch (e) {
-      return 'Browser';
-    }
-  }
 
   Future<int> _sendFeedback({
     required Uint8List imageBytes,
@@ -589,7 +566,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
           'metadata': {
             'platform': 'flutter',
             'os_name': kIsWeb ? 'web_${defaultTargetPlatform.name.toLowerCase()}' : Platform.operatingSystem,
-            'os_version': kIsWeb ? _getBrowserInfo() : Platform.operatingSystemVersion,
+            'os_version': kIsWeb ? getBrowserInfoHelper() : Platform.operatingSystemVersion,
             'package_name': SnappySnag()._packageName,
             'reporter_user_id': SnappySnag()._reporterUserId ?? 'anonymous',
             'reporter_email': SnappySnag()._reporterEmail ?? 'anonymous',
