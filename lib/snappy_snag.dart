@@ -1485,14 +1485,25 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
           Positioned(
             bottom: 80,
             right: 16,
-            child: Material(
-              type: MaterialType.transparency,
-              child: FloatingActionButton.small(
-                onPressed: () => _triggerCapture(),
-                backgroundColor: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.8),
-                child: const Icon(Icons.bolt, color: Colors.white),
+            child: GestureDetector(
+              onTap: () => _triggerCapture(),
+              child: Container(
+                width: 68, // Reduced from 80 to fit tightly around the 56px icon
+                height: 68, // Reduced from 80
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B),
+                  borderRadius: BorderRadius.circular(18), // Slightly tighter radius for smaller container
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black38,
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: SnappySnagIcon(size: 56, color: Colors.black), // Double the icon size to 56px
+                ),
               ),
             ),
           ),
@@ -1948,3 +1959,110 @@ class _SdkLocale {
   static String get analyzingScreen =>
       _isJa ? '画面を解析中...' : 'Analyzing screen...';
 }
+
+/// Custom Widget that draws the SnappySnag lightning logo with circular border gap mask.
+class SnappySnagIcon extends StatelessWidget {
+  final double size;
+  final Color color;
+
+  const SnappySnagIcon({
+    super.key,
+    this.size = 24.0,
+    this.color = Colors.white,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: SnappySnagIconPainter(color: color),
+      ),
+    );
+  }
+}
+
+/// CustomPainter to draw the SnappySnag logo using path logic similar to the SVG mask.
+class SnappySnagIconPainter extends CustomPainter {
+  final Color color;
+
+  SnappySnagIconPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final double minSize = size.width < size.height ? size.width : size.height;
+    final double scale = minSize / 512.0;
+
+    final double dx = (size.width - minSize) / 2;
+    final double dy = (size.height - minSize) / 2;
+
+    canvas.save();
+    canvas.translate(dx, dy);
+
+    // 1. Draw circle and erase the gap using saveLayer and BlendMode.clear
+    final Rect bounds = Rect.fromLTWH(0, 0, size.width, size.height);
+    canvas.saveLayer(bounds, Paint());
+
+    // Draw the camera lens circle
+    final Paint paintCircle = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 16.0 * scale;
+
+    canvas.drawCircle(
+      Offset(256.0 * scale, 256.0 * scale),
+      110.0 * scale,
+      paintCircle,
+    );
+
+    // Setup eraser paints (BlendMode.clear acting as transparent mask)
+    final Paint eraserFill = Paint()
+      ..blendMode = BlendMode.clear
+      ..style = PaintingStyle.fill;
+
+    final Paint eraserStroke = Paint()
+      ..blendMode = BlendMode.clear
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 24.0 * scale // This creates the 12px clear gap on each side of the bolt
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    // Define the bolt paths to be used for erasing and later drawing
+    final Path path1 = Path()
+      ..moveTo(330.0 * scale, 130.0 * scale)
+      ..lineTo(270.0 * scale, 250.0 * scale)
+      ..lineTo(190.0 * scale, 250.0 * scale)
+      ..lineTo(270.0 * scale, 130.0 * scale)
+      ..close();
+
+    final Path path2 = Path()
+      ..moveTo(322.0 * scale, 262.0 * scale)
+      ..lineTo(242.0 * scale, 382.0 * scale)
+      ..lineTo(162.0 * scale, 382.0 * scale)
+      ..lineTo(242.0 * scale, 262.0 * scale)
+      ..close();
+
+    // Erase the bolt shapes (including a stroke margin) from the circle layer
+    canvas.drawPath(path1, eraserStroke);
+    canvas.drawPath(path1, eraserFill);
+    canvas.drawPath(path2, eraserStroke);
+    canvas.drawPath(path2, eraserFill);
+
+    canvas.restore(); // Composites the erased circle layer back to screen
+
+    // 2. Draw the actual sharp solid lightning bolt on top of the circle
+    final Paint paintBolt = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    canvas.drawPath(path1, paintBolt);
+    canvas.drawPath(path2, paintBolt);
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
