@@ -584,6 +584,15 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       return response.statusCode;
     } catch (e) {
       debugPrint('❌ SnappySnag Network Error: $e');
+      if (!kIsWeb && Platform.isMacOS && e.toString().contains('Operation not permitted')) {
+        debugPrint('⚠️ [SnappySnag WARNING] macOS Sandbox Network client restriction detected!');
+        debugPrint('======================================================================');
+        debugPrint('To allow internet access for your macOS build, please add:');
+        debugPrint('  <key>com.apple.security.network.client</key>');
+        debugPrint('  <true/>');
+        debugPrint('inside macos/Runner/DebugProfile.entitlements and Release.entitlements.');
+        debugPrint('======================================================================');
+      }
       return -1; // ネットワーク切断を示す独自コード
     }
   }
@@ -683,7 +692,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         } else if (statusCode == 403) {
           message = _SdkLocale.statusUnauthorizedPackage;
         } else {
-          message = _SdkLocale.statusNetworkError;
+          if (!kIsWeb && Platform.isMacOS) {
+            message = 'Network error: macOS network.client entitlement may be missing.';
+          } else {
+            message = _SdkLocale.statusNetworkError;
+          }
         }
       }
 
