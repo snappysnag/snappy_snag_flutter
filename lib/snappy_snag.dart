@@ -1527,7 +1527,7 @@ class WidgetTreeDumper {
   static Map<String, dynamic> dump(BuildContext context) {
     Map<String, dynamic> tree = {};
     context.visitChildElements((element) {
-      tree = _buildNode(element, 0);
+      tree = _buildNode(element, 0) ?? {};
     });
     return tree;
   }
