@@ -1739,9 +1739,21 @@ class WidgetTreeDumper {
 
   static String? _getLocation(Element element) {
     try {
-      final str = element.toDiagnosticsNode().toStringDeep();
-      // Extract slim package/file name and line number
-      // e.g. "package:my_app/views/home_page.dart:123:45" -> "home_page.dart:123"
+      // 1. RenderObject's debugCreator (highly reliable public API for render elements)
+      final renderObject = element.renderObject;
+      if (renderObject != null) {
+        final creator = renderObject.debugCreator;
+        if (creator != null) {
+          final str = creator.toString();
+          final match = RegExp(r'([\w\-_]+\.dart:\d+)').firstMatch(str);
+          if (match != null) {
+            return match.group(1);
+          }
+        }
+      }
+
+      // 2. DiagnosticsNode debug-level output fallback
+      final str = element.toDiagnosticsNode().toStringDeep(minLevel: DiagnosticLevel.debug);
       final match = RegExp(r'([\w\-_]+\.dart:\d+)').firstMatch(str);
       if (match != null) {
         return match.group(1);
