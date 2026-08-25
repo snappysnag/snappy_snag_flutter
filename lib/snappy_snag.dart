@@ -545,7 +545,13 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   }
 
 
-  Future<int> _sendFeedback({
+class _FeedbackResponse {
+  final int statusCode;
+  final String? errorMessage;
+  _FeedbackResponse(this.statusCode, this.errorMessage);
+}
+
+  Future<_FeedbackResponse> _sendFeedback({
     required Uint8List imageBytes,
     required Map<String, dynamic> widgetTree,
     required String memo,
@@ -555,7 +561,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     final apiKey = SnappySnag()._apiKey;
     if (apiKey == null) {
       debugPrint('❌ SnappySnag Error: API Key is not configured.');
-      return 401;
+      return _FeedbackResponse(401, 'API Key is not configured.');
     }
 
     final String url =
@@ -591,7 +597,14 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       );
 
       debugPrint('🌐 SnappySnag HTTP Response: ${response.statusCode}');
-      return response.statusCode;
+      String? errorMessage;
+      if (response.statusCode != 200) {
+        try {
+          final Map<String, dynamic> body = jsonDecode(response.body);
+          errorMessage = body['error'] as String?;
+        } catch (_) {}
+      }
+      return _FeedbackResponse(response.statusCode, errorMessage);
     } catch (e) {
       debugPrint('❌ SnappySnag Network Error: $e');
       if (!kIsWeb && Platform.isMacOS && e.toString().contains('Operation not permitted')) {
@@ -603,7 +616,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         debugPrint('inside macos/Runner/DebugProfile.entitlements and Release.entitlements.');
         debugPrint('======================================================================');
       }
-      return -1; // ネットワーク切断を示す独自コード
+      return _FeedbackResponse(-1, e.toString());
     }
   }
 
@@ -668,7 +681,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     final finalBytes = editedBytes ?? _drawingImageBytes!;
 
     // 2. 送信処理
-    final statusCode = await _sendFeedback(
+    final feedbackRes = await _sendFeedback(
       imageBytes: finalBytes,
       widgetTree: _drawingWidgetTree,
       memo: memo,
@@ -676,8 +689,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       screenSignature: _drawingScreenSignature,
     );
 
-    final success = statusCode == 200;
-    final shouldClose = success || statusCode == 401 || statusCode == 403;
+    final success = feedbackRes.statusCode == 200;
+    final shouldClose = success || feedbackRes.statusCode == 401 || feedbackRes.statusCode == 403;
 
     if (shouldClose) {
       setState(() {
@@ -695,17 +708,21 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
       String message = _SdkLocale.statusSuccess;
       if (!success) {
-        if (statusCode == 429) {
-          message = _SdkLocale.statusRateLimit;
-        } else if (statusCode == 401) {
-          message = _SdkLocale.statusInvalidKey;
-        } else if (statusCode == 403) {
-          message = _SdkLocale.statusUnauthorizedPackage;
+        if (feedbackRes.errorMessage != null && feedbackRes.errorMessage!.isNotEmpty) {
+          message = feedbackRes.errorMessage!;
         } else {
-          if (!kIsWeb && Platform.isMacOS) {
-            message = 'Network error: macOS network.client entitlement may be missing.';
+          if (feedbackRes.statusCode == 429) {
+            message = _SdkLocale.statusRateLimit;
+          } else if (feedbackRes.statusCode == 401) {
+            message = _SdkLocale.statusInvalidKey;
+          } else if (feedbackRes.statusCode == 403) {
+            message = _SdkLocale.statusUnauthorizedPackage;
           } else {
-            message = _SdkLocale.statusNetworkError;
+            if (!kIsWeb && Platform.isMacOS) {
+              message = 'Network error: macOS network.client entitlement may be missing.';
+            } else {
+              message = _SdkLocale.statusNetworkError;
+            }
           }
         }
       }
