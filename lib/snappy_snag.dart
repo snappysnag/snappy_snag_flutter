@@ -1782,7 +1782,6 @@ class WidgetTreeDumper {
     }
     return false;
   }
-  }
 
   static String? _getLocation(Element element) {
     try {
