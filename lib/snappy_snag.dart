@@ -1739,15 +1739,12 @@ class WidgetTreeDumper {
 
   static String? _getLocation(Element element) {
     try {
-      final creator = element.debugCreator;
-      if (creator != null) {
-        final str = creator.toString();
-        // Extract slim package/file name and line number
-        // e.g. "package:my_app/views/home_page.dart:123:45" -> "home_page.dart:123"
-        final match = RegExp(r'([\w\-_]+\.dart:\d+)').firstMatch(str);
-        if (match != null) {
-          return match.group(1);
-        }
+      final str = element.toDiagnosticsNode().toStringDeep();
+      // Extract slim package/file name and line number
+      // e.g. "package:my_app/views/home_page.dart:123:45" -> "home_page.dart:123"
+      final match = RegExp(r'([\w\-_]+\.dart:\d+)').firstMatch(str);
+      if (match != null) {
+        return match.group(1);
       }
     } catch (_) {}
     return null;
