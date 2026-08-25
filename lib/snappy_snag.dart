@@ -1547,29 +1547,14 @@ class _SimpleDiagnosticsSerializationDelegate implements DiagnosticsSerializatio
   const _SimpleDiagnosticsSerializationDelegate();
 
   @override
-  Map<String, Object?> additionalNodeProperties(DiagnosticsNode node) => const <String, Object?>{};
-
-  @override
-  bool delegate(DiagnosticsNode node) => true;
-
-  @override
-  List<DiagnosticsNode> filterChildren(List<DiagnosticsNode> nodes, DiagnosticsNode owner) => nodes;
-
-  @override
-  List<DiagnosticsNode> filterProperties(List<DiagnosticsNode> nodes, DiagnosticsNode owner) => nodes;
-
-  @override
-  int get subtreeDepth => 0;
-
-  @override
-  bool get includeProperties => true;
-
-  @override
-  bool get expandValueProperties => false;
-
-  // Fallback for newer or older Flutter SDK implementation differences (e.g. copyWith, delegateForNode)
-  @override
-  dynamic noSuchMethod(Invocation invocation) => null;
+  dynamic noSuchMethod(Invocation invocation) {
+    if (invocation.isGetter) {
+      if (invocation.memberName == #subtreeDepth) return 0;
+      if (invocation.memberName == #includeProperties) return true;
+      if (invocation.memberName == #expandValueProperties) return false;
+    }
+    return null;
+  }
 }
 
 /// Dumps the active widget tree context into a JSON-compatible map, filtering out noise widgets.
