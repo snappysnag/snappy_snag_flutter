@@ -1739,12 +1739,20 @@ class WidgetTreeDumper {
 
   static String? _getLocation(Element element) {
     try {
-      // 1. RenderObject's debugCreator (highly reliable public API for render elements)
+      // 1. RenderObject's debugCreator
       final renderObject = element.renderObject;
       if (renderObject != null) {
         final creator = renderObject.debugCreator;
         if (creator != null) {
           final str = creator.toString();
+          // Filter out SDK and library noise paths
+          if (str.contains('package:flutter/') ||
+              str.contains('package:flutter_web/') ||
+              str.contains('package:provider/') ||
+              str.contains('package:flutter_riverpod/') ||
+              str.contains('package:riverpod/')) {
+            return null;
+          }
           final match = RegExp(r'([\w\-_]+\.dart:\d+)').firstMatch(str);
           if (match != null) {
             return match.group(1);
@@ -1754,6 +1762,13 @@ class WidgetTreeDumper {
 
       // 2. DiagnosticsNode debug-level output fallback (non-recursive)
       final str = element.toDiagnosticsNode().toString(minLevel: DiagnosticLevel.debug);
+      if (str.contains('package:flutter/') ||
+          str.contains('package:flutter_web/') ||
+          str.contains('package:provider/') ||
+          str.contains('package:flutter_riverpod/') ||
+          str.contains('package:riverpod/')) {
+        return null;
+      }
       final match = RegExp(r'([\w\-_]+\.dart:\d+)').firstMatch(str);
       if (match != null) {
         return match.group(1);
@@ -1762,32 +1777,48 @@ class WidgetTreeDumper {
     return null;
   }
 
-  static Map<String, dynamic> _buildNode(Element element, int depth) {
+  static bool _isLayoutStructuralWidget(String type) {
+    final clean = _cleanType(type);
+    const layoutWidgets = [
+      'Scaffold',
+      'Column',
+      'Row',
+      'Stack',
+      'ListView',
+      'GridView',
+      'SingleChildScrollView',
+      'Navigator',
+      'MaterialApp'
+    ];
+    return layoutWidgets.contains(clean);
+  }
+
+  static Map<String, dynamic>? _buildNode(Element element, int depth) {
     final widget = element.widget;
     final String type = widget.runtimeType.toString();
 
-    // Revert to standard readable keys for AI contextual mapping: type
-    Map<String, dynamic> node = {'type': type};
-
-    // Revert to standard readable keys: location
     final loc = _getLocation(element);
-    if (loc != null) {
-      node['location'] = loc;
-    }
+    final String? key = widget.key?.toString();
+    String? text;
 
-    if (widget.key != null) {
-      node['key'] = widget.key.toString();
-    }
-
-    // Revert to standard readable keys: text
     if (widget is Text) {
       final textData = widget.data ?? '';
-      node['text'] = textData.length > 15 ? '[REDACTED]' : textData;
+      text = textData.length > 15 ? '[REDACTED]' : textData;
     } else if (type.contains('EditableText') || type.contains('TextField')) {
-      node['text'] = '[REDACTED]';
+      text = '[REDACTED]';
     }
 
-    // Expand search depth limit up to 30 levels due to significantly smaller payload size
+    // Bypass check: If the node contains no location, key, or text, AND is not a structural layout widget,
+    // we return null to bypass (skip) this node entirely and let the children flatten up.
+    if (loc == null && key == null && text == null && !_isLayoutStructuralWidget(type)) {
+      return null;
+    }
+
+    Map<String, dynamic> node = {'type': type};
+    if (loc != null) node['location'] = loc;
+    if (key != null) node['key'] = key;
+    if (text != null) node['text'] = text;
+
     if (depth >= 30) {
       node['truncated'] = true;
       return node;
@@ -1798,13 +1829,13 @@ class WidgetTreeDumper {
     _collectChildren(element, children, depth + 1);
 
     if (children.isNotEmpty) {
-      node['children'] = children; // children
+      node['children'] = children;
     }
 
     return node;
   }
 
-  // Helper to collect child elements recursively bypassing noise widgets
+  // Helper to collect child elements recursively, flattening bypassed null nodes
   static void _collectChildren(
     Element element,
     List<Map<String, dynamic>> resultList,
@@ -1816,7 +1847,13 @@ class WidgetTreeDumper {
       if (_isNoiseWidget(childType)) {
         _collectChildren(childElement, resultList, depth);
       } else {
-        resultList.add(_buildNode(childElement, depth));
+        final node = _buildNode(childElement, depth);
+        if (node != null) {
+          resultList.add(node);
+        } else {
+          // Flatten: If this child node was bypassed, push its descendants directly to this parent level
+          _collectChildren(childElement, resultList, depth);
+        }
       }
     });
   }
