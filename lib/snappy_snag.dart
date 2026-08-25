@@ -1752,8 +1752,8 @@ class WidgetTreeDumper {
         }
       }
 
-      // 2. DiagnosticsNode debug-level output fallback
-      final str = element.toDiagnosticsNode().toStringDeep(minLevel: DiagnosticLevel.debug);
+      // 2. DiagnosticsNode debug-level output fallback (non-recursive)
+      final str = element.toDiagnosticsNode().toString(minLevel: DiagnosticLevel.debug);
       final match = RegExp(r'([\w\-_]+\.dart:\d+)').firstMatch(str);
       if (match != null) {
         return match.group(1);
@@ -1766,25 +1766,25 @@ class WidgetTreeDumper {
     final widget = element.widget;
     final String type = widget.runtimeType.toString();
 
-    // Minified key: w = widget class type
-    Map<String, dynamic> node = {'w': type};
+    // Revert to standard readable keys for AI contextual mapping: type
+    Map<String, dynamic> node = {'type': type};
 
-    // Extract slim location (file name and line number): f = file/location
+    // Revert to standard readable keys: location
     final loc = _getLocation(element);
     if (loc != null) {
-      node['f'] = loc;
+      node['location'] = loc;
     }
 
     if (widget.key != null) {
-      node['k'] = widget.key.toString(); // k = key
+      node['key'] = widget.key.toString();
     }
 
-    // Minified key: t = text for privacy redacted strings
+    // Revert to standard readable keys: text
     if (widget is Text) {
       final textData = widget.data ?? '';
-      node['t'] = textData.length > 15 ? '[REDACTED]' : textData;
+      node['text'] = textData.length > 15 ? '[REDACTED]' : textData;
     } else if (type.contains('EditableText') || type.contains('TextField')) {
-      node['t'] = '[REDACTED]';
+      node['text'] = '[REDACTED]';
     }
 
     // Expand search depth limit up to 30 levels due to significantly smaller payload size
@@ -1798,7 +1798,7 @@ class WidgetTreeDumper {
     _collectChildren(element, children, depth + 1);
 
     if (children.isNotEmpty) {
-      node['c'] = children; // c = children
+      node['children'] = children; // children
     }
 
     return node;
