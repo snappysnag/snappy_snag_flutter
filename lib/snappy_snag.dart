@@ -1566,6 +1566,10 @@ class _SimpleDiagnosticsSerializationDelegate implements DiagnosticsSerializatio
 
   @override
   bool get expandValueProperties => false;
+
+  // Fallback for newer or older Flutter SDK implementation differences (e.g. copyWith, delegateForNode)
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
 }
 
 /// Dumps the active widget tree context into a JSON-compatible map, filtering out noise widgets.
