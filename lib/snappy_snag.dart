@@ -1543,6 +1543,31 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   }
 }
 
+class _SimpleDiagnosticsSerializationDelegate implements DiagnosticsSerializationDelegate {
+  const _SimpleDiagnosticsSerializationDelegate();
+
+  @override
+  Map<String, Object?> additionalNodeProperties(DiagnosticsNode node) => const <String, Object?>{};
+
+  @override
+  bool delegate(DiagnosticsNode node) => true;
+
+  @override
+  List<DiagnosticsNode> filterChildren(List<DiagnosticsNode> nodes, DiagnosticsNode owner) => nodes;
+
+  @override
+  List<DiagnosticsNode> filterProperties(List<DiagnosticsNode> nodes, DiagnosticsNode owner) => nodes;
+
+  @override
+  int get subtreeDepth => 0;
+
+  @override
+  bool get includeProperties => true;
+
+  @override
+  bool get expandValueProperties => false;
+}
+
 /// Dumps the active widget tree context into a JSON-compatible map, filtering out noise widgets.
 class WidgetTreeDumper {
   static Map<String, dynamic> dump(BuildContext context) {
@@ -1757,31 +1782,7 @@ class WidgetTreeDumper {
     }
     return false;
   }
-
-class _SimpleDiagnosticsSerializationDelegate implements DiagnosticsSerializationDelegate {
-  const _SimpleDiagnosticsSerializationDelegate();
-
-  @override
-  Map<String, Object?> additionalNodeProperties(DiagnosticsNode node) => const <String, Object?>{};
-
-  @override
-  bool delegate(DiagnosticsNode node) => true;
-
-  @override
-  List<DiagnosticsNode> filterChildren(List<DiagnosticsNode> nodes, DiagnosticsNode owner) => nodes;
-
-  @override
-  List<DiagnosticsNode> filterProperties(List<DiagnosticsNode> nodes, DiagnosticsNode owner) => nodes;
-
-  @override
-  int get subtreeDepth => 0;
-
-  @override
-  bool get includeProperties => true;
-
-  @override
-  bool get expandValueProperties => false;
-}
+  }
 
   static String? _getLocation(Element element) {
     try {
