@@ -1761,22 +1761,28 @@ class WidgetTreeDumper {
   static String? _getLocation(Element element) {
     try {
       final node = element.toDiagnosticsNode();
-      // Iterate properties of the DiagnosticsNode to find the creationLocation object
-      for (final prop in node.getProperties()) {
-        if (prop.name == 'creationLocation' || prop.value.runtimeType.toString().contains('CreationLocation')) {
-          final val = prop.value;
-          if (val != null) {
-            final str = val.toString();
-            // Match filename and line number e.g. "home_page.dart:123"
-            final match = RegExp(r'([\w\-_]+\.dart:\d+)').firstMatch(str);
-            if (match != null) {
-              final path = match.group(1)!;
-              if (!path.contains('flutter') &&
-                  !path.contains('provider') &&
-                  !path.contains('riverpod')) {
-                return path;
+      // Use toJsonMap which contains structured creationLocation metadata from Flutter Widget Inspector
+      final jsonMap = node.toJsonMap(const DiagnosticsSerializationDelegate(subtreeDepth: 0));
+      if (jsonMap.containsKey('creationLocation')) {
+        final locMap = jsonMap['creationLocation'] as Map<String, dynamic>?;
+        if (locMap != null && locMap.containsKey('file')) {
+          final file = locMap['file'] as String;
+          final line = locMap['line'] as int;
+
+          // Reject framework paths
+          if (!file.contains('package:flutter/') &&
+              !file.contains('package:provider/') &&
+              !file.contains('package:flutter_riverpod/') &&
+              !file.contains('package:riverpod/')) {
+            // Safe URI parsing to extract the basename, falling back to full path if needed
+            String fileName = file;
+            try {
+              final uri = Uri.parse(file);
+              if (uri.pathSegments.isNotEmpty) {
+                fileName = uri.pathSegments.last;
               }
-            }
+            } catch (_) {}
+            return '$fileName:$line';
           }
         }
       }
