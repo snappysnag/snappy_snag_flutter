@@ -1758,11 +1758,36 @@ class WidgetTreeDumper {
     return false;
   }
 
+class _SimpleDiagnosticsSerializationDelegate implements DiagnosticsSerializationDelegate {
+  const _SimpleDiagnosticsSerializationDelegate();
+
+  @override
+  Map<String, Object?> additionalNodeProperties(DiagnosticsNode node) => const <String, Object?>{};
+
+  @override
+  bool delegate(DiagnosticsNode node) => true;
+
+  @override
+  List<DiagnosticsNode> filterChildren(List<DiagnosticsNode> nodes, DiagnosticsNode owner) => nodes;
+
+  @override
+  List<DiagnosticsNode> filterProperties(List<DiagnosticsNode> nodes, DiagnosticsNode owner) => nodes;
+
+  @override
+  int get subtreeDepth => 0;
+
+  @override
+  bool get includeProperties => true;
+
+  @override
+  bool get expandValueProperties => false;
+}
+
   static String? _getLocation(Element element) {
     try {
       final node = element.toDiagnosticsNode();
-      // Use toJsonMap which contains structured creationLocation metadata from Flutter Widget Inspector
-      final jsonMap = node.toJsonMap(const DiagnosticsSerializationDelegate(subtreeDepth: 0));
+      // Use toJsonMap with our concrete delegate implementation to safely extract creationLocation metadata
+      final jsonMap = node.toJsonMap(const _SimpleDiagnosticsSerializationDelegate());
       if (jsonMap.containsKey('creationLocation')) {
         final locMap = jsonMap['creationLocation'] as Map<String, dynamic>?;
         if (locMap != null && locMap.containsKey('file')) {
