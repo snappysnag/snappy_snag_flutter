@@ -545,12 +545,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   }
 
 
-class _FeedbackResponse {
-  final int statusCode;
-  final String? errorMessage;
-  _FeedbackResponse(this.statusCode, this.errorMessage);
-}
-
   Future<_FeedbackResponse> _sendFeedback({
     required Uint8List imageBytes,
     required Map<String, dynamic> widgetTree,
@@ -1572,6 +1566,12 @@ class _SimpleDiagnosticsSerializationDelegate implements DiagnosticsSerializatio
     }
     return null;
   }
+}
+
+class _FeedbackResponse {
+  final int statusCode;
+  final String? errorMessage;
+  _FeedbackResponse(this.statusCode, this.errorMessage);
 }
 
 /// Dumps the active widget tree context into a JSON-compatible map, filtering out noise widgets.
