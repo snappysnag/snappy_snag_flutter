@@ -721,12 +721,33 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
   Future<Uint8List> _resizeAndCompressScreenshot(Uint8List rawPng) async {
     try {
-      final ui.Codec codec = await ui.instantiateImageCodec(
+      // 1. Get raw image dimensions first without scaling
+      final ui.Codec metadataCodec = await ui.instantiateImageCodec(rawPng);
+      final ui.FrameInfo fi = await metadataCodec.getNextFrame();
+      final double width = fi.image.width.toDouble();
+      final double height = fi.image.height.toDouble();
+
+      int? targetWidth;
+      int? targetHeight;
+      const double maxDimension = 640.0;
+
+      // 2. Adjust target bounds depending on orientation (portrait vs landscape)
+      if (height > width) {
+        targetHeight = maxDimension.toInt();
+        targetWidth = ((width / height) * maxDimension).toInt();
+      } else {
+        targetWidth = maxDimension.toInt();
+        targetHeight = ((height / width) * maxDimension).toInt();
+      }
+
+      // 3. Load frame and encode at target sizes
+      final ui.Codec resizeCodec = await ui.instantiateImageCodec(
         rawPng,
-        targetWidth: 480,
+        targetWidth: targetWidth,
+        targetHeight: targetHeight,
       );
-      final ui.FrameInfo fi = await codec.getNextFrame();
-      final byteData = await fi.image.toByteData(
+      final ui.FrameInfo resizedFrame = await resizeCodec.getNextFrame();
+      final byteData = await resizedFrame.image.toByteData(
         format: ui.ImageByteFormat.png,
       );
       return byteData?.buffer.asUint8List() ?? rawPng;
@@ -1739,35 +1760,24 @@ class WidgetTreeDumper {
 
   static String? _getLocation(Element element) {
     try {
-      // 1. RenderObject's debugCreator (highly reliable public API for render elements)
-      final renderObject = element.renderObject;
-      if (renderObject != null) {
-        final creator = renderObject.debugCreator;
-        if (creator != null) {
-          final str = creator.toString();
-          // Extract specific .dart filename and line number first
-          final match = RegExp(r'([\w\-_]+\.dart:\d+)').firstMatch(str);
-          if (match != null) {
-            final path = match.group(1)!;
-            // Only reject if the extracted path itself is from core libraries
-            if (!path.contains('flutter') &&
-                !path.contains('provider') &&
-                !path.contains('riverpod')) {
-              return path;
+      final node = element.toDiagnosticsNode();
+      // Iterate properties of the DiagnosticsNode to find the creationLocation object
+      for (final prop in node.getProperties()) {
+        if (prop.name == 'creationLocation' || prop.value.runtimeType.toString().contains('CreationLocation')) {
+          final val = prop.value;
+          if (val != null) {
+            final str = val.toString();
+            // Match filename and line number e.g. "home_page.dart:123"
+            final match = RegExp(r'([\w\-_]+\.dart:\d+)').firstMatch(str);
+            if (match != null) {
+              final path = match.group(1)!;
+              if (!path.contains('flutter') &&
+                  !path.contains('provider') &&
+                  !path.contains('riverpod')) {
+                return path;
+              }
             }
           }
-        }
-      }
-
-      // 2. DiagnosticsNode debug-level output fallback (non-recursive)
-      final str = element.toDiagnosticsNode().toString(minLevel: DiagnosticLevel.debug);
-      final match = RegExp(r'([\w\-_]+\.dart:\d+)').firstMatch(str);
-      if (match != null) {
-        final path = match.group(1)!;
-        if (!path.contains('flutter') &&
-            !path.contains('provider') &&
-            !path.contains('riverpod')) {
-          return path;
         }
       }
     } catch (_) {}
