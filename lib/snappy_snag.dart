@@ -1737,53 +1737,65 @@ class WidgetTreeDumper {
     return false;
   }
 
+  static String? _getLocation(Element element) {
+    try {
+      final creator = element.debugCreator;
+      if (creator != null) {
+        final str = creator.toString();
+        // Extract slim package/file name and line number
+        // e.g. "package:my_app/views/home_page.dart:123:45" -> "home_page.dart:123"
+        final match = RegExp(r'([\w\-_]+\.dart:\d+)').firstMatch(str);
+        if (match != null) {
+          return match.group(1);
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   static Map<String, dynamic> _buildNode(Element element, int depth) {
     final widget = element.widget;
     final String type = widget.runtimeType.toString();
 
-    Map<String, dynamic> node = {'type': type};
+    // Minified key: w = widget class type
+    Map<String, dynamic> node = {'w': type};
 
-    // 主要ウィジェットのプロパティ抽出 ＆ 自動匿名化 (プライバシー保護)
-    if (widget is Text) {
-      final textData = widget.data ?? '';
-      node['text'] = textData.length > 25 ? '[REDACTED]' : textData;
-    } else if (type.contains('EditableText') || type.contains('TextField')) {
-      node['text'] = '[REDACTED]';
-    } else if (widget is Padding) {
-      node['padding'] = widget.padding.toString();
-    } else if (widget is SizedBox) {
-      if (widget.width != null) {
-        node['width'] =
-            widget.width == double.infinity ? 'infinity' : widget.width;
-      }
-      if (widget.height != null) {
-        node['height'] =
-            widget.height == double.infinity ? 'infinity' : widget.height;
-      }
+    // Extract slim location (file name and line number): f = file/location
+    final loc = _getLocation(element);
+    if (loc != null) {
+      node['f'] = loc;
     }
 
     if (widget.key != null) {
-      node['key'] = widget.key.toString();
+      node['k'] = widget.key.toString(); // k = key
     }
 
-    // ★ 深度が10以上に達した場合は探索を打ち切り
-    if (depth >= 10) {
-      node['children_truncated'] = true;
+    // Minified key: t = text for privacy redacted strings
+    if (widget is Text) {
+      final textData = widget.data ?? '';
+      node['t'] = textData.length > 15 ? '[REDACTED]' : textData;
+    } else if (type.contains('EditableText') || type.contains('TextField')) {
+      node['t'] = '[REDACTED]';
+    }
+
+    // Expand search depth limit up to 30 levels due to significantly smaller payload size
+    if (depth >= 30) {
+      node['truncated'] = true;
       return node;
     }
 
-    // 子ウィジェットを再帰的に走査（バイパス対応）
+    // Recursively collect children
     List<Map<String, dynamic>> children = [];
     _collectChildren(element, children, depth + 1);
 
     if (children.isNotEmpty) {
-      node['children'] = children;
+      node['c'] = children; // c = children
     }
 
     return node;
   }
 
-  // ノイズをバイパスしながら子エレメントを収集する再帰ヘルパー
+  // Helper to collect child elements recursively bypassing noise widgets
   static void _collectChildren(
     Element element,
     List<Map<String, dynamic>> resultList,
@@ -1793,10 +1805,8 @@ class WidgetTreeDumper {
       final childType = childElement.widget.runtimeType.toString();
 
       if (_isNoiseWidget(childType)) {
-        // ノイズウィジェット自身は追加せず、その子供たちを直接現在のリストに引き上げる
         _collectChildren(childElement, resultList, depth);
       } else {
-        // ノイズでなければ、通常通りノード化して追加
         resultList.add(_buildNode(childElement, depth));
       }
     });
