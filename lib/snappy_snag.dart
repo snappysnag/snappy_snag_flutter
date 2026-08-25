@@ -1739,39 +1739,36 @@ class WidgetTreeDumper {
 
   static String? _getLocation(Element element) {
     try {
-      // 1. RenderObject's debugCreator
+      // 1. RenderObject's debugCreator (highly reliable public API for render elements)
       final renderObject = element.renderObject;
       if (renderObject != null) {
         final creator = renderObject.debugCreator;
         if (creator != null) {
           final str = creator.toString();
-          // Filter out SDK and library noise paths
-          if (str.contains('package:flutter/') ||
-              str.contains('package:flutter_web/') ||
-              str.contains('package:provider/') ||
-              str.contains('package:flutter_riverpod/') ||
-              str.contains('package:riverpod/')) {
-            return null;
-          }
+          // Extract specific .dart filename and line number first
           final match = RegExp(r'([\w\-_]+\.dart:\d+)').firstMatch(str);
           if (match != null) {
-            return match.group(1);
+            final path = match.group(1)!;
+            // Only reject if the extracted path itself is from core libraries
+            if (!path.contains('flutter') &&
+                !path.contains('provider') &&
+                !path.contains('riverpod')) {
+              return path;
+            }
           }
         }
       }
 
       // 2. DiagnosticsNode debug-level output fallback (non-recursive)
       final str = element.toDiagnosticsNode().toString(minLevel: DiagnosticLevel.debug);
-      if (str.contains('package:flutter/') ||
-          str.contains('package:flutter_web/') ||
-          str.contains('package:provider/') ||
-          str.contains('package:flutter_riverpod/') ||
-          str.contains('package:riverpod/')) {
-        return null;
-      }
       final match = RegExp(r'([\w\-_]+\.dart:\d+)').firstMatch(str);
       if (match != null) {
-        return match.group(1);
+        final path = match.group(1)!;
+        if (!path.contains('flutter') &&
+            !path.contains('provider') &&
+            !path.contains('riverpod')) {
+          return path;
+        }
       }
     } catch (_) {}
     return null;
