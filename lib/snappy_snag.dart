@@ -1810,7 +1810,8 @@ class WidgetTreeDumper {
 
     // Bypass check: If the node contains no location, key, or text, AND is not a structural layout widget,
     // we return null to bypass (skip) this node entirely and let the children flatten up.
-    if (loc == null && key == null && text == null && !_isLayoutStructuralWidget(type)) {
+    // NOTE: We never bypass the root node (depth == 0) to ensure the tree has a valid starting node.
+    if (depth > 0 && loc == null && key == null && text == null && !_isLayoutStructuralWidget(type)) {
       return null;
     }
 
