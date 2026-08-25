@@ -5,7 +5,7 @@ import 'dart:math';
 import 'src/browser_info_helper.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, DiagnosticsSerializationDelegate;
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:screenshot/screenshot.dart';
