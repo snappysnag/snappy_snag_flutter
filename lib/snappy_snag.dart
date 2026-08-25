@@ -880,10 +880,12 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                               itemBuilder: (context, index) {
                                 final item = _currentDuplicates[index];
                                 final memo = item['user_memo'] ?? '';
-                                final severity = item['severity'] ?? 'low';
+                                final severity = item['severity'] ?? 'unassessed';
                                 final emoji = severity == 'high'
                                     ? '🔴'
-                                    : (severity == 'medium' ? '🟡' : '🔵');
+                                    : (severity == 'medium'
+                                        ? '🟡'
+                                        : (severity == 'low' ? '🔵' : '⚪'));
 
                                 return InkWell(
                                   onTap: () {
