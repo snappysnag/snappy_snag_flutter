@@ -12,6 +12,17 @@ import 'package:screenshot/screenshot.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Mode of SnappySnag SDK operation.
+enum SnappySnagMode {
+  /// Developer / Internal QA Mode:
+  /// Enables duplicate feedback warning dialogs and internal team comments thread.
+  dev,
+
+  /// End-User / Production Mode:
+  /// Hides internal tickets and warnings, offering a clean, friendly feedback submission experience.
+  user,
+}
+
 /// Main class for SnappySnag SDK configuration.
 class SnappySnag {
   static final SnappySnag _instance = SnappySnag._internal();
@@ -28,6 +39,24 @@ class SnappySnag {
   String _supabaseUrl =
       'https://apwesndoqpdlgwcylkzj.supabase.co'; // デフォルトは本番環境
 
+  SnappySnagMode _mode = SnappySnagMode.user;
+  SnappySnagMode get mode => _mode;
+
+  /// フィードバックモードのアクティブ状態を通知する ValueNotifier
+  final ValueNotifier<bool> isFeedbackModeActive = ValueNotifier<bool>(false);
+
+  /// アプリ内ボタン（設定画面など）からフィードバックモードを開始する
+  static void startFeedbackMode() {
+    SnappySnag().isFeedbackModeActive.value = true;
+    debugPrint('📸 SnappySnag: Feedback Mode started.');
+  }
+
+  /// フィードバックモードをキャンセルして終了する
+  static void cancelFeedbackMode() {
+    SnappySnag().isFeedbackModeActive.value = false;
+    debugPrint('❌ SnappySnag: Feedback Mode cancelled.');
+  }
+
   // 有効無効の状態管理フラグを追加
   bool _isEnabled = true;
   bool get isEnabled => _isEnabled;
@@ -40,6 +69,7 @@ class SnappySnag {
   void initialize({
     required String apiKey,
     required String packageName,
+    SnappySnagMode mode = SnappySnagMode.user,
     GlobalKey<NavigatorState>? navigatorKey,
     String? reporterUserId,
     String? reporterEmail,
@@ -47,6 +77,7 @@ class SnappySnag {
     bool enabled = true,
     String? supabaseUrl,
   }) {
+    _mode = mode;
     _isEnabled = enabled;
     if (!_isEnabled) {
       debugPrint('🚀 SnappySnag: SDK is disabled by configuration.');
@@ -125,7 +156,7 @@ class SnappySnagOverlay extends StatefulWidget {
   const SnappySnagOverlay({
     super.key,
     required this.child,
-    this.showTriggerButton = true,
+    this.showTriggerButton = false,
   });
 
   @override
@@ -164,7 +195,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   String _drawingScreenClassName = '';
   String _drawingScreenSignature = '';
   List<DrawingPoint> _drawingPoints = [];
-  bool _isRedPen = true;
+  SnappyDrawingTool _activeTool = SnappyDrawingTool.redPen;
   bool _isSendingFeedback = false;
   bool _isMemoOpen = false;
   final TextEditingController _feedbackMemoController = TextEditingController();
@@ -312,7 +343,12 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       targetContext,
       screenClassName,
     );
-    debugPrint('🎬 SnappySnag: Captured Screen ID: $screenClassName, Signature: $screenSignature');
+    // パスワード等の機密フィールドの絶対座標を自動抽出
+    final List<Rect> sensitiveBounds = WidgetTreeDumper.findSensitiveFieldBounds(
+      // ignore: use_build_context_synchronously
+      targetContext,
+    );
+    debugPrint('🎬 SnappySnag: Captured Screen ID: $screenClassName, Signature: $screenSignature, Sensitive Areas: ${sensitiveBounds.length}');
 
     // 即座にスクリーンショットを撮影 (ディレイなしで押した瞬間をキャプチャ)
     final Uint8List? imageBytes = await _screenshotController.capture();
@@ -329,7 +365,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
     if (imageBytes != null && mounted) {
       try {
-        final duplicates = await _fetchExistingFeedbacks(screenClassName, screenSignature);
+        final isUserMode = SnappySnag().mode == SnappySnagMode.user;
+        final duplicates = isUserMode
+            ? <dynamic>[]
+            : await _fetchExistingFeedbacks(screenClassName, screenSignature);
         _hideLoadingOverlay();
         if (!mounted) return;
 
@@ -352,6 +391,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                 widgetTree,
                 screenClassName: screenClassName,
                 screenSignature: screenSignature,
+                sensitiveBounds: sensitiveBounds,
               );
             } finally {
               if (mounted) {
@@ -371,6 +411,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
               widgetTree,
               screenClassName: screenClassName,
               screenSignature: screenSignature,
+              sensitiveBounds: sensitiveBounds,
             );
           } finally {
             if (mounted) {
@@ -659,18 +700,37 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     Map<String, dynamic> widgetTree, {
     required String screenClassName,
     required String screenSignature,
+    List<Rect>? sensitiveBounds,
   }) async {
     if (!mounted) return;
     _drawingCompleter = Completer<void>();
     final mediaSize = MediaQuery.of(context).size;
     final capturedAspect = mediaSize.height > 0 ? (mediaSize.width / mediaSize.height) : (9 / 16);
+
+    // パスワード等の機密フィールドを自動検出して初期マスクポイントに追加
+    final List<DrawingPoint> initialPoints = [];
+    if (sensitiveBounds != null && sensitiveBounds.isNotEmpty) {
+      for (final rect in sensitiveBounds) {
+        initialPoints.add(
+          DrawingPoint(
+            offsets: [rect.topLeft, rect.bottomRight],
+            rect: rect,
+            tool: SnappyDrawingTool.mosaic,
+            color: const Color(0xEE303036),
+            strokeWidth: rect.height,
+            recordedSize: mediaSize,
+          ),
+        );
+      }
+    }
+
     setState(() {
       _drawingImageBytes = imageBytes;
       _drawingWidgetTree = widgetTree;
       _drawingScreenClassName = screenClassName;
       _drawingScreenSignature = screenSignature;
-      _drawingPoints = [];
-      _isRedPen = true;
+      _drawingPoints = initialPoints;
+      _activeTool = SnappyDrawingTool.redPen;
       _isSendingFeedback = false;
       _isMemoOpen = false;
       _feedbackMemoController.clear();
@@ -761,6 +821,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         }
       }
 
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(messengerContext).showSnackBar(
         SnackBar(
           content: Text(message),
@@ -1327,16 +1388,21 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                   onPanStart: (details) {
                                                     if (_isSendingFeedback || _isMemoOpen) return;
                                                     setState(() {
+                                                      double strokeWidth = 4.0;
+                                                      Color color = Colors.red;
+                                                      if (_activeTool == SnappyDrawingTool.mosaic) {
+                                                        strokeWidth = 24.0;
+                                                        color = const Color(0xEE303036);
+                                                      } else if (_activeTool == SnappyDrawingTool.blackout) {
+                                                        strokeWidth = 24.0;
+                                                        color = Colors.black.withValues(alpha: 0.95);
+                                                      }
                                                       _drawingPoints.add(
                                                         DrawingPoint(
                                                           offsets: [details.localPosition],
-                                                          color: _isRedPen
-                                                              ? Colors.red
-                                                              : Colors.black.withValues(
-                                                                  alpha: 0.95,
-                                                                ),
-                                                          strokeWidth:
-                                                              _isRedPen ? 4.0 : 24.0,
+                                                          color: color,
+                                                          strokeWidth: strokeWidth,
+                                                          tool: _activeTool,
                                                           recordedSize: canvasSize,
                                                         ),
                                                       );
@@ -1382,7 +1448,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                       right: 16,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
+                          horizontal: 14,
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
@@ -1400,29 +1466,52 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
+                            // 1. 赤ペン
                             IconButton(
                               icon: Icon(
                                 Icons.edit,
-                                color: _isRedPen ? Colors.red : Colors.grey,
+                                color: _activeTool == SnappyDrawingTool.redPen
+                                    ? Colors.red
+                                    : Colors.grey,
                               ),
                               tooltip: 'Red Pen',
                               onPressed: _isSendingFeedback
                                   ? null
-                                  : () =>
-                                      setState(() => _isRedPen = true),
+                                  : () => setState(
+                                        () => _activeTool = SnappyDrawingTool.redPen,
+                                      ),
                             ),
+                            // 2. モザイクペン
                             IconButton(
                               icon: Icon(
                                 Icons.blur_on,
-                                color: !_isRedPen ? Colors.white : Colors.grey,
+                                color: _activeTool == SnappyDrawingTool.mosaic
+                                    ? const Color(0xFFF59E0B)
+                                    : Colors.grey,
                               ),
-                              tooltip: 'Masking',
+                              tooltip: 'Mosaic Blur',
                               onPressed: _isSendingFeedback
                                   ? null
                                   : () => setState(
-                                        () => _isRedPen = false,
+                                        () => _activeTool = SnappyDrawingTool.mosaic,
                                       ),
                             ),
+                            // 3. 黒塗りペン
+                            IconButton(
+                              icon: Icon(
+                                Icons.brush,
+                                color: _activeTool == SnappyDrawingTool.blackout
+                                    ? Colors.white
+                                    : Colors.grey,
+                              ),
+                              tooltip: 'Blackout Mask',
+                              onPressed: _isSendingFeedback
+                                  ? null
+                                  : () => setState(
+                                        () => _activeTool = SnappyDrawingTool.blackout,
+                                      ),
+                            ),
+                            // 4. メモ
                             IconButton(
                               icon: Icon(
                                 Icons.comment,
@@ -1437,7 +1526,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         () => _isMemoOpen = true,
                                       ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 6),
+                            // 5. 元に戻す (Undo)
                             IconButton(
                               icon: const Icon(
                                 Icons.undo,
@@ -1450,6 +1540,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         () => _drawingPoints.removeLast(),
                                       ),
                             ),
+                            // 6. 全消去 (Clear)
                             IconButton(
                               icon: const Icon(
                                 Icons.delete_outline,
@@ -1564,33 +1655,132 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     ],
   ),
 ),
-        // Tiny Floating Trigger Button
-        if (widget.showTriggerButton && !_isCapturing && !_isFeedbackDialogOpen)
-          Positioned(
-            bottom: 80,
-            right: 16,
-            child: GestureDetector(
-              onTap: () => _triggerCapture(),
-              child: Container(
-                width: 68, // Reduced from 80 to fit tightly around the 56px icon
-                height: 68, // Reduced from 80
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF59E0B),
-                  borderRadius: BorderRadius.circular(18), // Slightly tighter radius for smaller container
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black38,
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
+        // Feedback Mode Guidance Banner & Floating Trigger Button
+        ValueListenableBuilder<bool>(
+          valueListenable: SnappySnag().isFeedbackModeActive,
+          builder: (context, isFeedbackActive, _) {
+            final shouldShowButton =
+                (widget.showTriggerButton || isFeedbackActive) &&
+                    !_isCapturing &&
+                    !_isFeedbackDialogOpen &&
+                    _overlayMode == _SnappyOverlayMode.none;
+
+            return Stack(
+              children: [
+                // 上部ガイダンスバナー（フィードバックモード時のみ）
+                if (isFeedbackActive &&
+                    !_isCapturing &&
+                    _overlayMode == _SnappyOverlayMode.none)
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1E1E24).withValues(alpha: 0.95),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color(0xFFF59E0B).withValues(alpha: 0.6),
+                                width: 1.5,
+                              ),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black45,
+                                  blurRadius: 12,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.camera_alt_outlined,
+                                  color: Color(0xFFF59E0B),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    _SdkLocale.feedbackModeBanner,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                InkWell(
+                                  onTap: () => SnappySnag.cancelFeedbackMode(),
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white12,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.close,
+                                      color: Colors.white70,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  ],
-                ),
-                child: const Center(
-                  child: SnappySnagIcon(size: 56, color: Colors.black), // Double the icon size to 56px
-                ),
-              ),
-            ),
-          ),
+                  ),
+
+                // フローティング撮影ボタン
+                if (shouldShowButton)
+                  Positioned(
+                    bottom: 80,
+                    right: 16,
+                    child: GestureDetector(
+                      onTap: () {
+                        // 撮影開始時にフィードバックモードを解除
+                        SnappySnag().isFeedbackModeActive.value = false;
+                        _triggerCapture();
+                      },
+                      child: Container(
+                        width: 68,
+                        height: 68,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF59E0B),
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black38,
+                              blurRadius: 10,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: SnappySnagIcon(size: 56, color: Colors.black),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
       ],
     );
   }
@@ -1624,6 +1814,41 @@ class WidgetTreeDumper {
       tree = _buildNode(element, 0) ?? {};
     });
     return tree;
+  }
+
+  /// 画面上のパスワード欄（obscureText: true）や機密入力欄のグローバル絶対座標（Rect）を自動収集
+  static List<Rect> findSensitiveFieldBounds(BuildContext context) {
+    final List<Rect> bounds = [];
+
+    void inspectElement(Element element) {
+      final widget = element.widget;
+      bool isSensitive = false;
+
+      // 1. TextField / TextFormField の obscureText チェック
+      if (widget is TextField && widget.obscureText) {
+        isSensitive = true;
+      } else if (widget is EditableText && widget.obscureText) {
+        isSensitive = true;
+      }
+
+      if (isSensitive) {
+        final renderBox = element.findRenderObject();
+        if (renderBox is RenderBox && renderBox.hasSize && renderBox.attached) {
+          try {
+            final position = renderBox.localToGlobal(Offset.zero);
+            final size = renderBox.size;
+            if (size.width > 0 && size.height > 0) {
+              bounds.add(Rect.fromLTWH(position.dx, position.dy, size.width, size.height));
+            }
+          } catch (_) {}
+        }
+      }
+
+      element.visitChildren(inspectElement);
+    }
+
+    context.visitChildElements(inspectElement);
+    return bounds;
   }
 
   // ★ 根本解決: Scaffoldを起点として先祖を上に遡り、正しい画面カスタムクラスを特定する
@@ -2005,18 +2230,29 @@ class WidgetTreeDumper {
   }
 }
 
+/// Drawing tool type for annotation and masking.
+enum SnappyDrawingTool {
+  redPen,
+  mosaic,
+  blackout,
+}
+
 /// 描画の一筆を表現するデータクラス
 class DrawingPoint {
   final List<Offset?> offsets;
   final Color color;
   final double strokeWidth;
   final Size recordedSize;
+  final SnappyDrawingTool tool;
+  final Rect? rect;
 
   DrawingPoint({
     required this.offsets,
     required this.color,
     required this.strokeWidth,
     required this.recordedSize,
+    this.tool = SnappyDrawingTool.redPen,
+    this.rect,
   });
 }
 
@@ -2038,11 +2274,60 @@ class DrawingPainter extends CustomPainter {
       final double scaleX = point.recordedSize.width > 0 ? size.width / point.recordedSize.width : 1.0;
       final double scaleY = point.recordedSize.height > 0 ? size.height / point.recordedSize.height : 1.0;
 
+      // 1. 自動マスキング矩形がある場合
+      if (point.rect != null) {
+        final scaledRect = Rect.fromLTRB(
+          point.rect!.left * scaleX,
+          point.rect!.top * scaleY,
+          point.rect!.right * scaleX,
+          point.rect!.bottom * scaleY,
+        );
+
+        if (point.tool == SnappyDrawingTool.mosaic) {
+          // モザイク風のフロスト角丸矩形を描画
+          final bgPaint = Paint()
+            ..color = const Color(0xE62A2A2E)
+            ..style = PaintingStyle.fill;
+          canvas.drawRRect(
+            RRect.fromRectAndRadius(scaledRect, const Radius.circular(6)),
+            bgPaint,
+          );
+
+          // ピクセルモザイク風グリッドライン
+          final gridPaint = Paint()
+            ..color = Colors.white.withValues(alpha: 0.12)
+            ..strokeWidth = 1.0
+            ..style = PaintingStyle.stroke;
+          for (double x = scaledRect.left; x < scaledRect.right; x += 10) {
+            canvas.drawLine(Offset(x, scaledRect.top), Offset(x, scaledRect.bottom), gridPaint);
+          }
+          for (double y = scaledRect.top; y < scaledRect.bottom; y += 10) {
+            canvas.drawLine(Offset(scaledRect.left, y), Offset(scaledRect.right, y), gridPaint);
+          }
+        } else {
+          // 黒塗り
+          final blackPaint = Paint()
+            ..color = Colors.black
+            ..style = PaintingStyle.fill;
+          canvas.drawRRect(
+            RRect.fromRectAndRadius(scaledRect, const Radius.circular(4)),
+            blackPaint,
+          );
+        }
+        continue;
+      }
+
+      // 2. なぞり書きパスの描画
       final paint = Paint()
         ..color = point.color
         ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
         ..strokeWidth = point.strokeWidth * scaleX
         ..style = PaintingStyle.stroke;
+
+      if (point.tool == SnappyDrawingTool.mosaic) {
+        paint.color = const Color(0xEE303036);
+      }
 
       for (int i = 0; i < point.offsets.length - 1; i++) {
         if (point.offsets[i] != null && point.offsets[i + 1] != null) {
@@ -2064,6 +2349,10 @@ class DrawingPainter extends CustomPainter {
 /// Internal localization helper for SnappySnag SDK.
 class _SdkLocale {
   static bool get _isJa => ui.PlatformDispatcher.instance.locale.languageCode.toLowerCase().startsWith('ja');
+
+  static String get feedbackModeBanner => _isJa
+      ? 'フィードバックモード: 報告したい画面へ移動し、右下のボタンを押してください'
+      : 'Feedback Mode: Navigate to the target screen and tap the button';
 
   static String get cancel => _isJa ? 'キャンセル' : 'Cancel';
   static String get send => _isJa ? '送信' : 'Send';
