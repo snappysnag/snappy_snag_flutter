@@ -275,6 +275,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   SnappyDrawingTool _activeTool = SnappyDrawingTool.redPen;
   bool _isSendingFeedback = false;
   bool _isMemoOpen = false;
+  bool _isPrivacyConfirmOpen = false;
   final TextEditingController _feedbackMemoController = TextEditingController();
   final ScreenshotController _canvasScreenshotController = ScreenshotController();
   Completer<void>? _drawingCompleter;
@@ -850,72 +851,22 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       return;
     }
 
-    // ★ SnappySnagMode.user（一般ユーザーモード）の場合、送信前にプライバシー確認ダイアログを表示
+    // ★ SnappySnagMode.user（一般ユーザーモード）の場合、最前面オーバーレイのプライバシー確認ダイアログを開く
     if (SnappySnag().mode == SnappySnagMode.user) {
-      final dialogContext = SnappySnag().navigatorKey?.currentContext ?? context;
-      final shouldSend = await showDialog<bool>(
-        context: dialogContext,
-        barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E1E24),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF2E2E38)),
-          ),
-          title: Row(
-            children: [
-              const Icon(Icons.shield_outlined, color: Color(0xFFF59E0B)),
-              const SizedBox(width: 8),
-              Text(
-                _SdkLocale.privacyConfirmTitle,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            _SdkLocale.privacyConfirmContent,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 13,
-              height: 1.5,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text(
-                _SdkLocale.backToEdit,
-                style: const TextStyle(color: Colors.white60),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF59E0B),
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: Text(
-                _SdkLocale.sendConfirm,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-      );
-
-      if (shouldSend != true) {
-        return; // 戻って編集
-      }
+      setState(() {
+        _isPrivacyConfirmOpen = true;
+      });
+      return;
     }
 
+    // dev モードはそのまま即座に送信実行
+    await _executeFeedbackSubmission();
+  }
+
+  Future<void> _executeFeedbackSubmission() async {
+    final memo = _feedbackMemoController.text;
     setState(() {
+      _isPrivacyConfirmOpen = false;
       _isSendingFeedback = true;
     });
 
@@ -947,6 +898,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       });
     }
 
+    // トースト等の通知
     if (mounted) {
       final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
       String message = _SdkLocale.statusSuccess;
@@ -1768,6 +1720,91 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                 ),
                               ),
                             ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // 4. プライバシー確認用フローティングオーバーレイ（最前面に描画）
+                    if (_isPrivacyConfirmOpen)
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.75),
+                          padding: const EdgeInsets.all(24),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 420),
+                              child: Card(
+                                color: const Color(0xFF1E1E24),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: const BorderSide(color: Color(0xFF2E2E38)),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.shield_outlined, color: Color(0xFFF59E0B)),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            _SdkLocale.privacyConfirmTitle,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        _SdkLocale.privacyConfirmContent,
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 13,
+                                          height: 1.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          TextButton(
+                                            onPressed: () {
+                                              setState(() => _isPrivacyConfirmOpen = false);
+                                            },
+                                            child: Text(
+                                              _SdkLocale.backToEdit,
+                                              style: const TextStyle(color: Colors.white60),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(0xFFF59E0B),
+                                              foregroundColor: Colors.black,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                            onPressed: () {
+                                              _executeFeedbackSubmission();
+                                            },
+                                            child: Text(
+                                              _SdkLocale.sendConfirm,
+                                              style: const TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
