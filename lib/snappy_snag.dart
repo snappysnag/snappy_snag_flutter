@@ -42,12 +42,17 @@ class SnappySnag {
   SnappySnagMode _mode = SnappySnagMode.user;
   SnappySnagMode get mode => _mode;
 
+  /// 常駐ボタン（showTriggerButton）がONかどうかのフラグ
+  bool isTriggerButtonAlwaysVisible = false;
+
   /// フィードバックモードのアクティブ状態を通知する ValueNotifier
   final ValueNotifier<bool> isFeedbackModeActive = ValueNotifier<bool>(false);
 
   /// アプリ内ボタン（設定画面など）からフィードバックモードを開始する
   static void startFeedbackMode({BuildContext? context}) {
     final ctx = context ?? SnappySnag().navigatorKey?.currentContext;
+    final isAlreadyVisible = SnappySnag().isTriggerButtonAlwaysVisible;
+
     if (ctx != null) {
       showDialog(
         context: ctx,
@@ -62,7 +67,9 @@ class SnappySnag {
               const Icon(Icons.camera_alt_outlined, color: Color(0xFFF59E0B)),
               const SizedBox(width: 8),
               Text(
-                _SdkLocale.feedbackModeDialogTitle,
+                isAlreadyVisible
+                    ? _SdkLocale.feedbackModeAlreadyVisibleTitle
+                    : _SdkLocale.feedbackModeDialogTitle,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -72,7 +79,9 @@ class SnappySnag {
             ],
           ),
           content: Text(
-            _SdkLocale.feedbackModeDialogContent,
+            isAlreadyVisible
+                ? _SdkLocale.feedbackModeAlreadyVisibleContent
+                : _SdkLocale.feedbackModeDialogContent,
             style: const TextStyle(
               color: Colors.white70,
               fontSize: 13,
@@ -80,13 +89,14 @@ class SnappySnag {
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogCtx).pop(),
-              child: Text(
-                _SdkLocale.cancel,
-                style: const TextStyle(color: Colors.white60),
+            if (!isAlreadyVisible)
+              TextButton(
+                onPressed: () => Navigator.of(dialogCtx).pop(),
+                child: Text(
+                  _SdkLocale.cancel,
+                  style: const TextStyle(color: Colors.white60),
+                ),
               ),
-            ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFF59E0B),
@@ -97,11 +107,13 @@ class SnappySnag {
               ),
               onPressed: () {
                 Navigator.of(dialogCtx).pop();
-                SnappySnag().isFeedbackModeActive.value = true;
-                debugPrint('📸 SnappySnag: Feedback Mode started.');
+                if (!isAlreadyVisible) {
+                  SnappySnag().isFeedbackModeActive.value = true;
+                  debugPrint('📸 SnappySnag: Feedback Mode started.');
+                }
               },
               child: Text(
-                _SdkLocale.start,
+                isAlreadyVisible ? _SdkLocale.ok : _SdkLocale.start,
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
@@ -109,8 +121,10 @@ class SnappySnag {
         ),
       );
     } else {
-      SnappySnag().isFeedbackModeActive.value = true;
-      debugPrint('📸 SnappySnag: Feedback Mode started.');
+      if (!isAlreadyVisible) {
+        SnappySnag().isFeedbackModeActive.value = true;
+        debugPrint('📸 SnappySnag: Feedback Mode started.');
+      }
     }
   }
 
@@ -271,7 +285,14 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   @override
   void initState() {
     super.initState();
+    SnappySnag().isTriggerButtonAlwaysVisible = widget.showTriggerButton;
     _initShakeDetection();
+  }
+
+  @override
+  void didUpdateWidget(covariant SnappySnagOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    SnappySnag().isTriggerButtonAlwaysVisible = widget.showTriggerButton;
   }
 
   void _initShakeDetection() {
@@ -1451,15 +1472,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                   onPanStart: (details) {
                                                     if (_isSendingFeedback || _isMemoOpen) return;
                                                     setState(() {
-                                                      double strokeWidth = 4.0;
-                                                      Color color = Colors.red;
-                                                      if (_activeTool == SnappyDrawingTool.mosaic) {
-                                                        strokeWidth = 24.0;
-                                                        color = const Color(0xEE303036);
-                                                      } else if (_activeTool == SnappyDrawingTool.blackout) {
-                                                        strokeWidth = 24.0;
-                                                        color = Colors.black.withValues(alpha: 0.95);
-                                                      }
+                                                      final double strokeWidth = _activeTool == SnappyDrawingTool.mosaic ? 24.0 : 4.0;
+                                                      final Color color = _activeTool == SnappyDrawingTool.mosaic ? const Color(0xEE303036) : Colors.red;
                                                       _drawingPoints.add(
                                                         DrawingPoint(
                                                           offsets: [details.localPosition],
@@ -1557,21 +1571,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                   ? null
                                   : () => setState(
                                         () => _activeTool = SnappyDrawingTool.mosaic,
-                                      ),
-                            ),
-                            // 3. 黒塗りペン
-                            IconButton(
-                              icon: Icon(
-                                Icons.brush,
-                                color: _activeTool == SnappyDrawingTool.blackout
-                                    ? Colors.white
-                                    : Colors.grey,
-                              ),
-                              tooltip: 'Blackout Mask',
-                              onPressed: _isSendingFeedback
-                                  ? null
-                                  : () => setState(
-                                        () => _activeTool = SnappyDrawingTool.blackout,
                                       ),
                             ),
                             // 4. メモ
@@ -1810,30 +1809,25 @@ class WidgetTreeDumper {
       visitedHashCodes.add(element.hashCode);
 
       final widget = element.widget;
+      final typeStr = widget.runtimeType.toString();
+
+      // 0. 通常の文章・テキストウィジェットは確実に除外
+      if (widget is Text || widget is RichText || typeStr.contains('Selectable')) {
+        return;
+      }
+
       bool isSensitive = false;
 
-      // 1. TextField / TextFormField / EditableText の判定
+      // 1. TextField / TextFormField / EditableText の判定（編集可能な入力フィールドのみ）
       if (widget is TextField) {
-        if (widget.obscureText) {
-          isSensitive = true;
-        } else if (widget.keyboardType == TextInputType.emailAddress ||
-            widget.keyboardType == TextInputType.phone ||
-            widget.keyboardType == TextInputType.number) {
-          isSensitive = true;
-        } else if (widget.autofillHints != null && widget.autofillHints!.isNotEmpty) {
-          isSensitive = true;
-        } else {
-          // 一般的な入力フィールドもマスキング対象として保護
+        if (!widget.readOnly && (widget.enabled ?? true)) {
           isSensitive = true;
         }
       } else if (widget is EditableText) {
-        if (widget.obscureText ||
-            widget.keyboardType == TextInputType.emailAddress ||
-            widget.keyboardType == TextInputType.phone) {
+        // SelectableTextなどの読み取り専用EditableTextは除外
+        if (!widget.readOnly) {
           isSensitive = true;
         }
-      } else if (widget is TextFormField) {
-        isSensitive = true;
       }
 
       if (isSensitive) {
@@ -2252,7 +2246,6 @@ class WidgetTreeDumper {
 enum SnappyDrawingTool {
   redPen,
   mosaic,
-  blackout,
 }
 
 /// 描画の一筆を表現するデータクラス
@@ -2429,11 +2422,18 @@ class _SdkLocale {
   static bool get _isJa => ui.PlatformDispatcher.instance.locale.languageCode.toLowerCase().startsWith('ja');
 
   static String get start => _isJa ? '開始する' : 'Start';
+  static String get ok => _isJa ? '了解' : 'OK';
   static String get feedbackModeDialogTitle =>
       _isJa ? 'フィードバックモード' : 'Feedback Mode';
   static String get feedbackModeDialogContent => _isJa
       ? 'アプリを自由に操作して報告したい画面へ移動してください。\n目的の画面で右下のボタンをタップすると撮影できます。'
       : 'Navigate freely to the screen you want to report.\nTap the button at the bottom right to capture.';
+
+  static String get feedbackModeAlreadyVisibleTitle =>
+      _isJa ? 'フィードバックボタン' : 'Feedback Button';
+  static String get feedbackModeAlreadyVisibleContent => _isJa
+      ? 'フィードバック用のボタンは既に画面右下に表示されています。\nいつでもタップして現在の画面を報告できます。'
+      : 'The feedback button is already visible at the bottom right.\nTap it anytime to report the current screen.';
 
   static String get cancel => _isJa ? 'キャンセル' : 'Cancel';
   static String get send => _isJa ? '送信' : 'Send';
