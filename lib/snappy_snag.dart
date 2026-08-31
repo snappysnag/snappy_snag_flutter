@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:screenshot/screenshot.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Main class for SnappySnag SDK configuration.
 class SnappySnag {
@@ -18,6 +19,7 @@ class SnappySnag {
   SnappySnag._internal();
 
   String? _apiKey;
+  String? _deviceId;
   GlobalKey<NavigatorState>? _navigatorKey;
   String? _reporterUserId;
   String? _reporterEmail;
@@ -78,6 +80,40 @@ class SnappySnag {
     debugPrint(
       '👤 SnappySnag: Reporter info updated (ID: $userId, Email: $email)',
     );
+  }
+
+  /// 端末固有のランダムUUIDを取得（存在しない場合は初回生成してローカルに永続化）
+  Future<String> getOrGenerateDeviceId() async {
+    if (_deviceId != null && _deviceId!.isNotEmpty) {
+      return _deviceId!;
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String? savedId = prefs.getString('snappy_snag_device_id');
+      if (savedId == null || savedId.isEmpty) {
+        savedId = _generateUuidV4();
+        await prefs.setString('snappy_snag_device_id', savedId);
+      }
+      _deviceId = savedId;
+      return _deviceId!;
+    } catch (e) {
+      debugPrint('⚠️ SnappySnag: Failed to access SharedPreferences for deviceId: $e');
+      _deviceId ??= _generateUuidV4();
+      return _deviceId!;
+    }
+  }
+
+  static String _generateUuidV4() {
+    final random = Random.secure();
+    final values = List<int>.generate(16, (i) => random.nextInt(256));
+    // Set version to 4
+    values[6] = (values[6] & 0x0f) | 0x40;
+    // Set variant to RFC 4122 (10xxxxxx)
+    values[8] = (values[8] & 0x3f) | 0x80;
+
+    final hexDigits =
+        values.map((b) => b.toRadixString(16).padLeft(2, '0')).toList();
+    return '${hexDigits.sublist(0, 4).join()}-${hexDigits.sublist(4, 6).join()}-${hexDigits.sublist(6, 8).join()}-${hexDigits.sublist(8, 10).join()}-${hexDigits.sublist(10, 16).join()}';
   }
 }
 
@@ -562,6 +598,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         '${SnappySnag().supabaseUrl}/functions/v1/collect-feedback';
 
     try {
+      final deviceId = await SnappySnag().getOrGenerateDeviceId();
       final compressedBytes = await _resizeAndCompressScreenshot(imageBytes);
       final base64Image = base64Encode(compressedBytes);
 
@@ -570,8 +607,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         headers: {
           'Content-Type': 'application/json',
           'x-snappy-api-key': apiKey,
+          'x-snappy-device-id': deviceId,
         },
         body: jsonEncode({
+          'device_id': deviceId,
           'screenshot_base64': base64Image,
           'widget_tree': widgetTree,
           'memo': memo,
@@ -579,6 +618,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
           'screen_signature': screenSignature,
           'tags': ['debug', 'feedback'],
           'metadata': {
+            'device_id': deviceId,
             'platform': 'flutter',
             'os_name': kIsWeb ? 'web_${defaultTargetPlatform.name.toLowerCase()}' : Platform.operatingSystem,
             'os_version': kIsWeb ? getBrowserInfoHelper() : Platform.operatingSystemVersion,
