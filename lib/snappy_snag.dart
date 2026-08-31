@@ -1800,9 +1800,28 @@ class WidgetTreeDumper {
   }
 
   /// 画面上のパスワード欄、Email欄、電話番号欄、機密入力欄のグローバル絶対座標（Rect）を自動収集
+  /// （※ 最前面のアクティブな画面かつ目に見えて表示されている入力欄のみを対象にする）
   static List<Rect> findSensitiveFieldBounds(BuildContext context) {
     final List<Rect> bounds = [];
     final Set<int> visitedHashCodes = {};
+
+    // 1. 最前面の Scaffold (最前面に重なっている画面) を特定
+    Element? topScaffoldElement;
+    void findTopScaffold(Element element) {
+      if (element.widget.runtimeType.toString() == 'Scaffold') {
+        topScaffoldElement = element;
+      }
+      element.visitChildren(findTopScaffold);
+    }
+    context.visitChildElements(findTopScaffold);
+
+    // 探索の起点: 最前面のScaffoldが見つかればそれを起点にし、なければ渡されたcontextを使用
+    final Element searchRoot = topScaffoldElement ?? (context as Element);
+
+    // 画面全体のサイズを取得（画面外の座標を除外するため）
+    final mediaQuery = MediaQuery.maybeOf(context);
+    final screenWidth = mediaQuery?.size.width ?? 5000.0;
+    final screenHeight = mediaQuery?.size.height ?? 5000.0;
 
     void inspectElement(Element element) {
       if (visitedHashCodes.contains(element.hashCode)) return;
@@ -1811,14 +1830,19 @@ class WidgetTreeDumper {
       final widget = element.widget;
       final typeStr = widget.runtimeType.toString();
 
-      // 0. 通常の文章・テキストウィジェットは確実に除外
+      // 非表示ウィジェット（Offstage / Visibility / TickerMode）の場合はその配下ごとスキップ
+      if (widget is Offstage && widget.offstage) return;
+      if (widget is Visibility && !widget.visible) return;
+      if (widget is TickerMode && !widget.enabled) return;
+
+      // 0. 通常の文章・テキストウィジェットは除外
       if (widget is Text || widget is RichText || typeStr.contains('Selectable')) {
         return;
       }
 
       bool isSensitive = false;
 
-      // 1. TextField / TextFormField / EditableText の判定（編集可能な入力フィールドのみ）
+      // 1. TextField / EditableText の判定（アクティブかつ編集可能な入力フィールドのみ）
       if (widget is TextField) {
         if (!widget.readOnly && (widget.enabled ?? true)) {
           isSensitive = true;
@@ -1836,10 +1860,20 @@ class WidgetTreeDumper {
           try {
             final position = renderBox.localToGlobal(Offset.zero);
             final size = renderBox.size;
-            if (size.width > 0 && size.height > 0) {
-              final rect = Rect.fromLTWH(position.dx, position.dy, size.width, size.height);
-              if (!bounds.any((b) => (b.left - rect.left).abs() < 5 && (b.top - rect.top).abs() < 5)) {
-                bounds.add(rect);
+
+            // 最小サイズ条件（幅20px以上、高さ10px以上）
+            if (size.width >= 20 && size.height >= 10) {
+              // 画面内（Viewport）に実際に存在しているかをチェック
+              final isInsideScreen = position.dx < screenWidth &&
+                  position.dx + size.width > 0 &&
+                  position.dy < screenHeight &&
+                  position.dy + size.height > 0;
+
+              if (isInsideScreen) {
+                final rect = Rect.fromLTWH(position.dx, position.dy, size.width, size.height);
+                if (!bounds.any((b) => (b.left - rect.left).abs() < 5 && (b.top - rect.top).abs() < 5)) {
+                  bounds.add(rect);
+                }
               }
             }
           } catch (_) {}
@@ -1849,17 +1883,7 @@ class WidgetTreeDumper {
       element.visitChildren(inspectElement);
     }
 
-    // 1. 渡された context から探索
-    context.visitChildElements(inspectElement);
-
-    // 2. ルートエレメントが存在する場合はルート全体からも探索
-    try {
-      final rootElement = WidgetsBinding.instance.rootElement;
-      if (rootElement != null) {
-        rootElement.visitChildren(inspectElement);
-      }
-    } catch (_) {}
-
+    searchRoot.visitChildren(inspectElement);
     return bounds;
   }
 
