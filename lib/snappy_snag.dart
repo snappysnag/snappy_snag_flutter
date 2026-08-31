@@ -46,9 +46,72 @@ class SnappySnag {
   final ValueNotifier<bool> isFeedbackModeActive = ValueNotifier<bool>(false);
 
   /// アプリ内ボタン（設定画面など）からフィードバックモードを開始する
-  static void startFeedbackMode() {
-    SnappySnag().isFeedbackModeActive.value = true;
-    debugPrint('📸 SnappySnag: Feedback Mode started.');
+  static void startFeedbackMode({BuildContext? context}) {
+    final ctx = context ?? SnappySnag().navigatorKey?.currentContext;
+    if (ctx != null) {
+      showDialog(
+        context: ctx,
+        builder: (dialogCtx) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFF2E2E38)),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.camera_alt_outlined, color: Color(0xFFF59E0B)),
+              const SizedBox(width: 8),
+              Text(
+                _SdkLocale.feedbackModeDialogTitle,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            _SdkLocale.feedbackModeDialogContent,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+              child: Text(
+                _SdkLocale.cancel,
+                style: const TextStyle(color: Colors.white60),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF59E0B),
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(dialogCtx).pop();
+                SnappySnag().isFeedbackModeActive.value = true;
+                debugPrint('📸 SnappySnag: Feedback Mode started.');
+              },
+              child: Text(
+                _SdkLocale.start,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      SnappySnag().isFeedbackModeActive.value = true;
+      debugPrint('📸 SnappySnag: Feedback Mode started.');
+    }
   }
 
   /// フィードバックモードをキャンセルして終了する
@@ -1667,86 +1730,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
             return Stack(
               children: [
-                // 上部ガイダンスバナー（フィードバックモード時のみ）
-                if (isFeedbackActive &&
-                    !_isCapturing &&
-                    _overlayMode == _SnappyOverlayMode.none)
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1E1E24).withValues(alpha: 0.95),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: const Color(0xFFF59E0B).withValues(alpha: 0.6),
-                                width: 1.5,
-                              ),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black45,
-                                  blurRadius: 12,
-                                  offset: Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.camera_alt_outlined,
-                                  color: Color(0xFFF59E0B),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    _SdkLocale.feedbackModeBanner,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                InkWell(
-                                  onTap: () => SnappySnag.cancelFeedbackMode(),
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.white12,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.close,
-                                      color: Colors.white70,
-                                      size: 16,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // フローティング撮影ボタン
+                // フローティング撮影ボタン（フィードバックモードまたは常駐設定時）
                 if (shouldShowButton)
                   Positioned(
                     bottom: 80,
@@ -1816,18 +1800,39 @@ class WidgetTreeDumper {
     return tree;
   }
 
-  /// 画面上のパスワード欄（obscureText: true）や機密入力欄のグローバル絶対座標（Rect）を自動収集
+  /// 画面上のパスワード欄、Email欄、電話番号欄、機密入力欄のグローバル絶対座標（Rect）を自動収集
   static List<Rect> findSensitiveFieldBounds(BuildContext context) {
     final List<Rect> bounds = [];
+    final Set<int> visitedHashCodes = {};
 
     void inspectElement(Element element) {
+      if (visitedHashCodes.contains(element.hashCode)) return;
+      visitedHashCodes.add(element.hashCode);
+
       final widget = element.widget;
       bool isSensitive = false;
 
-      // 1. TextField / TextFormField の obscureText チェック
-      if (widget is TextField && widget.obscureText) {
-        isSensitive = true;
-      } else if (widget is EditableText && widget.obscureText) {
+      // 1. TextField / TextFormField / EditableText の判定
+      if (widget is TextField) {
+        if (widget.obscureText) {
+          isSensitive = true;
+        } else if (widget.keyboardType == TextInputType.emailAddress ||
+            widget.keyboardType == TextInputType.phone ||
+            widget.keyboardType == TextInputType.number) {
+          isSensitive = true;
+        } else if (widget.autofillHints != null && widget.autofillHints!.isNotEmpty) {
+          isSensitive = true;
+        } else {
+          // 一般的な入力フィールドもマスキング対象として保護
+          isSensitive = true;
+        }
+      } else if (widget is EditableText) {
+        if (widget.obscureText ||
+            widget.keyboardType == TextInputType.emailAddress ||
+            widget.keyboardType == TextInputType.phone) {
+          isSensitive = true;
+        }
+      } else if (widget is TextFormField) {
         isSensitive = true;
       }
 
@@ -1838,7 +1843,10 @@ class WidgetTreeDumper {
             final position = renderBox.localToGlobal(Offset.zero);
             final size = renderBox.size;
             if (size.width > 0 && size.height > 0) {
-              bounds.add(Rect.fromLTWH(position.dx, position.dy, size.width, size.height));
+              final rect = Rect.fromLTWH(position.dx, position.dy, size.width, size.height);
+              if (!bounds.any((b) => (b.left - rect.left).abs() < 5 && (b.top - rect.top).abs() < 5)) {
+                bounds.add(rect);
+              }
             }
           } catch (_) {}
         }
@@ -1847,7 +1855,17 @@ class WidgetTreeDumper {
       element.visitChildren(inspectElement);
     }
 
+    // 1. 渡された context から探索
     context.visitChildElements(inspectElement);
+
+    // 2. ルートエレメントが存在する場合はルート全体からも探索
+    try {
+      final rootElement = WidgetsBinding.instance.rootElement;
+      if (rootElement != null) {
+        rootElement.visitChildren(inspectElement);
+      }
+    } catch (_) {}
+
     return bounds;
   }
 
@@ -2318,16 +2336,76 @@ class DrawingPainter extends CustomPainter {
       }
 
       // 2. なぞり書きパスの描画
+      if (point.tool == SnappyDrawingTool.mosaic) {
+        // ★ 本物のモザイク（Pixelation）タイル描画
+        const double tileSize = 10.0;
+        final Set<String> drawnTiles = {};
+
+        for (final offset in point.offsets) {
+          if (offset == null) continue;
+          final center = Offset(offset.dx * scaleX, offset.dy * scaleY);
+          final radius = point.strokeWidth * scaleX * 0.65;
+
+          final int minTileX = ((center.dx - radius) / tileSize).floor();
+          final int maxTileX = ((center.dx + radius) / tileSize).ceil();
+          final int minTileY = ((center.dy - radius) / tileSize).floor();
+          final int maxTileY = ((center.dy + radius) / tileSize).ceil();
+
+          for (int tx = minTileX; tx <= maxTileX; tx++) {
+            for (int ty = minTileY; ty <= maxTileY; ty++) {
+              final key = '$tx,$ty';
+              if (drawnTiles.contains(key)) continue;
+
+              final tileRect = Rect.fromLTWH(
+                tx * tileSize,
+                ty * tileSize,
+                tileSize,
+                tileSize,
+              );
+
+              if ((tileRect.center - center).distance <= radius) {
+                drawnTiles.add(key);
+
+                final hash = (tx * 73856093 ^ ty * 19349663).abs() % 4;
+                final Color tileColor;
+                switch (hash) {
+                  case 0:
+                    tileColor = const Color(0xF02A2A2E);
+                    break;
+                  case 1:
+                    tileColor = const Color(0xF0404048);
+                    break;
+                  case 2:
+                    tileColor = const Color(0xF05A5A66);
+                    break;
+                  default:
+                    tileColor = const Color(0xF01E1E22);
+                }
+
+                final tilePaint = Paint()
+                  ..color = tileColor
+                  ..style = PaintingStyle.fill;
+                canvas.drawRect(tileRect, tilePaint);
+
+                final borderPaint = Paint()
+                  ..color = Colors.white.withValues(alpha: 0.08)
+                  ..strokeWidth = 0.5
+                  ..style = PaintingStyle.stroke;
+                canvas.drawRect(tileRect, borderPaint);
+              }
+            }
+          }
+        }
+        continue;
+      }
+
+      // 赤ペン・黒塗りペンの描画
       final paint = Paint()
         ..color = point.color
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
         ..strokeWidth = point.strokeWidth * scaleX
         ..style = PaintingStyle.stroke;
-
-      if (point.tool == SnappyDrawingTool.mosaic) {
-        paint.color = const Color(0xEE303036);
-      }
 
       for (int i = 0; i < point.offsets.length - 1; i++) {
         if (point.offsets[i] != null && point.offsets[i + 1] != null) {
@@ -2350,9 +2428,12 @@ class DrawingPainter extends CustomPainter {
 class _SdkLocale {
   static bool get _isJa => ui.PlatformDispatcher.instance.locale.languageCode.toLowerCase().startsWith('ja');
 
-  static String get feedbackModeBanner => _isJa
-      ? 'フィードバックモード: 報告したい画面へ移動し、右下のボタンを押してください'
-      : 'Feedback Mode: Navigate to the target screen and tap the button';
+  static String get start => _isJa ? '開始する' : 'Start';
+  static String get feedbackModeDialogTitle =>
+      _isJa ? 'フィードバックモード' : 'Feedback Mode';
+  static String get feedbackModeDialogContent => _isJa
+      ? 'アプリを自由に操作して報告したい画面へ移動してください。\n目的の画面で右下のボタンをタップすると撮影できます。'
+      : 'Navigate freely to the screen you want to report.\nTap the button at the bottom right to capture.';
 
   static String get cancel => _isJa ? 'キャンセル' : 'Cancel';
   static String get send => _isJa ? '送信' : 'Send';
