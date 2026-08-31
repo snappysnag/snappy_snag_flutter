@@ -850,6 +850,71 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       return;
     }
 
+    // ★ SnappySnagMode.user（一般ユーザーモード）の場合、送信前にプライバシー確認ダイアログを表示
+    if (SnappySnag().mode == SnappySnagMode.user) {
+      final dialogContext = SnappySnag().navigatorKey?.currentContext ?? context;
+      final shouldSend = await showDialog<bool>(
+        context: dialogContext,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFF2E2E38)),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.shield_outlined, color: Color(0xFFF59E0B)),
+              const SizedBox(width: 8),
+              Text(
+                _SdkLocale.privacyConfirmTitle,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            _SdkLocale.privacyConfirmContent,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(
+                _SdkLocale.backToEdit,
+                style: const TextStyle(color: Colors.white60),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF59E0B),
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(
+                _SdkLocale.sendConfirm,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldSend != true) {
+        return; // 戻って編集
+      }
+    }
+
     setState(() {
       _isSendingFeedback = true;
     });
@@ -2484,6 +2549,14 @@ class _SdkLocale {
   static String get feedbackModeAlreadyVisibleContent => _isJa
       ? 'フィードバック用のボタンは既に画面右下に表示されています。\nいつでもタップして現在の画面を報告できます。'
       : 'The feedback button is already visible at the bottom right.\nTap it anytime to report the current screen.';
+
+  static String get privacyConfirmTitle =>
+      _isJa ? '送信前の確認' : 'Privacy Check';
+  static String get privacyConfirmContent => _isJa
+      ? '画面内の個人情報や機密情報（パスワード・住所・顔写真など）はモザイクで隠れていますか？'
+      : 'Are personal or sensitive details (passwords, address, photos) properly masked with blur?';
+  static String get backToEdit => _isJa ? '戻って編集' : 'Back to Edit';
+  static String get sendConfirm => _isJa ? '送信する' : 'Send';
 
   static String get cancel => _isJa ? 'キャンセル' : 'Cancel';
   static String get send => _isJa ? '送信' : 'Send';
