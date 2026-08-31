@@ -1823,26 +1823,52 @@ class WidgetTreeDumper {
     final screenWidth = mediaQuery?.size.width ?? 5000.0;
     final screenHeight = mediaQuery?.size.height ?? 5000.0;
 
+    // 個人情報検出用の正規表現（メール、電話番号、クレジットカード、郵便番号）
+    final emailRegex = RegExp(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}');
+    final phoneRegex = RegExp(r'(?:\+?\d{1,3}[- ]?)?(?:0\d{1,4}[- ]?\d{1,4}[- ]?\d{3,4}|\b\d{3}[- ]?\d{4}[- ]?\d{4}\b)');
+    final creditCardRegex = RegExp(r'\b(?:\d{4}[ -]?){3}\d{4}\b');
+    final postalCodeRegex = RegExp(r'〒?\s*\d{3}-\d{4}');
+
     void inspectElement(Element element) {
       if (visitedHashCodes.contains(element.hashCode)) return;
       visitedHashCodes.add(element.hashCode);
 
       final widget = element.widget;
-      final typeStr = widget.runtimeType.toString();
 
       // 非表示ウィジェット（Offstage / Visibility / TickerMode）の場合はその配下ごとスキップ
       if (widget is Offstage && widget.offstage) return;
       if (widget is Visibility && !widget.visible) return;
       if (widget is TickerMode && !widget.enabled) return;
 
-      // 0. 通常の文章・テキストウィジェットは除外
-      if (widget is Text || widget is RichText || typeStr.contains('Selectable')) {
-        return;
-      }
-
       bool isSensitive = false;
 
-      // 1. TextField / EditableText の判定（アクティブかつ編集可能な入力フィールドのみ）
+      // 1. Text / RichText 内の個人情報パターン検知（メール、電話番号、カード番号、郵便番号）
+      if (widget is Text && widget.data != null) {
+        final text = widget.data!;
+        if (text.length >= 6 &&
+            (emailRegex.hasMatch(text) ||
+                phoneRegex.hasMatch(text) ||
+                creditCardRegex.hasMatch(text) ||
+                postalCodeRegex.hasMatch(text))) {
+          isSensitive = true;
+        }
+      } else if (widget is RichText) {
+        final text = widget.text.toPlainText();
+        if (text.length >= 6 &&
+            (emailRegex.hasMatch(text) ||
+                phoneRegex.hasMatch(text) ||
+                creditCardRegex.hasMatch(text) ||
+                postalCodeRegex.hasMatch(text))) {
+          isSensitive = true;
+        }
+      }
+
+      // 2. CircleAvatar（プロフィール顔写真）の検知
+      if (widget is CircleAvatar) {
+        isSensitive = true;
+      }
+
+      // 3. TextField / EditableText の判定（アクティブかつ編集可能な入力フィールドのみ）
       if (widget is TextField) {
         if (!widget.readOnly && (widget.enabled ?? true)) {
           isSensitive = true;
