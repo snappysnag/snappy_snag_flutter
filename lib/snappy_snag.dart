@@ -336,6 +336,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   bool _isSendingFeedback = false;
   bool _isMemoOpen = false;
   bool _isPrivacyConfirmOpen = false;
+  bool _includeAccountAndDiagnostics = true;
   final TextEditingController _feedbackMemoController = TextEditingController();
   final ScreenshotController _canvasScreenshotController = ScreenshotController();
   Completer<void>? _drawingCompleter;
@@ -798,20 +799,31 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         body: jsonEncode({
           'device_id': deviceId,
           'screenshot_base64': base64Image,
-          'widget_tree': widgetTree,
+          'widget_tree': (_includeAccountAndDiagnostics || SnappySnag().mode != SnappySnagMode.user) ? widgetTree : <String, dynamic>{},
           'memo': memo,
           'screen_class_name': screenClassName,
           'screen_signature': screenSignature,
-          'tags': ['debug', 'feedback'],
+          'tags': [
+            'debug',
+            'feedback',
+            SnappySnag().mode == SnappySnagMode.user ? 'user_feedback' : 'dev_report',
+          ],
           'metadata': {
             'device_id': deviceId,
             'platform': 'flutter',
             'os_name': kIsWeb ? 'web_${defaultTargetPlatform.name.toLowerCase()}' : Platform.operatingSystem,
             'os_version': kIsWeb ? getBrowserInfoHelper() : Platform.operatingSystemVersion,
             'package_name': SnappySnag()._packageName,
-            'reporter_user_id': SnappySnag()._reporterUserId ?? 'anonymous',
-            'reporter_email': SnappySnag()._reporterEmail ?? 'anonymous',
-            ...?SnappySnag()._customMetadata,
+            'reporter_user_id': (_includeAccountAndDiagnostics || SnappySnag().mode != SnappySnagMode.user)
+                ? (SnappySnag()._reporterUserId ?? 'anonymous')
+                : 'anonymous',
+            'reporter_email': (_includeAccountAndDiagnostics || SnappySnag().mode != SnappySnagMode.user)
+                ? (SnappySnag()._reporterEmail ?? 'anonymous')
+                : 'anonymous',
+            'mode': SnappySnag().mode == SnappySnagMode.user ? 'user' : 'dev',
+            'is_anonymous': (SnappySnag().mode == SnappySnagMode.user && !_includeAccountAndDiagnostics),
+            if (_includeAccountAndDiagnostics || SnappySnag().mode != SnappySnagMode.user)
+              ...?SnappySnag()._customMetadata,
           },
         }),
       );
@@ -1779,11 +1791,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                   ],
                                 ),
                               ),
-                            ),
-                            ),
-                          ),
-                        ),
-                      ),
+                             ),
+                           ),
+                         ),
+                       ),
 
                     // 4. プライバシー確認用フローティングオーバーレイ（最前面に描画）
                     if (_isPrivacyConfirmOpen)
@@ -1793,7 +1804,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                           padding: const EdgeInsets.all(24),
                           child: Center(
                             child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 420),
+                              constraints: const BoxConstraints(maxWidth: 440),
                               child: Card(
                                 color: const Color(0xFF1E1E24),
                                 shape: RoundedRectangleBorder(
@@ -1821,15 +1832,80 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         ],
                                       ),
                                       const SizedBox(height: 12),
+                                      // 1. 画像モザイク確認
                                       Text(
                                         _SdkLocale.privacyConfirmContent,
                                         style: const TextStyle(
                                           color: Colors.white70,
                                           fontSize: 13,
-                                          height: 1.5,
+                                          height: 1.4,
                                         ),
                                       ),
-                                      const SizedBox(height: 20),
+                                      const SizedBox(height: 14),
+                                      const Divider(color: Color(0xFF2E2E38)),
+                                      const SizedBox(height: 8),
+                                      // 2. 診断・アカウント情報共有チェックボックス
+                                      InkWell(
+                                        onTap: () {
+                                          setState(() {
+                                            _includeAccountAndDiagnostics = !_includeAccountAndDiagnostics;
+                                          });
+                                        },
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 4),
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              SizedBox(
+                                                width: 24,
+                                                height: 24,
+                                                child: Checkbox(
+                                                  value: _includeAccountAndDiagnostics,
+                                                  activeColor: const Color(0xFFF59E0B),
+                                                  checkColor: Colors.black,
+                                                  side: const BorderSide(color: Colors.white38),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  onChanged: (val) {
+                                                    setState(() {
+                                                      _includeAccountAndDiagnostics = val ?? true;
+                                                    });
+                                                  },
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      SnappySnag()._reporterEmail != null && SnappySnag()._reporterEmail!.isNotEmpty
+                                                          ? _SdkLocale.privacyShareAccountWithEmail(SnappySnag()._reporterEmail!)
+                                                          : _SdkLocale.privacyShareAccount,
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      _SdkLocale.privacyAnonymousHint,
+                                                      style: TextStyle(
+                                                        color: Colors.grey.shade400,
+                                                        fontSize: 11,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.end,
                                         children: [
@@ -1862,7 +1938,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         ],
                                       ),
                                     ],
-                                  ),
                                 ),
                               ),
                             ),
@@ -2658,6 +2733,15 @@ class _SdkLocale {
   static String get privacyConfirmContent => _isJa
       ? '画面内の個人情報や機密情報（パスワード・住所・顔写真など）はモザイクで隠れていますか？'
       : 'Are personal or sensitive details (passwords, address, photos) properly masked with blur?';
+  static String privacyShareAccountWithEmail(String email) => _isJa
+      ? '問題解決のために診断情報とアカウント情報 ($email) を共有する'
+      : 'Include diagnostics and account info ($email) to resolve issues';
+  static String get privacyShareAccount => _isJa
+      ? '問題解決のためにデバイス診断情報を共有する'
+      : 'Include device diagnostics to resolve issues';
+  static String get privacyAnonymousHint => _isJa
+      ? '※チェックを外すと匿名（画像とメモのみ）で送信されます'
+      : 'Uncheck to submit anonymously (screenshot and memo only)';
   static String get backToEdit => _isJa ? '戻って編集' : 'Back to Edit';
   static String get sendConfirm => _isJa ? '送信する' : 'Send';
 
