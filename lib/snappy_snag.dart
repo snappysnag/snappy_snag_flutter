@@ -1724,77 +1724,62 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                   side: BorderSide(color: Colors.grey.shade800),
                                 ),
                                 child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    Text(
-                                      _SdkLocale.describeIssue,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    TextField(
-                                      controller: _feedbackMemoController,
-                                      maxLength: 500,
-                                      maxLengthEnforcement:
-                                          MaxLengthEnforcement.enforced,
-                                      maxLines: 4,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                      ),
-                                      decoration: InputDecoration(
-                                        hintText: _SdkLocale.memoHint,
-                                        hintStyle: const TextStyle(
-                                          color: Colors.grey,
-                                        ),
-                                        fillColor: Colors.black26,
-                                        filled: true,
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          borderSide: BorderSide(
-                                            color: Colors.grey.shade800,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.amber,
-                                        foregroundColor: Colors.black,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                      ),
-                                      onPressed: () {
-                                        setState(
-                                          () => _isMemoOpen = false,
-                                        );
-                                      },
-                                      child: Text(
-                                        _SdkLocale.done,
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Text(
+                                        _SdkLocale.describeIssue,
                                         style: const TextStyle(
+                                          color: Colors.white,
                                           fontWeight: FontWeight.bold,
+                                          fontSize: 16,
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 12),
+                                      TextField(
+                                        controller: _feedbackMemoController,
+                                        maxLength: 500,
+                                        maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                                        maxLines: 4,
+                                        style: const TextStyle(color: Colors.white),
+                                        decoration: InputDecoration(
+                                          hintText: _SdkLocale.memoHint,
+                                          hintStyle: const TextStyle(color: Colors.grey),
+                                          fillColor: Colors.black26,
+                                          filled: true,
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                            borderSide: BorderSide(color: Colors.grey.shade800),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.amber,
+                                          foregroundColor: Colors.black,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          setState(() => _isMemoOpen = false);
+                                        },
+                                        child: Text(
+                                          _SdkLocale.done,
+                                          style: const TextStyle(fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                             ),
-                           ),
-                         ),
-                       ),
+                            ),
+                          ),
+                        ),
+                      ),
 
                     // 4. プライバシー確認用フローティングオーバーレイ（最前面に描画）
                     if (_isPrivacyConfirmOpen)
@@ -1938,6 +1923,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         ],
                                       ),
                                     ],
+                                  ),
                                 ),
                               ),
                             ),
