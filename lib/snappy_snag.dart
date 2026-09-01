@@ -103,6 +103,8 @@ class SnappySnag {
             ],
           ),
         );
+      } else {
+        debugPrint('⚠️ SnappySnag Warning: Cannot show disabled dialog because BuildContext is null. Please pass context to SnappySnag.startFeedbackMode(context: context) or pass navigatorKey to SnappySnag().initialize().');
       }
       debugPrint('ℹ️ SnappySnag: Feedback feature is currently disabled (enabled: false).');
       return;
@@ -213,10 +215,6 @@ class SnappySnag {
   }) {
     _mode = mode;
     _isEnabled = enabled;
-    if (!_isEnabled) {
-      debugPrint('🚀 SnappySnag: SDK is disabled by configuration.');
-      return;
-    }
     _apiKey = apiKey;
     _packageName = packageName.trim();
     _navigatorKey = navigatorKey;
@@ -225,6 +223,11 @@ class SnappySnag {
     _customMetadata = customMetadata;
     if (supabaseUrl != null && supabaseUrl.trim().isNotEmpty) {
       _supabaseUrl = supabaseUrl.trim();
+    }
+
+    if (!_isEnabled) {
+      debugPrint('🚀 SnappySnag: SDK is disabled by configuration (enabled: false).');
+      return;
     }
 
     if (_apiKey == null || _apiKey!.trim().isEmpty) {
