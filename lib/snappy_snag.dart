@@ -51,6 +51,63 @@ class SnappySnag {
   /// アプリ内ボタン（設定画面など）からフィードバックモードを開始する
   static void startFeedbackMode({BuildContext? context}) {
     final ctx = context ?? SnappySnag().navigatorKey?.currentContext;
+
+    // ★ SDKが無効（isEnabled == false）の場合のダイアログ
+    if (!SnappySnag().isEnabled) {
+      if (ctx != null) {
+        showDialog(
+          context: ctx,
+          builder: (dialogCtx) => AlertDialog(
+            backgroundColor: const Color(0xFF1E1E24),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Color(0xFF2E2E38)),
+            ),
+            title: Row(
+              children: [
+                const Icon(Icons.info_outline, color: Colors.grey),
+                const SizedBox(width: 8),
+                Text(
+                  _SdkLocale.disabledTitle,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              _SdkLocale.disabledContent,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+                height: 1.5,
+              ),
+            ),
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF3E3E48),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () => Navigator.of(dialogCtx).pop(),
+                child: Text(
+                  _SdkLocale.ok,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      debugPrint('ℹ️ SnappySnag: Feedback feature is currently disabled (enabled: false).');
+      return;
+    }
+
     final isAlreadyVisible = SnappySnag().isTriggerButtonAlwaysVisible;
 
     if (ctx != null) {
@@ -2572,6 +2629,12 @@ class DrawingPainter extends CustomPainter {
 /// Internal localization helper for SnappySnag SDK.
 class _SdkLocale {
   static bool get _isJa => ui.PlatformDispatcher.instance.locale.languageCode.toLowerCase().startsWith('ja');
+
+  static String get disabledTitle =>
+      _isJa ? 'フィードバック機能は無効です' : 'Feedback Feature Disabled';
+  static String get disabledContent => _isJa
+      ? '現在フィードバック機能は無効に設定されているため、ご利用いただけません。'
+      : 'The feedback feature is currently disabled and unavailable.';
 
   static String get start => _isJa ? '開始する' : 'Start';
   static String get ok => _isJa ? '了解' : 'OK';
