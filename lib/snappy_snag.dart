@@ -623,6 +623,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         headers: {
           'x-snappy-api-key': apiKey,
           'x-snappy-package-name': SnappySnag()._packageName ?? '',
+          if (SnappySnag()._reporterEmail != null && SnappySnag()._reporterEmail!.isNotEmpty)
+            'x-snappy-reporter-email': SnappySnag()._reporterEmail!,
         },
       );
 
@@ -683,7 +685,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     try {
       final response = await http.get(
         Uri.parse(url),
-        headers: {'x-snappy-api-key': apiKey},
+        headers: {
+          'x-snappy-api-key': apiKey,
+          if (SnappySnag()._reporterEmail != null && SnappySnag()._reporterEmail!.isNotEmpty)
+            'x-snappy-reporter-email': SnappySnag()._reporterEmail!,
+        },
       );
 
       if (response.statusCode == 200) {
@@ -714,12 +720,15 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         headers: {
           'Content-Type': 'application/json',
           'x-snappy-api-key': apiKey,
+          if (SnappySnag()._reporterEmail != null && SnappySnag()._reporterEmail!.isNotEmpty)
+            'x-snappy-reporter-email': SnappySnag()._reporterEmail!,
         },
         body: jsonEncode({
           'feedback_log_id': feedbackLogId,
           'sender_type': 'reporter',
           'sender_name': SnappySnag()._reporterUserId ?? 'Reporter',
           'message': message,
+          if (SnappySnag()._reporterEmail != null) 'user_email': SnappySnag()._reporterEmail!,
         }),
       );
 
