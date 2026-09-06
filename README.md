@@ -102,10 +102,10 @@ When you build your application in **Release Mode** (`flutter build ipa` / `flut
 > ```
 
 ### 2. Remote Kill-Switch (Admin Dashboard)
-If a release containing developer feedback features goes public by accident, project owners can instantly shut down in-app developer chat across all running mobile instances worldwide with a single click:
+If a release containing developer feedback features goes public by accident, project owners can instantly shut down developer features across all running mobile instances worldwide with a single click:
 - Go to **Dashboard** > **Project Settings** > **General & SDK**.
-- Toggle **Developer In-App Chat (Kill-switch)** to **OFF**.
-- The chat thread and input are immediately suppressed and hidden on all client devices, and server endpoints will reject incoming messages with `403 Forbidden`.
+- Toggle **Developer In-App Features (Kill-switch)** to **OFF**.
+- Both the **reported internal tickets dialog** and **comments chat** are immediately suppressed. The app automatically falls back to the clean end-user feedback flow (directly opening the screenshot capture/drawing screen), and comment submission endpoints will reject incoming requests with `403 Forbidden`.
 
 ### 3. Client & Server Rate Limiting (Spam & Flood Protection)
 Applies to both `user` and `dev` modes out of the box:

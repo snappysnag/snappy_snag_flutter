@@ -523,7 +523,9 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
     if (imageBytes != null && mounted) {
       try {
-        final isUserMode = SnappySnag().mode == SnappySnagMode.user;
+        // ★ 第2の防壁: ユーザーモードまたはリモートキルスイッチ（isDevChatEnabled == false）時は
+        // 内部チケット一覧を一般露出させず、直接フィードバック送信フローへスキップ
+        final isUserMode = SnappySnag().mode == SnappySnagMode.user || SnappySnag().isDevChatEnabled == false;
         final duplicates = isUserMode
             ? <dynamic>[]
             : await _fetchExistingFeedbacks(screenClassName, screenSignature);
