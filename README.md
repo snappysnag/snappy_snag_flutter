@@ -7,6 +7,7 @@ SnappySnag is a visual bug reporting and AI auto-fix suggestion tool for Flutter
 * 📸 **Prioritized Instant Screenshots**: Captured immediately on-press to freeze the screen state, even during fast page transitions.
 * 🌳 **Widget Tree Dumper**: Automatically dumps the widget hierarchy (up to a depth of 10 levels) for precise widget mapping.
 * 🤖 **AI Auto-Fix suggestions**: Generates human-focused technical guides and cursor-compatible agent prompts.
+* 👥 **One-Build Role-Based Sharing**: Show internal tickets, duplicate warnings, and discussion threads to developers while keeping external clients on a clean, simple feedback flow in the exact same build.
 * 🛡️ **Package Name Lock**: Prevents unauthorized API requests by locking your API Key to your registered bundle identifier.
 * 🚫 **Store Production Safe**: Easily disable the overlay button and sensor listeners completely in App Store/Google Play builds using the `enabled` configuration.
 
@@ -38,6 +39,8 @@ void main() {
     apiKey: 'snag_live_your_api_key_here',
     packageName: 'your.package.name',
     navigatorKey: navigatorKey,
+    // Optional: Identify tester to automatically unlock developer tickets/chat for team members
+    reporterEmail: 'developer@example.com',
     // Safely enable SnappySnag only when ENABLE_SNAPPY_SNAG=true is passed at build time.
     // It will automatically bypass overlay rendering and sensor listeners in production builds.
     enabled: const bool.fromEnvironment('ENABLE_SNAPPY_SNAG', defaultValue: false) || kDebugMode,
@@ -51,20 +54,9 @@ void main() {
     ),
   );
 }
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'My App',
-      navigatorKey: navigatorKey, // Ensure the NavigatorKey is attached!
-      home: const HomeScreen(),
-    );
-  }
-}
 ```
+
+> 💡 **Tip: Dynamic Reporter Info**: If users log in after app startup, call `SnappySnag().setReporterInfo(email: currentUser.email)` anywhere in your authentication flow.
 
 ### 2. Build for TestFlight / Internal Testing
 
@@ -84,14 +76,25 @@ flutter build ipa
 ```
 
 
-## Multi-Layer Safety Guards (Release & Spam Protection)
+## Smart Role-Based Access & Multi-Layer Safety Guards
 
-To prevent internal developer discussions, sensitive bug tickets, or runaway API spam from leaking in production builds, SnappySnag incorporates a 3-layer security defense:
+In team and client work, building separate app binaries (one for internal developers and one for external clients) is time-consuming and prone to human error. SnappySnag provides a comprehensive defense and access control system to **safely share a single build** between developers and clients without risking internal leakages.
 
-### 1. Automatic Release Guard (`kReleaseMode`)
+### 1. One-Build Sharing: Role-Based Developer In-App Features
+With `mode: SnappySnagMode.dev`, you can let your development team view **existing internal tickets, duplicate warnings, and discussion threads**, while ensuring clients and external testers only see a clean, distraction-free **feedback submission screen**.
+
+Control access effortlessly from your **Web Dashboard** > **Project Settings** > **General & SDK**:
+* 👥 **Allowed Only (Recommended)**:
+  * **Team Members**: Owners and developers registered in your dashboard's "Team & Members" automatically get full access to internal tickets and chat threads when their `reporterEmail` matches.
+  * **Additional Allowed Emails**: Seamlessly whitelist client leads or external QA testers by email address without touching your code or re-deploying.
+  * **Unauthenticated / Unknown Testers**: Automatically skip internal tickets and transition directly to the feedback submission screen. Chat submissions are rejected with `403 Forbidden`.
+* 🌐 **Everyone**: Displays developer tickets and chat to anyone running the dev-mode app.
+* 🛑 **Disabled (Remote Kill-Switch)**: Instantly suppresses internal tickets and chat worldwide across all mobile instances.
+
+### 2. Automatic Release Guard (`kReleaseMode`)
 When you build your application in **Release Mode** (`flutter build ipa` / `flutter build appbundle`), SnappySnag automatically checks Flutter's `kReleaseMode`. Even if `mode: SnappySnagMode.dev` was inadvertently left configured in your source code, SnappySnag automatically falls back to `SnappySnagMode.user`, completely hiding developer tickets and comments.
 
-> 💡 **Internal TestFlight / Dogfooding Exception**: If you intentionally wish to test developer mode in a release-compiled build (e.g. TestFlight distribution to internal team members), explicitly set `forceDevInRelease: true`:
+> 💡 **Internal Dogfooding in Release Builds**: If you intentionally wish to test developer mode in a release-compiled build (e.g. TestFlight distribution to internal team members), explicitly set `forceDevInRelease: true`:
 > ```dart
 > SnappySnag().initialize(
 >   apiKey: 'YOUR_KEY',
@@ -100,12 +103,6 @@ When you build your application in **Release Mode** (`flutter build ipa` / `flut
 >   forceDevInRelease: const bool.fromEnvironment('FORCE_DEV_CHAT', defaultValue: false),
 > );
 > ```
-
-### 2. Remote Kill-Switch (Admin Dashboard)
-If a release containing developer feedback features goes public by accident, project owners can instantly shut down developer features across all running mobile instances worldwide with a single click:
-- Go to **Dashboard** > **Project Settings** > **General & SDK**.
-- Toggle **Developer In-App Features (Kill-switch)** to **OFF**.
-- Both the **reported internal tickets dialog** and **comments chat** are immediately suppressed. The app automatically falls back to the clean end-user feedback flow (directly opening the screenshot capture/drawing screen), and comment submission endpoints will reject incoming requests with `403 Forbidden`.
 
 ### 3. Client & Server Rate Limiting (Spam & Flood Protection)
 Applies to both `user` and `dev` modes out of the box:
