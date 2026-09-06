@@ -82,3 +82,32 @@ To compile your app for production release, build normally. SnappySnag will auto
 ```bash
 flutter build ipa
 ```
+
+
+## Multi-Layer Safety Guards (Release & Spam Protection)
+
+To prevent internal developer discussions, sensitive bug tickets, or runaway API spam from leaking in production builds, SnappySnag incorporates a 3-layer security defense:
+
+### 1. Automatic Release Guard (`kReleaseMode`)
+When you build your application in **Release Mode** (`flutter build ipa` / `flutter build appbundle`), SnappySnag automatically checks Flutter's `kReleaseMode`. Even if `mode: SnappySnagMode.dev` was inadvertently left configured in your source code, SnappySnag automatically falls back to `SnappySnagMode.user`, completely hiding developer tickets and comments.
+
+> 💡 **Internal TestFlight / Dogfooding Exception**: If you intentionally wish to test developer mode in a release-compiled build (e.g. TestFlight distribution to internal team members), explicitly set `forceDevInRelease: true`:
+> ```dart
+> SnappySnag().initialize(
+>   apiKey: 'YOUR_KEY',
+>   packageName: 'com.example.app',
+>   mode: SnappySnagMode.dev,
+>   forceDevInRelease: const bool.fromEnvironment('FORCE_DEV_CHAT', defaultValue: false),
+> );
+> ```
+
+### 2. Remote Kill-Switch (Admin Dashboard)
+If a release containing developer feedback features goes public by accident, project owners can instantly shut down in-app developer chat across all running mobile instances worldwide with a single click:
+- Go to **Dashboard** > **Project Settings** > **General & SDK**.
+- Toggle **Developer In-App Chat (Kill-switch)** to **OFF**.
+- The chat thread and input are immediately suppressed and hidden on all client devices, and server endpoints will reject incoming messages with `403 Forbidden`.
+
+### 3. Client & Server Rate Limiting (Spam & Flood Protection)
+Applies to both `user` and `dev` modes out of the box:
+- **Client-Side**: The send button enforces a mandatory 3-second cooldown between successive submissions to prevent accidental or malicious double-taps.
+- **Server-Side**: The backend API limits continuous messages to a maximum of 5 messages per minute per user/device. Exceeding requests automatically receive `429 Too Many Requests` with an in-app notice.

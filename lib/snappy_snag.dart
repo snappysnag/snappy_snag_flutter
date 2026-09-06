@@ -5,7 +5,7 @@ import 'dart:math';
 import 'src/browser_info_helper.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, DiagnosticsSerializationDelegate;
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode, defaultTargetPlatform, DiagnosticsSerializationDelegate;
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:screenshot/screenshot.dart';
@@ -41,6 +41,8 @@ class SnappySnag {
 
   SnappySnagMode _mode = SnappySnagMode.user;
   SnappySnagMode get mode => _mode;
+  bool _isDevChatEnabled = true;
+  bool get isDevChatEnabled => _isDevChatEnabled;
 
   /// 常駐ボタン（showTriggerButton）がONかどうかのフラグ
   bool isTriggerButtonAlwaysVisible = false;
@@ -212,8 +214,17 @@ class SnappySnag {
     Map<String, dynamic>? customMetadata,
     bool enabled = true,
     String? supabaseUrl,
+    bool forceDevInRelease = false,
   }) {
-    _mode = mode;
+    // ★ 第1の防壁: Releaseモード時の安全ガード
+    // 本番ビルド時に mode: SnappySnagMode.dev が指定されていても、
+    // forceDevInRelease: true が明示されていない限り自動的に user モードへフォールバック
+    if (kReleaseMode && mode == SnappySnagMode.dev && !forceDevInRelease) {
+      _mode = SnappySnagMode.user;
+      debugPrint('🛡️ SnappySnag Security Guard: SnappySnagMode.dev was specified in release mode without forceDevInRelease: true. Automatically falling back to SnappySnagMode.user to protect internal tickets & developer chats.');
+    } else {
+      _mode = mode;
+    }
     _isEnabled = enabled;
     _apiKey = apiKey;
     _packageName = packageName.trim();
@@ -323,6 +334,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   List<dynamic> _commentsList = [];
   bool _commentsLoading = false;
   bool _isSendingComment = false;
+  bool _isCommentCooldownActive = false;
   final TextEditingController _commentTextController = TextEditingController();
   bool _isFeedbackDialogOpen = false;
 
@@ -614,6 +626,9 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        if (data['is_dev_chat_enabled'] != null) {
+          SnappySnag()._isDevChatEnabled = data['is_dev_chat_enabled'] == true;
+        }
         return (data['duplicates'] as List<dynamic>?) ?? [];
       } else {
         String serverError = '';
@@ -671,6 +686,9 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        if (data['is_dev_chat_enabled'] != null) {
+          SnappySnag()._isDevChatEnabled = data['is_dev_chat_enabled'] == true;
+        }
         return (data['comments'] as List<dynamic>?) ?? [];
       }
     } catch (e) {
@@ -679,12 +697,12 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     return [];
   }
 
-  Future<bool> _postComment({
+    Future<_CommentPostResult> _postComment({
     required String feedbackLogId,
     required String message,
   }) async {
     final apiKey = SnappySnag()._apiKey;
-    if (apiKey == null) return false;
+    if (apiKey == null) return _CommentPostResult(false, 'API Key is missing');
 
     final String url = '${SnappySnag().supabaseUrl}/functions/v1/comments';
 
@@ -703,10 +721,19 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         }),
       );
 
-      return response.statusCode == 200;
+      if (response.statusCode == 200) {
+        return _CommentPostResult(true);
+      } else if (response.statusCode == 403) {
+        SnappySnag()._isDevChatEnabled = false;
+        return _CommentPostResult(false, _SdkLocale.chatDisabled);
+      } else if (response.statusCode == 429) {
+        return _CommentPostResult(false, _SdkLocale.statusRateLimit);
+      } else {
+        return _CommentPostResult(false, _SdkLocale.statusNetworkError);
+      }
     } catch (e) {
       debugPrint('❌ SnappySnag Post Comment Error: $e');
-      return false;
+      return _CommentPostResult(false, _SdkLocale.statusNetworkError);
     }
   }
 
@@ -738,20 +765,23 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     }
   }
 
-  Future<void> _sendCommentInline() async {
+    Future<void> _sendCommentInline() async {
     final text = _commentTextController.text.trim();
-    if (text.isEmpty || _isSendingComment) return;
+    if (text.isEmpty || _isSendingComment || _isCommentCooldownActive) return;
 
     if (mounted) {
-      setState(() => _isSendingComment = true);
+      setState(() {
+        _isSendingComment = true;
+        _isCommentCooldownActive = true;
+      });
     }
 
-    final success = await _postComment(
+    final result = await _postComment(
       feedbackLogId: _commentsFeedbackId,
       message: text,
     );
 
-    if (success) {
+    if (result.success) {
       _commentTextController.clear();
       final updatedComments = await _fetchComments(_commentsFeedbackId);
       if (mounted) {
@@ -763,8 +793,24 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     } else {
       if (mounted) {
         setState(() => _isSendingComment = false);
+        if (result.errorMessage != null && result.errorMessage!.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.errorMessage!),
+              backgroundColor: Colors.redAccent.shade700,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
       }
     }
+
+    // 第3の防壁: 送信後3秒間のクールダウンタイマー
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() => _isCommentCooldownActive = false);
+      }
+    });
   }
 
 
@@ -1163,6 +1209,16 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
                                 return InkWell(
                                   onTap: () {
+                                    if (SnappySnag().isDevChatEnabled == false) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(_SdkLocale.chatDisabled),
+                                          backgroundColor: const Color(0xFF2E2E38),
+                                          duration: const Duration(seconds: 3),
+                                        ),
+                                      );
+                                      return;
+                                    }
                                     _showCommentsThreadSheet(
                                       item['id'].toString(),
                                       memo,
@@ -1439,17 +1495,17 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                             ),
                             const SizedBox(width: 8),
                             IconButton(
-                              icon: _isSendingComment
-                                  ? const SizedBox(
+                              icon: (_isSendingComment || _isCommentCooldownActive)
+                                  ? SizedBox(
                                       width: 18,
                                       height: 18,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: Colors.amber,
+                                        color: _isCommentCooldownActive && !_isSendingComment ? Colors.grey : Colors.amber,
                                       ),
                                     )
                                   : const Icon(Icons.send, color: Colors.amber),
-                              onPressed: _isSendingComment
+                              onPressed: (_isSendingComment || _isCommentCooldownActive)
                                   ? null
                                   : () => _sendCommentInline(),
                             ),
@@ -2004,6 +2060,13 @@ class _SimpleDiagnosticsSerializationDelegate implements DiagnosticsSerializatio
     }
     return null;
   }
+}
+
+
+class _CommentPostResult {
+  final bool success;
+  final String? errorMessage;
+  _CommentPostResult(this.success, [this.errorMessage]);
 }
 
 class _FeedbackResponse {
@@ -2767,6 +2830,9 @@ class _SdkLocale {
       ? 'コメントはまだありません。会話を始めましょう！'
       : 'No comments yet. Start the conversation!';
   static String get typeMessage => _isJa ? 'メッセージを入力...' : 'Type a message...';
+  static String get chatDisabled => _isJa
+      ? '管理者により現在チャット機能は無効に設定されています。'
+      : 'Chat is currently disabled by the project administrator.';
 
   static String get describeIssue =>
       _isJa ? 'フィードバックの詳細を説明してください' : 'Describe your feedback';
