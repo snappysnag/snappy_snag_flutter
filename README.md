@@ -30,33 +30,42 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:snappy_snag/snappy_snag.dart';
 
-// 1. Define a global NavigatorKey to access BuildContext from anywhere
-final navigatorKey = GlobalKey<NavigatorState>();
-
 void main() {
-  // 2. Initialize the SDK
+  // 1. Initialize the SDK
   SnappySnag().initialize(
     apiKey: 'snag_live_your_api_key_here',
     packageName: 'your.package.name',
-    navigatorKey: navigatorKey,
-    // Optional: Identify tester to automatically unlock developer tickets/chat for team members
-    reporterEmail: 'developer@example.com',
+    // Optional: Identify user/tester to automatically unlock developer tickets/chat for team members
+    user: const SnappySnagUser(
+      email: 'developer@example.com',
+    ),
     // Safely enable SnappySnag only when ENABLE_SNAPPY_SNAG=true is passed at build time.
     // It will automatically bypass overlay rendering and sensor listeners in production builds.
     enabled: const bool.fromEnvironment('ENABLE_SNAPPY_SNAG', defaultValue: false) || kDebugMode,
   );
 
-  runApp(
-    // 3. Wrap your root widget with SnappySnagOverlay
-    const SnappySnagOverlay(
-      showTriggerButton: true, // Set to false if you only want shake detection
-      child: MyApp(),
-    ),
-  );
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      // 2. Simply pass SnappySnag's defaultNavigatorKey
+      navigatorKey: SnappySnag.defaultNavigatorKey,
+      // 3. Wrap your screen with SnappySnagOverlay in builder
+      builder: (context, child) => SnappySnagOverlay(
+        child: child ?? const SizedBox.shrink(),
+      ),
+      home: const MyHomePage(),
+    );
+  }
 }
 ```
 
-> 💡 **Tip: Dynamic Reporter Info**: If users log in after app startup, call `SnappySnag().setReporterInfo(email: currentUser.email)` anywhere in your authentication flow.
+> 💡 **Tip: Dynamic User Info**: If users log in after app startup, call `SnappySnag().setUser(SnappySnagUser(id: user.id, email: user.email))` anywhere in your authentication flow. Call `SnappySnag().clearUser()` on logout.
 
 ### 2. Build for TestFlight / Internal Testing
 

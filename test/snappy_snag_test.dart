@@ -24,4 +24,44 @@ void main() {
       );
     },
   );
+
+  test('SnappySnagUser sets and updates user info correctly', () {
+    final snappy = SnappySnag();
+    snappy.initialize(
+      apiKey: 'test_key',
+      packageName: 'com.example.test',
+      user: const SnappySnagUser(
+        id: 'user_123',
+        email: 'test@example.com',
+        name: 'Taro Yamada',
+        customAttributes: {'plan': 'premium'},
+      ),
+    );
+
+    expect(snappy.user?.id, 'user_123');
+    expect(snappy.user?.email, 'test@example.com');
+    expect(snappy.user?.name, 'Taro Yamada');
+    expect(snappy.reporterUserId, 'user_123');
+    expect(snappy.reporterEmail, 'test@example.com');
+    expect(snappy.user?.toJson(), {
+      'id': 'user_123',
+      'email': 'test@example.com',
+      'name': 'Taro Yamada',
+      'plan': 'premium',
+    });
+
+    snappy.setUser(const SnappySnagUser(id: 'user_456', email: 'new@example.com'));
+    expect(snappy.user?.id, 'user_456');
+    expect(snappy.user?.email, 'new@example.com');
+
+    snappy.clearUser();
+    expect(snappy.user, isNull);
+    expect(snappy.reporterUserId, isNull);
+    expect(snappy.reporterEmail, isNull);
+  });
+
+  test('SnappySnag defaultNavigatorKey is always available', () {
+    expect(SnappySnag.defaultNavigatorKey, isNotNull);
+    expect(SnappySnag().navigatorKey, equals(SnappySnag.defaultNavigatorKey));
+  });
 }

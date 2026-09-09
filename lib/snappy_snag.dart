@@ -23,17 +23,49 @@ enum SnappySnagMode {
   user,
 }
 
+/// Representation of reporter/user information for SnappySnag.
+class SnappySnagUser {
+  /// Unique identifier of the user (e.g. database UUID, user ID).
+  final String? id;
+
+  /// Contact email address of the user.
+  final String? email;
+
+  /// Display name of the user.
+  final String? name;
+
+  /// Optional arbitrary attributes associated with this user.
+  final Map<String, dynamic>? customAttributes;
+
+  const SnappySnagUser({
+    this.id,
+    this.email,
+    this.name,
+    this.customAttributes,
+  });
+
+  Map<String, dynamic> toJson() => {
+        if (id != null) 'id': id,
+        if (email != null) 'email': email,
+        if (name != null) 'name': name,
+        if (customAttributes != null) ...customAttributes!,
+      };
+}
+
 /// Main class for SnappySnag SDK configuration.
 class SnappySnag {
   static final SnappySnag _instance = SnappySnag._internal();
   factory SnappySnag() => _instance;
   SnappySnag._internal();
 
+  /// Default top-level NavigatorKey provided by SnappySnag SDK.
+  /// Pass this directly to `MaterialApp(navigatorKey: SnappySnag.defaultNavigatorKey)` or `SnappySnag().navigatorKey` to avoid manual key management.
+  static final GlobalKey<NavigatorState> defaultNavigatorKey = GlobalKey<NavigatorState>();
+
   String? _apiKey;
   String? _deviceId;
-  GlobalKey<NavigatorState>? _navigatorKey;
-  String? _reporterUserId;
-  String? _reporterEmail;
+  GlobalKey<NavigatorState>? _customNavigatorKey;
+  SnappySnagUser? _user;
   String? _packageName;
   Map<String, dynamic>? _customMetadata;
   String _supabaseUrl =
@@ -43,6 +75,11 @@ class SnappySnag {
   SnappySnagMode get mode => _mode;
   bool _isDevChatEnabled = true;
   bool get isDevChatEnabled => _isDevChatEnabled;
+
+  /// Current user/reporter information.
+  SnappySnagUser? get user => _user;
+  String? get reporterUserId => _user?.id;
+  String? get reporterEmail => _user?.email;
 
   /// 常駐ボタン（showTriggerButton）がONかどうかのフラグ
   bool isTriggerButtonAlwaysVisible = false;
@@ -201,16 +238,16 @@ class SnappySnag {
   String get supabaseUrl => _supabaseUrl;
 
   /// GlobalKey for accessing top-level Navigator context.
-  GlobalKey<NavigatorState>? get navigatorKey => _navigatorKey;
+  /// Returns custom navigatorKey if provided to `initialize()`, otherwise returns the default `SnappySnag.navigatorKey`.
+  GlobalKey<NavigatorState>? get navigatorKey => _customNavigatorKey ?? SnappySnag.defaultNavigatorKey;
 
-  /// Initialize the SnappySnag SDK with a Project/API Key, Package Name, and optional NavigatorKey.
+  /// Initialize the SnappySnag SDK with a Project/API Key, Package Name, optional SnappySnagUser, and optional custom NavigatorKey.
   void initialize({
     required String apiKey,
     required String packageName,
     SnappySnagMode mode = SnappySnagMode.user,
     GlobalKey<NavigatorState>? navigatorKey,
-    String? reporterUserId,
-    String? reporterEmail,
+    SnappySnagUser? user,
     Map<String, dynamic>? customMetadata,
     bool enabled = true,
     String? supabaseUrl,
@@ -228,9 +265,8 @@ class SnappySnag {
     _isEnabled = enabled;
     _apiKey = apiKey;
     _packageName = packageName.trim();
-    _navigatorKey = navigatorKey;
-    _reporterUserId = reporterUserId;
-    _reporterEmail = reporterEmail;
+    _customNavigatorKey = navigatorKey;
+    _user = user;
     _customMetadata = customMetadata;
     if (supabaseUrl != null && supabaseUrl.trim().isNotEmpty) {
       _supabaseUrl = supabaseUrl.trim();
@@ -252,13 +288,18 @@ class SnappySnag {
     debugPrint('🚀 SnappySnag initialized.');
   }
 
-  /// ユーザー情報を後から動的に更新するためのメソッド
-  void setReporterInfo({String? userId, String? email}) {
-    _reporterUserId = userId;
-    _reporterEmail = email;
+  /// ユーザー情報を設定・動的更新するためのメソッド
+  void setUser(SnappySnagUser? user) {
+    _user = user;
     debugPrint(
-      '👤 SnappySnag: Reporter info updated (ID: $userId, Email: $email)',
+      '👤 SnappySnag: User info updated (ID: ${user?.id}, Email: ${user?.email}, Name: ${user?.name})',
     );
+  }
+
+  /// ユーザー情報をクリアする（ログアウト時など）
+  void clearUser() {
+    _user = null;
+    debugPrint('👤 SnappySnag: User info cleared.');
   }
 
   /// 端末固有のランダムUUIDを取得（存在しない場合は初回生成してローカルに永続化）
@@ -304,7 +345,7 @@ class SnappySnagOverlay extends StatefulWidget {
   const SnappySnagOverlay({
     super.key,
     required this.child,
-    this.showTriggerButton = false,
+    this.showTriggerButton = true,
   });
 
   @override
@@ -623,8 +664,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         headers: {
           'x-snappy-api-key': apiKey,
           'x-snappy-package-name': SnappySnag()._packageName ?? '',
-          if (SnappySnag()._reporterEmail != null && SnappySnag()._reporterEmail!.isNotEmpty)
-            'x-snappy-reporter-email': SnappySnag()._reporterEmail!,
+          if (SnappySnag().reporterEmail != null && SnappySnag().reporterEmail!.isNotEmpty)
+            'x-snappy-reporter-email': SnappySnag().reporterEmail!,
         },
       );
 
@@ -687,8 +728,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         Uri.parse(url),
         headers: {
           'x-snappy-api-key': apiKey,
-          if (SnappySnag()._reporterEmail != null && SnappySnag()._reporterEmail!.isNotEmpty)
-            'x-snappy-reporter-email': SnappySnag()._reporterEmail!,
+          if (SnappySnag().reporterEmail != null && SnappySnag().reporterEmail!.isNotEmpty)
+            'x-snappy-reporter-email': SnappySnag().reporterEmail!,
         },
       );
 
@@ -720,15 +761,15 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         headers: {
           'Content-Type': 'application/json',
           'x-snappy-api-key': apiKey,
-          if (SnappySnag()._reporterEmail != null && SnappySnag()._reporterEmail!.isNotEmpty)
-            'x-snappy-reporter-email': SnappySnag()._reporterEmail!,
+          if (SnappySnag().reporterEmail != null && SnappySnag().reporterEmail!.isNotEmpty)
+            'x-snappy-reporter-email': SnappySnag().reporterEmail!,
         },
         body: jsonEncode({
           'feedback_log_id': feedbackLogId,
           'sender_type': 'reporter',
-          'sender_name': SnappySnag()._reporterUserId ?? 'Reporter',
+          'sender_name': SnappySnag()._user?.name ?? SnappySnag().reporterUserId ?? 'Reporter',
           'message': message,
-          if (SnappySnag()._reporterEmail != null) 'user_email': SnappySnag()._reporterEmail!,
+          if (SnappySnag().reporterEmail != null) 'user_email': SnappySnag().reporterEmail!,
         }),
       );
 
@@ -872,13 +913,16 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
             'os_version': kIsWeb ? getBrowserInfoHelper() : Platform.operatingSystemVersion,
             'package_name': SnappySnag()._packageName,
             'reporter_user_id': (_includeAccountAndDiagnostics || SnappySnag().mode != SnappySnagMode.user)
-                ? (SnappySnag()._reporterUserId ?? 'anonymous')
+                ? (SnappySnag().reporterUserId ?? 'anonymous')
                 : 'anonymous',
             'reporter_email': (_includeAccountAndDiagnostics || SnappySnag().mode != SnappySnagMode.user)
-                ? (SnappySnag()._reporterEmail ?? 'anonymous')
+                ? (SnappySnag().reporterEmail ?? 'anonymous')
                 : 'anonymous',
+            if (SnappySnag()._user?.name != null && (_includeAccountAndDiagnostics || SnappySnag().mode != SnappySnagMode.user))
+              'reporter_name': SnappySnag()._user!.name!,
             'mode': SnappySnag().mode == SnappySnagMode.user ? 'user' : 'dev',
             'is_anonymous': (SnappySnag().mode == SnappySnagMode.user && !_includeAccountAndDiagnostics),
+            if (_includeAccountAndDiagnostics || SnappySnag().mode != SnappySnagMode.user) ...?SnappySnag()._user?.customAttributes,
             if (_includeAccountAndDiagnostics || SnappySnag().mode != SnappySnagMode.user)
               ...?SnappySnag()._customMetadata,
           },
@@ -1933,8 +1977,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                   crossAxisAlignment: CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
-                                                      SnappySnag()._reporterEmail != null && SnappySnag()._reporterEmail!.isNotEmpty
-                                                          ? _SdkLocale.privacyShareAccountWithEmail(SnappySnag()._reporterEmail!)
+                                                      SnappySnag().reporterEmail != null && SnappySnag().reporterEmail!.isNotEmpty
+                                                          ? _SdkLocale.privacyShareAccountWithEmail(SnappySnag().reporterEmail!)
                                                           : _SdkLocale.privacyShareAccount,
                                                       style: const TextStyle(
                                                         color: Colors.white,
@@ -2031,21 +2075,21 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                         _triggerCapture();
                       },
                       child: Container(
-                        width: 68,
-                        height: 68,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF59E0B),
-                          borderRadius: BorderRadius.circular(18),
-                          boxShadow: const [
+                        width: 56,
+                        height: 56,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF59E0B),
+                          shape: BoxShape.circle,
+                          boxShadow: [
                             BoxShadow(
                               color: Colors.black38,
-                              blurRadius: 10,
-                              offset: Offset(0, 4),
+                              blurRadius: 8,
+                              offset: Offset(0, 3),
                             ),
                           ],
                         ),
                         child: const Center(
-                          child: SnappySnagIcon(size: 56, color: Colors.black),
+                          child: SnappySnagIcon(size: 42, color: Colors.black),
                         ),
                       ),
                     ),
