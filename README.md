@@ -69,14 +69,19 @@ class MyApp extends StatelessWidget {
 
 ### 2. Trigger Button Visibility & Control
 
-By default, the floating capture button is displayed on all screens (`showTriggerButton: true`). You can customize this behavior:
+By default, the floating capture button visibility adapts automatically to your `mode`:
+* **`SnappySnagMode.dev`**: Displayed by default (`showTriggerButton: true`) for rapid QA and internal bug reporting.
+* **`SnappySnagMode.user`**: Hidden by default (`showTriggerButton: false`) to keep production screens clean, guiding users to trigger feedback via [manual launch](#3-launch-feedback-mode-manually-eg-from-settings-or-in-app-menu) or device shake.
 
-* **Hide Globally by Default**:
+You can customize this behavior at any time:
+
+* **Explicitly Override Default Visibility**:
   ```dart
   SnappySnag().initialize(
     apiKey: '...',
     packageName: '...',
-    showTriggerButton: false, // Default is true. When false, trigger button won't show globally.
+    // Force show in user mode, or force hide in dev mode:
+    showTriggerButton: true, // or false
   );
   ```
 
@@ -102,7 +107,24 @@ By default, the floating capture button is displayed on all screens (`showTrigge
   SnappySnag().setTriggerButtonVisibility(true);
   ```
 
-### 3. Build for TestFlight / Internal Testing
+### 3. Launch Feedback Mode Manually (e.g. from Settings or In-App Menu)
+
+When the floating button is hidden (via `showTriggerButton: false` or `SnappySnagHideButton`), or if you prefer triggering feedback through your own custom UI (such as a "Report Bug" button in a Settings or Help drawer), call `SnappySnag.startFeedbackMode`:
+
+```dart
+ListTile(
+  leading: const Icon(Icons.feedback_outlined),
+  title: const Text('Report a Bug / Feedback'),
+  onTap: () {
+    // Starts Feedback Mode with a guidance banner and temporary capture trigger
+    SnappySnag.startFeedbackMode(context: context);
+  },
+)
+```
+
+> 💡 When invoked, it displays a guided prompt modal and temporarily reveals the capture button, allowing the user to navigate anywhere in the app to capture and highlight the issue.
+
+### 4. Build for TestFlight / Internal Testing
 
 To compile your app with SnappySnag enabled, build with the `--dart-define` flag:
 
@@ -111,7 +133,7 @@ flutter build ipa --dart-define=ENABLE_SNAPPY_SNAG=true
 flutter build appbundle --dart-define=ENABLE_SNAPPY_SNAG=true
 ```
 
-### 4. Build for App Store / Google Play Store (Production)
+### 5. Build for App Store / Google Play Store (Production)
 
 To compile your app for production release, build normally. SnappySnag will automatically be disabled, will not render the overlay button, and will not register any shake listeners:
 

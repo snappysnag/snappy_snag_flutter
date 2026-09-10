@@ -66,6 +66,43 @@ void main() {
     expect(SnappySnag().navigatorKey, equals(SnappySnag.defaultNavigatorKey));
   });
 
+  test('SnappySnag trigger button default visibility based on mode', () {
+    final snappy = SnappySnag();
+
+    // Default for user mode is false
+    snappy.initialize(
+      apiKey: 'test_key',
+      packageName: 'com.example.test',
+      mode: SnappySnagMode.user,
+    );
+    expect(snappy.isTriggerButtonVisible.value, isFalse);
+
+    // Default for dev mode is true
+    snappy.initialize(
+      apiKey: 'test_key',
+      packageName: 'com.example.test',
+      mode: SnappySnagMode.dev,
+    );
+    expect(snappy.isTriggerButtonVisible.value, isTrue);
+
+    // Explicit override works for both
+    snappy.initialize(
+      apiKey: 'test_key',
+      packageName: 'com.example.test',
+      mode: SnappySnagMode.user,
+      showTriggerButton: true,
+    );
+    expect(snappy.isTriggerButtonVisible.value, isTrue);
+
+    snappy.initialize(
+      apiKey: 'test_key',
+      packageName: 'com.example.test',
+      mode: SnappySnagMode.dev,
+      showTriggerButton: false,
+    );
+    expect(snappy.isTriggerButtonVisible.value, isFalse);
+  });
+
   test('SnappySnag trigger button visibility controls', () {
     final snappy = SnappySnag();
     snappy.initialize(

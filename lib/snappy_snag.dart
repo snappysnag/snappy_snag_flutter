@@ -5,6 +5,7 @@ import 'dart:math';
 import 'src/browser_info_helper.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode, defaultTargetPlatform, DiagnosticsSerializationDelegate;
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -126,7 +127,17 @@ class SnappySnag {
   void _updateTriggerButtonVisibility() {
     final shouldBeVisible = _baseTriggerButtonVisibility && _hideRequestsCount == 0;
     if (isTriggerButtonVisible.value != shouldBeVisible) {
-      isTriggerButtonVisible.value = shouldBeVisible;
+      final binding = WidgetsBinding.instance;
+      if (binding.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+        binding.addPostFrameCallback((_) {
+          final currentTarget = _baseTriggerButtonVisibility && _hideRequestsCount == 0;
+          if (isTriggerButtonVisible.value != currentTarget) {
+            isTriggerButtonVisible.value = currentTarget;
+          }
+        });
+      } else {
+        isTriggerButtonVisible.value = shouldBeVisible;
+      }
     }
   }
 
@@ -296,11 +307,14 @@ class SnappySnag {
     SnappySnagUser? user,
     Map<String, dynamic>? customMetadata,
     bool enabled = true,
-    bool showTriggerButton = true,
+    bool? showTriggerButton,
     String? supabaseUrl,
     bool forceDevInRelease = false,
   }) {
-    _baseTriggerButtonVisibility = showTriggerButton;
+    // mode によるデフォルト表示制御:
+    // dev モード: 開発・検証用としてデフォルト表示 (true)
+    // user モード: 一般ユーザー向けとしてデフォルト非表示 (false)（設定画面やシェイクから起動を推奨）
+    _baseTriggerButtonVisibility = showTriggerButton ?? (mode == SnappySnagMode.dev);
     _updateTriggerButtonVisibility();
     // ★ 第1の防壁: Releaseモード時の安全ガード
     // 本番ビルド時に mode: SnappySnagMode.dev が指定されていても、
