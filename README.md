@@ -67,7 +67,42 @@ class MyApp extends StatelessWidget {
 
 > 💡 **Tip: Dynamic User Info**: If users log in after app startup, call `SnappySnag().setUser(SnappySnagUser(id: user.id, email: user.email))` anywhere in your authentication flow. Call `SnappySnag().clearUser()` on logout.
 
-### 2. Build for TestFlight / Internal Testing
+### 2. Trigger Button Visibility & Control
+
+By default, the floating capture button is displayed on all screens (`showTriggerButton: true`). You can customize this behavior:
+
+* **Hide Globally by Default**:
+  ```dart
+  SnappySnag().initialize(
+    apiKey: '...',
+    packageName: '...',
+    showTriggerButton: false, // Default is true. When false, trigger button won't show globally.
+  );
+  ```
+
+* **Hide on Specific Screens (Declarative)**:
+  Wrap any screen (e.g. camera, video player, payment screen) with `SnappySnagHideButton`:
+  ```dart
+  class CameraScreen extends StatelessWidget {
+    @override
+    Widget build(BuildContext context) {
+      return SnappySnagHideButton(
+        child: Scaffold(
+          body: YourCameraView(),
+        ),
+      );
+    }
+  }
+  ```
+
+* **Programmatic Visibility Control**:
+  ```dart
+  SnappySnag().showTriggerButton();
+  SnappySnag().hideTriggerButton();
+  SnappySnag().setTriggerButtonVisibility(true);
+  ```
+
+### 3. Build for TestFlight / Internal Testing
 
 To compile your app with SnappySnag enabled, build with the `--dart-define` flag:
 
@@ -76,7 +111,7 @@ flutter build ipa --dart-define=ENABLE_SNAPPY_SNAG=true
 flutter build appbundle --dart-define=ENABLE_SNAPPY_SNAG=true
 ```
 
-### 3. Build for App Store / Google Play Store (Production)
+### 4. Build for App Store / Google Play Store (Production)
 
 To compile your app for production release, build normally. SnappySnag will automatically be disabled, will not render the overlay button, and will not register any shake listeners:
 

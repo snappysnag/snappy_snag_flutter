@@ -64,4 +64,27 @@ void main() {
     expect(SnappySnag.defaultNavigatorKey, isNotNull);
     expect(SnappySnag().navigatorKey, equals(SnappySnag.defaultNavigatorKey));
   });
+
+  test('SnappySnag trigger button visibility controls', () {
+    final snappy = SnappySnag();
+    snappy.initialize(
+      apiKey: 'test_key',
+      packageName: 'com.example.test',
+      showTriggerButton: false,
+    );
+
+    expect(snappy.isTriggerButtonVisible.value, isFalse);
+    expect(snappy.isTriggerButtonAlwaysVisible, isFalse);
+
+    snappy.showTriggerButton();
+    expect(snappy.isTriggerButtonVisible.value, isTrue);
+    expect(snappy.isTriggerButtonAlwaysVisible, isTrue);
+
+    snappy.hideTriggerButton();
+    expect(snappy.isTriggerButtonVisible.value, isFalse);
+    expect(snappy.isTriggerButtonAlwaysVisible, isFalse);
+
+    snappy.setTriggerButtonVisibility(true);
+    expect(snappy.isTriggerButtonVisible.value, isTrue);
+  });
 }

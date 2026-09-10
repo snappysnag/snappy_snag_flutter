@@ -81,8 +81,26 @@ class SnappySnag {
   String? get reporterUserId => _user?.id;
   String? get reporterEmail => _user?.email;
 
-  /// 常駐ボタン（showTriggerButton）がONかどうかのフラグ
-  bool isTriggerButtonAlwaysVisible = false;
+  /// 常駐ボタンの表示状態を保持・通知する ValueNotifier
+  final ValueNotifier<bool> isTriggerButtonVisible = ValueNotifier<bool>(true);
+
+  /// 常駐ボタンが表示中かどうか
+  bool get isTriggerButtonAlwaysVisible => isTriggerButtonVisible.value;
+
+  /// 常駐ボタンを表示する
+  void showTriggerButton() {
+    isTriggerButtonVisible.value = true;
+  }
+
+  /// 常駐ボタンを非表示にする
+  void hideTriggerButton() {
+    isTriggerButtonVisible.value = false;
+  }
+
+  /// 常駐ボタンの表示/非表示を切り替える
+  void setTriggerButtonVisibility(bool visible) {
+    isTriggerButtonVisible.value = visible;
+  }
 
   /// フィードバックモードのアクティブ状態を通知する ValueNotifier
   final ValueNotifier<bool> isFeedbackModeActive = ValueNotifier<bool>(false);
@@ -250,9 +268,11 @@ class SnappySnag {
     SnappySnagUser? user,
     Map<String, dynamic>? customMetadata,
     bool enabled = true,
+    bool showTriggerButton = true,
     String? supabaseUrl,
     bool forceDevInRelease = false,
   }) {
+    isTriggerButtonVisible.value = showTriggerButton;
     // ★ 第1の防壁: Releaseモード時の安全ガード
     // 本番ビルド時に mode: SnappySnagMode.dev が指定されていても、
     // forceDevInRelease: true が明示されていない限り自動的に user モードへフォールバック
@@ -340,12 +360,10 @@ class SnappySnag {
 /// Overlay Widget that wraps your App to capture screenshots and feedback memos.
 class SnappySnagOverlay extends StatefulWidget {
   final Widget child;
-  final bool showTriggerButton;
 
   const SnappySnagOverlay({
     super.key,
     required this.child,
-    this.showTriggerButton = true,
   });
 
   @override
@@ -400,14 +418,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   @override
   void initState() {
     super.initState();
-    SnappySnag().isTriggerButtonAlwaysVisible = widget.showTriggerButton;
     _initShakeDetection();
-  }
-
-  @override
-  void didUpdateWidget(covariant SnappySnagOverlay oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    SnappySnag().isTriggerButtonAlwaysVisible = widget.showTriggerButton;
   }
 
   void _initShakeDetection() {
@@ -2052,11 +2063,16 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   ),
 ),
         // Feedback Mode Guidance Banner & Floating Trigger Button
-        ValueListenableBuilder<bool>(
-          valueListenable: SnappySnag().isFeedbackModeActive,
-          builder: (context, isFeedbackActive, _) {
+        AnimatedBuilder(
+          animation: Listenable.merge([
+            SnappySnag().isTriggerButtonVisible,
+            SnappySnag().isFeedbackModeActive,
+          ]),
+          builder: (context, _) {
+            final isTriggerVisible = SnappySnag().isTriggerButtonVisible.value;
+            final isFeedbackActive = SnappySnag().isFeedbackModeActive.value;
             final shouldShowButton =
-                (widget.showTriggerButton || isFeedbackActive) &&
+                (isTriggerVisible || isFeedbackActive) &&
                     !_isCapturing &&
                     !_isFeedbackDialogOpen &&
                     _overlayMode == _SnappyOverlayMode.none;
@@ -2101,6 +2117,44 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       ],
     );
   }
+}
+
+/// A widget that temporarily hides the SnappySnag floating trigger button
+/// while this widget is mounted in the widget tree (e.g., Camera, Payment, Video screens).
+///
+/// When disposed, it automatically restores the trigger button visibility.
+class SnappySnagHideButton extends StatefulWidget {
+  final Widget child;
+
+  const SnappySnagHideButton({
+    super.key,
+    required this.child,
+  });
+
+  @override
+  State<SnappySnagHideButton> createState() => _SnappySnagHideButtonState();
+}
+
+class _SnappySnagHideButtonState extends State<SnappySnagHideButton> {
+  bool _wasVisibleBefore = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _wasVisibleBefore = SnappySnag().isTriggerButtonVisible.value;
+    SnappySnag().hideTriggerButton();
+  }
+
+  @override
+  void dispose() {
+    if (_wasVisibleBefore) {
+      SnappySnag().showTriggerButton();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _SimpleDiagnosticsSerializationDelegate implements DiagnosticsSerializationDelegate {
