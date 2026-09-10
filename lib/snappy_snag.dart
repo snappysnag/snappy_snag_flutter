@@ -84,22 +84,50 @@ class SnappySnag {
   /// 常駐ボタンの表示状態を保持・通知する ValueNotifier
   final ValueNotifier<bool> isTriggerButtonVisible = ValueNotifier<bool>(true);
 
+  /// 基本の表示設定（initializeで設定された値）
+  bool _baseTriggerButtonVisibility = true;
+
+  /// SnappySnagHideButton などによる一時的非表示リクエストの参照カウント
+  int _hideRequestsCount = 0;
+
   /// 常駐ボタンが表示中かどうか
   bool get isTriggerButtonAlwaysVisible => isTriggerButtonVisible.value;
 
   /// 常駐ボタンを表示する
   void showTriggerButton() {
-    isTriggerButtonVisible.value = true;
+    _baseTriggerButtonVisibility = true;
+    _updateTriggerButtonVisibility();
   }
 
   /// 常駐ボタンを非表示にする
   void hideTriggerButton() {
-    isTriggerButtonVisible.value = false;
+    _baseTriggerButtonVisibility = false;
+    _updateTriggerButtonVisibility();
   }
 
   /// 常駐ボタンの表示/非表示を切り替える
   void setTriggerButtonVisibility(bool visible) {
-    isTriggerButtonVisible.value = visible;
+    _baseTriggerButtonVisibility = visible;
+    _updateTriggerButtonVisibility();
+  }
+
+  void _pushHideRequest() {
+    _hideRequestsCount++;
+    _updateTriggerButtonVisibility();
+  }
+
+  void _popHideRequest() {
+    if (_hideRequestsCount > 0) {
+      _hideRequestsCount--;
+    }
+    _updateTriggerButtonVisibility();
+  }
+
+  void _updateTriggerButtonVisibility() {
+    final shouldBeVisible = _baseTriggerButtonVisibility && _hideRequestsCount == 0;
+    if (isTriggerButtonVisible.value != shouldBeVisible) {
+      isTriggerButtonVisible.value = shouldBeVisible;
+    }
   }
 
   /// フィードバックモードのアクティブ状態を通知する ValueNotifier
@@ -272,7 +300,8 @@ class SnappySnag {
     String? supabaseUrl,
     bool forceDevInRelease = false,
   }) {
-    isTriggerButtonVisible.value = showTriggerButton;
+    _baseTriggerButtonVisibility = showTriggerButton;
+    _updateTriggerButtonVisibility();
     // ★ 第1の防壁: Releaseモード時の安全ガード
     // 本番ビルド時に mode: SnappySnagMode.dev が指定されていても、
     // forceDevInRelease: true が明示されていない限り自動的に user モードへフォールバック
@@ -2136,20 +2165,19 @@ class SnappySnagHideButton extends StatefulWidget {
 }
 
 class _SnappySnagHideButtonState extends State<SnappySnagHideButton> {
-  bool _wasVisibleBefore = true;
-
   @override
   void initState() {
     super.initState();
-    _wasVisibleBefore = SnappySnag().isTriggerButtonVisible.value;
-    SnappySnag().hideTriggerButton();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        SnappySnag()._pushHideRequest();
+      }
+    });
   }
 
   @override
   void dispose() {
-    if (_wasVisibleBefore) {
-      SnappySnag().showTriggerButton();
-    }
+    SnappySnag()._popHideRequest();
     super.dispose();
   }
 

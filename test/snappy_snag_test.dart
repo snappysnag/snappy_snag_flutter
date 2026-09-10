@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:snappy_snag/snappy_snag.dart';
 
@@ -85,6 +86,30 @@ void main() {
     expect(snappy.isTriggerButtonAlwaysVisible, isFalse);
 
     snappy.setTriggerButtonVisibility(true);
+    expect(snappy.isTriggerButtonVisible.value, isTrue);
+  });
+
+  testWidgets('SnappySnagHideButton hides and restores trigger button', (tester) async {
+    final snappy = SnappySnag();
+    snappy.initialize(
+      apiKey: 'test_key',
+      packageName: 'com.example.test',
+      showTriggerButton: true,
+    );
+    expect(snappy.isTriggerButtonVisible.value, isTrue);
+
+    // Mount SnappySnagHideButton
+    await tester.pumpWidget(
+      const SnappySnagHideButton(
+        child: SizedBox(),
+      ),
+    );
+    await tester.pump(); // allow postFrameCallback to fire
+
+    expect(snappy.isTriggerButtonVisible.value, isFalse);
+
+    // Unmount
+    await tester.pumpWidget(const SizedBox());
     expect(snappy.isTriggerButtonVisible.value, isTrue);
   });
 }
