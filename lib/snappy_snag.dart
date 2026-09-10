@@ -2168,11 +2168,7 @@ class _SnappySnagHideButtonState extends State<SnappySnagHideButton> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        SnappySnag()._pushHideRequest();
-      }
-    });
+    SnappySnag()._pushHideRequest();
   }
 
   @override
