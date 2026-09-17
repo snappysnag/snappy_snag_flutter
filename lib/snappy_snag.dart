@@ -445,6 +445,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   bool _isSendingFeedback = false;
   bool _isMemoOpen = false;
   bool _isPrivacyConfirmOpen = false;
+  bool _isCancelDraftConfirmOpen = false;
+  bool _isFailedSendDraftConfirmOpen = false;
   bool _includeAccountAndDiagnostics = true;
   final TextEditingController _feedbackMemoController = TextEditingController();
   final ScreenshotController _canvasScreenshotController = ScreenshotController();
@@ -1152,6 +1154,9 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       _activeTool = SnappyDrawingTool.redPen;
       _isSendingFeedback = false;
       _isMemoOpen = false;
+      _isPrivacyConfirmOpen = false;
+      _isCancelDraftConfirmOpen = false;
+      _isFailedSendDraftConfirmOpen = false;
       _feedbackMemoController.text = initialMemo ?? '';
       _drawingAspectRatio = capturedAspect;
       _overlayMode = _SnappyOverlayMode.drawing;
@@ -1165,102 +1170,20 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     final hasUserEdits = memo.isNotEmpty || _drawingPoints.any((p) => p.rect == null);
 
     if (hasUserEdits && mounted) {
-      final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
-      // 下書き保存確認ダイアログを表示
-      final result = await showDialog<String>(
-        context: targetContext,
-        barrierDismissible: true,
-        builder: (dialogCtx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E1E24),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF2E2E38)),
-          ),
-          title: Row(
-            children: [
-              const Icon(Icons.bookmark_border, color: Color(0xFFF59E0B)),
-              const SizedBox(width: 8),
-              Text(
-                _SdkLocale.saveDraftPromptTitle,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            _SdkLocale.saveDraftPromptOnCancel,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 13,
-              height: 1.5,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogCtx).pop('cancel'),
-              child: Text(
-                _SdkLocale.cancel,
-                style: const TextStyle(color: Colors.white54),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogCtx).pop('discard'),
-              child: Text(
-                _SdkLocale.discardDraft,
-                style: const TextStyle(color: Colors.redAccent),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF59E0B),
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onPressed: () => Navigator.of(dialogCtx).pop('save'),
-              child: Text(
-                _SdkLocale.saveDraft,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-      );
-
-      if (!mounted) return;
-      if (result == 'cancel' || result == null) {
-        // ダイアログ外タップまたはキャンセル時はそのまま編集画面に留まる
-        return;
-      }
-      if (result == 'save') {
-        if (_drawingImageBytes != null) {
-          await _SnappyDraftData.save(
-            imageBytes: _drawingImageBytes!,
-            widgetTree: _drawingWidgetTree,
-            screenClassName: _drawingScreenClassName,
-            screenSignature: _drawingScreenSignature,
-            drawingPoints: _drawingPoints,
-            memo: _feedbackMemoController.text,
-            drawingAspectRatio: _drawingAspectRatio,
-          );
-        }
-        ScaffoldMessenger.of(targetContext).showSnackBar(
-          SnackBar(
-            content: Text(_SdkLocale.draftSavedToast),
-            backgroundColor: Colors.black87,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      } else if (result == 'discard') {
-        await _SnappyDraftData.clear();
-      }
+      // 全画面OverlayEntryの内側で確実に最前面に表示するため、インラインモーダルを開く
+      setState(() {
+        _isCancelDraftConfirmOpen = true;
+      });
+      return;
     }
 
+    _closeDrawingOverlay();
+  }
+
+  void _closeDrawingOverlay() {
     setState(() {
+      _isCancelDraftConfirmOpen = false;
+      _isFailedSendDraftConfirmOpen = false;
       _overlayMode = _SnappyOverlayMode.none;
       _isCapturing = false;
     });
@@ -1374,92 +1297,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         ),
       );
 
-      // 送信失敗時の下書き保存提案ダイアログ
+      // 送信失敗時の下書き保存提案（インラインモーダルで確実に最前面表示）
       if (!success && mounted) {
-        final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
-        final saveDraftChoice = await showDialog<bool>(
-          context: targetContext,
-          barrierDismissible: true,
-          builder: (dialogCtx) => AlertDialog(
-            backgroundColor: const Color(0xFF1E1E24),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: Color(0xFF2E2E38)),
-            ),
-            title: Row(
-              children: [
-                const Icon(Icons.bookmark_border, color: Color(0xFFF59E0B)),
-                const SizedBox(width: 8),
-                Text(
-                  _SdkLocale.saveDraftPromptTitle,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            content: Text(
-              _SdkLocale.saveDraftPromptOnFailedSend,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 13,
-                height: 1.5,
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogCtx).pop(false),
-                child: Text(
-                  _SdkLocale.stayOnScreen,
-                  style: const TextStyle(color: Colors.white70),
-                ),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF59E0B),
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                onPressed: () => Navigator.of(dialogCtx).pop(true),
-                child: Text(
-                  _SdkLocale.saveDraft,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-        );
-
-        if (saveDraftChoice == true && mounted) {
-          if (_drawingImageBytes != null) {
-            await _SnappyDraftData.save(
-              imageBytes: _drawingImageBytes!,
-              widgetTree: _drawingWidgetTree,
-              screenClassName: _drawingScreenClassName,
-              screenSignature: _drawingScreenSignature,
-              drawingPoints: _drawingPoints,
-              memo: _feedbackMemoController.text,
-              drawingAspectRatio: _drawingAspectRatio,
-            );
-          }
-          setState(() {
-            _overlayMode = _SnappyOverlayMode.none;
-            _isCapturing = false;
-          });
-          _drawingCompleter?.complete();
-          // ignore: use_build_context_synchronously
-          ScaffoldMessenger.of(targetContext).showSnackBar(
-            SnackBar(
-              content: Text(_SdkLocale.draftSavedToast),
-              backgroundColor: Colors.black87,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
+        setState(() {
+          _isFailedSendDraftConfirmOpen = true;
+        });
       }
     }
   }
@@ -2387,6 +2229,222 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                             },
                                             child: Text(
                                               _SdkLocale.sendConfirm,
+                                              style: const TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    // 5. キャンセル時の下書き保存確認オーバーレイ
+                    if (_isCancelDraftConfirmOpen)
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.75),
+                          padding: const EdgeInsets.all(24),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 420),
+                              child: Card(
+                                color: const Color(0xFF1E1E24),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: const BorderSide(color: Color(0xFF2E2E38)),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.bookmark_border, color: Color(0xFFF59E0B)),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            _SdkLocale.saveDraftPromptTitle,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        _SdkLocale.saveDraftPromptOnCancel,
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 13,
+                                          height: 1.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          TextButton(
+                                            onPressed: () {
+                                              setState(() => _isCancelDraftConfirmOpen = false);
+                                            },
+                                            child: Text(
+                                              _SdkLocale.cancel,
+                                              style: const TextStyle(color: Colors.white54),
+                                            ),
+                                          ),
+                                          TextButton(
+                                            onPressed: () async {
+                                              await _SnappyDraftData.clear();
+                                              _closeDrawingOverlay();
+                                            },
+                                            child: Text(
+                                              _SdkLocale.discardDraft,
+                                              style: const TextStyle(color: Colors.redAccent),
+                                            ),
+                                          ),
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(0xFFF59E0B),
+                                              foregroundColor: Colors.black,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                            onPressed: () async {
+                                              if (_drawingImageBytes != null) {
+                                                await _SnappyDraftData.save(
+                                                  imageBytes: _drawingImageBytes!,
+                                                  widgetTree: _drawingWidgetTree,
+                                                  screenClassName: _drawingScreenClassName,
+                                                  screenSignature: _drawingScreenSignature,
+                                                  drawingPoints: _drawingPoints,
+                                                  memo: _feedbackMemoController.text,
+                                                  drawingAspectRatio: _drawingAspectRatio,
+                                                );
+                                              }
+                                              final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
+                                              _closeDrawingOverlay();
+                                              ScaffoldMessenger.of(messengerContext).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(_SdkLocale.draftSavedToast),
+                                                  backgroundColor: Colors.black87,
+                                                  behavior: SnackBarBehavior.floating,
+                                                ),
+                                              );
+                                            },
+                                            child: Text(
+                                              _SdkLocale.saveDraft,
+                                              style: const TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // 6. 送信失敗時の下書き保存確認オーバーレイ
+                    if (_isFailedSendDraftConfirmOpen)
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.75),
+                          padding: const EdgeInsets.all(24),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 420),
+                              child: Card(
+                                color: const Color(0xFF1E1E24),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: const BorderSide(color: Color(0xFF2E2E38)),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.bookmark_border, color: Color(0xFFF59E0B)),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            _SdkLocale.saveDraftPromptTitle,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        _SdkLocale.saveDraftPromptOnFailedSend,
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 13,
+                                          height: 1.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          TextButton(
+                                            onPressed: () {
+                                              setState(() => _isFailedSendDraftConfirmOpen = false);
+                                            },
+                                            child: Text(
+                                              _SdkLocale.stayOnScreen,
+                                              style: const TextStyle(color: Colors.white70),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(0xFFF59E0B),
+                                              foregroundColor: Colors.black,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                            onPressed: () async {
+                                              if (_drawingImageBytes != null) {
+                                                await _SnappyDraftData.save(
+                                                  imageBytes: _drawingImageBytes!,
+                                                  widgetTree: _drawingWidgetTree,
+                                                  screenClassName: _drawingScreenClassName,
+                                                  screenSignature: _drawingScreenSignature,
+                                                  drawingPoints: _drawingPoints,
+                                                  memo: _feedbackMemoController.text,
+                                                  drawingAspectRatio: _drawingAspectRatio,
+                                                );
+                                              }
+                                              final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
+                                              _closeDrawingOverlay();
+                                              ScaffoldMessenger.of(messengerContext).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(_SdkLocale.draftSavedToast),
+                                                  backgroundColor: Colors.black87,
+                                                  behavior: SnackBarBehavior.floating,
+                                                ),
+                                              );
+                                            },
+                                            child: Text(
+                                              _SdkLocale.saveDraft,
                                               style: const TextStyle(fontWeight: FontWeight.bold),
                                             ),
                                           ),
