@@ -7,6 +7,8 @@ SnappySnag is a visual bug reporting and AI auto-fix suggestion tool for Flutter
 * 📸 **Prioritized Instant Screenshots**: Captured immediately on-press to freeze the screen state, even during fast page transitions.
 * 🌳 **Widget Tree Dumper**: Automatically dumps the widget hierarchy (up to a depth of 10 levels) for precise widget mapping.
 * 🤖 **AI Auto-Fix suggestions**: Generates human-focused technical guides and cursor-compatible agent prompts.
+* 💾 **Offline Draft & Resilience**: Automatically saves drawing annotations and comments locally on connection failure or accidental dismissal. Seamlessly resume or discard drafts on the next capture without wasting user efforts.
+* ⚡ **Pre-Validation Error Guard**: Instantly validates API key configuration and bundle identifiers before users spend time drawing or writing, preventing post-submit authentication surprises.
 * 👥 **One-Build Role-Based Sharing**: Show internal tickets, duplicate warnings, and discussion threads to developers while keeping external clients on a clean, simple feedback flow in the exact same build.
 * 🛡️ **Package Name Lock**: Prevents unauthorized API requests by locking your API Key to your registered bundle identifier.
 * 🚫 **Store Production Safe**: Easily disable the overlay button and sensor listeners completely in App Store/Google Play builds using the `enabled` configuration.
@@ -174,3 +176,11 @@ When you build your application in **Release Mode** (`flutter build ipa` / `flut
 Applies to both `user` and `dev` modes out of the box:
 - **Client-Side**: The send button enforces a mandatory 3-second cooldown between successive submissions to prevent accidental or malicious double-taps.
 - **Server-Side**: The backend API limits continuous messages to a maximum of 5 messages per minute per user/device. Exceeding requests automatically receive `429 Too Many Requests` with an in-app notice.
+
+### 4. Zero-Friction Pre-Validation & Offline Draft Protection
+- **Instant Pre-Validation**: When the capture button is triggered, SnappySnag performs a lightweight authorization check in the background. If an invalid API key or package name mismatch (`401`/`403`) occurs, it immediately halts and alerts you without letting the user waste time annotating or typing a memo.
+- **On-Device Offline Draft (Zero-Loss Resilience)**:
+  - If a feedback submission fails due to an unstable internet connection or if the user cancels with unsaved edits, SnappySnag offers to save the current progress as a draft.
+  - **Privacy & Storage Safe**: Drafts are stored strictly on the device's local sandbox (`SharedPreferences`). No draft data is sent to external servers until explicitly submitted. Only 1 active draft is retained, ensuring zero unnecessary storage overhead.
+  - On the next capture attempt, users are prompted to either **Resume Draft** or **Discard & Start New Capture**.
+
