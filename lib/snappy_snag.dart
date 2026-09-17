@@ -589,6 +589,100 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
     final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
 
+    // ★ 下書きチェック: 保存された下書きが存在するかローカル（通信なし）で確認
+    final hasDraft = await _SnappyDraftData.hasDraft();
+    if (hasDraft && mounted) {
+      final resume = await showDialog<bool>(
+        context: targetContext,
+        barrierDismissible: false,
+        builder: (dialogCtx) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFF2E2E38)),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.edit_note, color: Color(0xFFF59E0B)),
+              const SizedBox(width: 8),
+              Text(
+                _SdkLocale.draftFoundTitle,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            _SdkLocale.draftFoundContent,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(false),
+              child: Text(
+                _SdkLocale.discardAndNewCapture,
+                style: const TextStyle(color: Colors.redAccent),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF59E0B),
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () => Navigator.of(dialogCtx).pop(true),
+              child: Text(
+                _SdkLocale.resumeDraft,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (resume == true) {
+        // 下書きを読み込んで復元
+        final draft = await _SnappyDraftData.load();
+        if (draft != null && mounted) {
+          setState(() {
+            _isCapturing = false;
+            _capturedImageForFreeze = null;
+            _isFeedbackDialogOpen = true;
+          });
+          try {
+            await _startDrawingFlow(
+              draft.imageBytes,
+              draft.widgetTree,
+              screenClassName: draft.screenClassName,
+              screenSignature: draft.screenSignature,
+              initialCustomPoints: draft.drawingPoints,
+              initialMemo: draft.memo,
+              initialAspectRatio: draft.drawingAspectRatio,
+            );
+          } finally {
+            if (mounted) {
+              setState(() => _isFeedbackDialogOpen = false);
+            }
+          }
+          return;
+        }
+      } else {
+        // 破棄して新規撮影を選択した場合、下書きを即時消去
+        await _SnappyDraftData.clear();
+      }
+    }
+
     // === 【超高速先行キャプチャ】画面遷移に備え、ボタンタップしたその瞬間のデータを即座にフリーズ ===
     final Map<String, dynamic> widgetTree = WidgetTreeDumper.dump(
       // ignore: use_build_context_synchronously
@@ -1021,15 +1115,20 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     required String screenClassName,
     required String screenSignature,
     List<Rect>? sensitiveBounds,
+    List<DrawingPoint>? initialCustomPoints,
+    String? initialMemo,
+    double? initialAspectRatio,
   }) async {
     if (!mounted) return;
     _drawingCompleter = Completer<void>();
     final mediaSize = MediaQuery.of(context).size;
-    final capturedAspect = mediaSize.height > 0 ? (mediaSize.width / mediaSize.height) : (9 / 16);
+    final capturedAspect = initialAspectRatio ?? (mediaSize.height > 0 ? (mediaSize.width / mediaSize.height) : (9 / 16));
 
     // パスワード等の機密フィールドを自動検出して初期マスクポイントに追加
     final List<DrawingPoint> initialPoints = [];
-    if (sensitiveBounds != null && sensitiveBounds.isNotEmpty) {
+    if (initialCustomPoints != null) {
+      initialPoints.addAll(initialCustomPoints);
+    } else if (sensitiveBounds != null && sensitiveBounds.isNotEmpty) {
       for (final rect in sensitiveBounds) {
         initialPoints.add(
           DrawingPoint(
@@ -1053,14 +1152,114 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       _activeTool = SnappyDrawingTool.redPen;
       _isSendingFeedback = false;
       _isMemoOpen = false;
-      _feedbackMemoController.clear();
+      _feedbackMemoController.text = initialMemo ?? '';
       _drawingAspectRatio = capturedAspect;
       _overlayMode = _SnappyOverlayMode.drawing;
     });
     return _drawingCompleter!.future;
   }
 
-  void _cancelDrawingFlow() {
+  Future<void> _cancelDrawingFlow() async {
+    final memo = _feedbackMemoController.text.trim();
+    // ユーザーがお絵描きやメモを追加しているか判定
+    final hasUserEdits = memo.isNotEmpty || _drawingPoints.any((p) => p.rect == null);
+
+    if (hasUserEdits && mounted) {
+      final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
+      // 下書き保存確認ダイアログを表示
+      final result = await showDialog<String>(
+        context: targetContext,
+        barrierDismissible: true,
+        builder: (dialogCtx) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFF2E2E38)),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.bookmark_border, color: Color(0xFFF59E0B)),
+              const SizedBox(width: 8),
+              Text(
+                _SdkLocale.saveDraftPromptTitle,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            _SdkLocale.saveDraftPromptOnCancel,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop('cancel'),
+              child: Text(
+                _SdkLocale.cancel,
+                style: const TextStyle(color: Colors.white54),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop('discard'),
+              child: Text(
+                _SdkLocale.discardDraft,
+                style: const TextStyle(color: Colors.redAccent),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF59E0B),
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () => Navigator.of(dialogCtx).pop('save'),
+              child: Text(
+                _SdkLocale.saveDraft,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (!mounted) return;
+      if (result == 'cancel' || result == null) {
+        // ダイアログ外タップまたはキャンセル時はそのまま編集画面に留まる
+        return;
+      }
+      if (result == 'save') {
+        if (_drawingImageBytes != null) {
+          await _SnappyDraftData.save(
+            imageBytes: _drawingImageBytes!,
+            widgetTree: _drawingWidgetTree,
+            screenClassName: _drawingScreenClassName,
+            screenSignature: _drawingScreenSignature,
+            drawingPoints: _drawingPoints,
+            memo: _feedbackMemoController.text,
+            drawingAspectRatio: _drawingAspectRatio,
+          );
+        }
+        ScaffoldMessenger.of(targetContext).showSnackBar(
+          SnackBar(
+            content: Text(_SdkLocale.draftSavedToast),
+            backgroundColor: Colors.black87,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else if (result == 'discard') {
+        await _SnappyDraftData.clear();
+      }
+    }
+
     setState(() {
       _overlayMode = _SnappyOverlayMode.none;
       _isCapturing = false;
@@ -1121,6 +1320,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     final success = feedbackRes.statusCode == 200;
 
     if (success) {
+      // 送信成功時は下書きをクリアして閉じる
+      await _SnappyDraftData.clear();
       setState(() {
         _overlayMode = _SnappyOverlayMode.none;
         _isCapturing = false;
@@ -1172,6 +1373,94 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
           backgroundColor: success ? Colors.green : Colors.red,
         ),
       );
+
+      // 送信失敗時の下書き保存提案ダイアログ
+      if (!success && mounted) {
+        final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
+        final saveDraftChoice = await showDialog<bool>(
+          context: targetContext,
+          barrierDismissible: true,
+          builder: (dialogCtx) => AlertDialog(
+            backgroundColor: const Color(0xFF1E1E24),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Color(0xFF2E2E38)),
+            ),
+            title: Row(
+              children: [
+                const Icon(Icons.bookmark_border, color: Color(0xFFF59E0B)),
+                const SizedBox(width: 8),
+                Text(
+                  _SdkLocale.saveDraftPromptTitle,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              _SdkLocale.saveDraftPromptOnFailedSend,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+                height: 1.5,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogCtx).pop(false),
+                child: Text(
+                  _SdkLocale.stayOnScreen,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF59E0B),
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () => Navigator.of(dialogCtx).pop(true),
+                child: Text(
+                  _SdkLocale.saveDraft,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+
+        if (saveDraftChoice == true && mounted) {
+          if (_drawingImageBytes != null) {
+            await _SnappyDraftData.save(
+              imageBytes: _drawingImageBytes!,
+              widgetTree: _drawingWidgetTree,
+              screenClassName: _drawingScreenClassName,
+              screenSignature: _drawingScreenSignature,
+              drawingPoints: _drawingPoints,
+              memo: _feedbackMemoController.text,
+              drawingAspectRatio: _drawingAspectRatio,
+            );
+          }
+          setState(() {
+            _overlayMode = _SnappyOverlayMode.none;
+            _isCapturing = false;
+          });
+          _drawingCompleter?.complete();
+          // ignore: use_build_context_synchronously
+          ScaffoldMessenger.of(targetContext).showSnackBar(
+            SnackBar(
+              content: Text(_SdkLocale.draftSavedToast),
+              backgroundColor: Colors.black87,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -2764,6 +3053,174 @@ class DrawingPoint {
     this.tool = SnappyDrawingTool.redPen,
     this.rect,
   });
+
+  Map<String, dynamic> toJson() => {
+        'offsets': offsets
+            .map((o) => o != null ? {'dx': o.dx, 'dy': o.dy} : null)
+            .toList(),
+        'color': color.toARGB32(),
+        'strokeWidth': strokeWidth,
+        'recordedWidth': recordedSize.width,
+        'recordedHeight': recordedSize.height,
+        'tool': tool.name,
+        if (rect != null)
+          'rect': {
+            'left': rect!.left,
+            'top': rect!.top,
+            'right': rect!.right,
+            'bottom': rect!.bottom,
+          },
+      };
+
+  factory DrawingPoint.fromJson(Map<String, dynamic> json) {
+    final rawOffsets = json['offsets'] as List<dynamic>? ?? [];
+    final offsets = rawOffsets.map<Offset?>((item) {
+      if (item == null) return null;
+      final m = item as Map<String, dynamic>;
+      return Offset((m['dx'] as num).toDouble(), (m['dy'] as num).toDouble());
+    }).toList();
+
+    Rect? rect;
+    if (json['rect'] != null) {
+      final r = json['rect'] as Map<String, dynamic>;
+      rect = Rect.fromLTRB(
+        (r['left'] as num).toDouble(),
+        (r['top'] as num).toDouble(),
+        (r['right'] as num).toDouble(),
+        (r['bottom'] as num).toDouble(),
+      );
+    }
+
+    final toolName = json['tool'] as String? ?? 'redPen';
+    final tool = SnappyDrawingTool.values.firstWhere(
+      (t) => t.name == toolName,
+      orElse: () => SnappyDrawingTool.redPen,
+    );
+
+    return DrawingPoint(
+      offsets: offsets,
+      color: Color(json['color'] as int? ?? 0xFFEF4444),
+      strokeWidth: (json['strokeWidth'] as num?)?.toDouble() ?? 4.0,
+      recordedSize: Size(
+        (json['recordedWidth'] as num?)?.toDouble() ?? 0.0,
+        (json['recordedHeight'] as num?)?.toDouble() ?? 0.0,
+      ),
+      tool: tool,
+      rect: rect,
+    );
+  }
+}
+
+/// 下書きデータを SharedPreferences に保存・復元するためのヘルパークラス
+class _SnappyDraftData {
+  static const String _draftKey = 'snappy_snag_draft_v1';
+
+  final Uint8List imageBytes;
+  final Map<String, dynamic> widgetTree;
+  final String screenClassName;
+  final String screenSignature;
+  final List<DrawingPoint> drawingPoints;
+  final String memo;
+  final double? drawingAspectRatio;
+  final int timestamp;
+
+  _SnappyDraftData({
+    required this.imageBytes,
+    required this.widgetTree,
+    required this.screenClassName,
+    required this.screenSignature,
+    required this.drawingPoints,
+    required this.memo,
+    this.drawingAspectRatio,
+    required this.timestamp,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'imageBytesBase64': base64Encode(imageBytes),
+        'widgetTree': widgetTree,
+        'screenClassName': screenClassName,
+        'screenSignature': screenSignature,
+        'drawingPoints': drawingPoints.map((p) => p.toJson()).toList(),
+        'memo': memo,
+        if (drawingAspectRatio != null) 'drawingAspectRatio': drawingAspectRatio,
+        'timestamp': timestamp,
+      };
+
+  factory _SnappyDraftData.fromJson(Map<String, dynamic> json) {
+    final rawPoints = json['drawingPoints'] as List<dynamic>? ?? [];
+    return _SnappyDraftData(
+      imageBytes: base64Decode(json['imageBytesBase64'] as String),
+      widgetTree: json['widgetTree'] as Map<String, dynamic>? ?? {},
+      screenClassName: json['screenClassName'] as String? ?? '',
+      screenSignature: json['screenSignature'] as String? ?? '',
+      drawingPoints: rawPoints
+          .map((p) => DrawingPoint.fromJson(p as Map<String, dynamic>))
+          .toList(),
+      memo: json['memo'] as String? ?? '',
+      drawingAspectRatio: (json['drawingAspectRatio'] as num?)?.toDouble(),
+      timestamp: json['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch,
+    );
+  }
+
+  static Future<bool> hasDraft() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.containsKey(_draftKey);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<_SnappyDraftData?> load() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final rawStr = prefs.getString(_draftKey);
+      if (rawStr == null || rawStr.isEmpty) return null;
+      final json = jsonDecode(rawStr) as Map<String, dynamic>;
+      return _SnappyDraftData.fromJson(json);
+    } catch (e) {
+      debugPrint('⚠️ SnappySnag: Failed to load draft: $e');
+      return null;
+    }
+  }
+
+  static Future<void> save({
+    required Uint8List imageBytes,
+    required Map<String, dynamic> widgetTree,
+    required String screenClassName,
+    required String screenSignature,
+    required List<DrawingPoint> drawingPoints,
+    required String memo,
+    double? drawingAspectRatio,
+  }) async {
+    try {
+      final draft = _SnappyDraftData(
+        imageBytes: imageBytes,
+        widgetTree: widgetTree,
+        screenClassName: screenClassName,
+        screenSignature: screenSignature,
+        drawingPoints: drawingPoints,
+        memo: memo,
+        drawingAspectRatio: drawingAspectRatio,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+      );
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_draftKey, jsonEncode(draft.toJson()));
+      debugPrint('💾 SnappySnag: Draft saved successfully (1 item max).');
+    } catch (e) {
+      debugPrint('⚠️ SnappySnag: Failed to save draft: $e');
+    }
+  }
+
+  static Future<void> clear() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_draftKey);
+      debugPrint('🗑️ SnappySnag: Draft cleared.');
+    } catch (e) {
+      debugPrint('⚠️ SnappySnag: Failed to clear draft: $e');
+    }
+  }
 }
 
 class SnappySnagException implements Exception {
@@ -3012,6 +3469,33 @@ class _SdkLocale {
 
   static String get analyzingScreen =>
       _isJa ? '画面を解析中...' : 'Analyzing screen...';
+
+  // 下書き関連
+  static String get draftFoundTitle =>
+      _isJa ? '保存された下書き' : 'Saved Draft Found';
+  static String get draftFoundContent => _isJa
+      ? '前回保存した下書きがあります。下書きを再開しますか？'
+      : 'You have a saved feedback draft. Would you like to resume it?';
+  static String get resumeDraft =>
+      _isJa ? '下書きを再開' : 'Resume Draft';
+  static String get discardAndNewCapture =>
+      _isJa ? '破棄して新規撮影' : 'Discard & Capture New';
+  static String get saveDraftPromptTitle =>
+      _isJa ? '下書きの保存' : 'Save Draft';
+  static String get saveDraftPromptOnCancel => _isJa
+      ? '編集中の内容を下書きとして保存しますか？'
+      : 'Would you like to save your edits as a draft?';
+  static String get saveDraftPromptOnFailedSend => _isJa
+      ? '送信に失敗しました。この内容を下書きとして保存しますか？'
+      : 'Failed to send feedback. Would you like to save it as a draft?';
+  static String get saveDraft =>
+      _isJa ? '下書き保存' : 'Save Draft';
+  static String get discardDraft =>
+      _isJa ? '破棄する' : 'Discard';
+  static String get stayOnScreen =>
+      _isJa ? '画面に留まる' : 'Stay Here';
+  static String get draftSavedToast =>
+      _isJa ? '下書きに保存しました' : 'Draft saved successfully.';
 }
 
 /// Custom Widget that draws the SnappySnag lightning logo with circular border gap mask.

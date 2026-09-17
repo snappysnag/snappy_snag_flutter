@@ -155,4 +155,34 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     expect(snappy.isTriggerButtonVisible.value, isTrue);
   });
+
+  test('DrawingPoint JSON serialization and deserialization test', () {
+    final point = DrawingPoint(
+      offsets: [const Offset(10, 20), const Offset(30, 40)],
+      color: const Color(0xFFEF4444),
+      strokeWidth: 4.0,
+      recordedSize: const Size(375, 812),
+      tool: SnappyDrawingTool.redPen,
+      rect: const Rect.fromLTWH(5, 5, 50, 50),
+    );
+
+    final json = point.toJson();
+    expect(json['tool'], 'redPen');
+    expect(json['color'], const Color(0xFFEF4444).toARGB32());
+    expect(json['rect'], {
+      'left': 5.0,
+      'top': 5.0,
+      'right': 55.0,
+      'bottom': 55.0,
+    });
+
+    final restored = DrawingPoint.fromJson(json);
+    expect(restored.tool, SnappyDrawingTool.redPen);
+    expect(restored.strokeWidth, 4.0);
+    expect(restored.recordedSize.width, 375);
+    expect(restored.recordedSize.height, 812);
+    expect(restored.rect, const Rect.fromLTWH(5, 5, 50, 50));
+    expect(restored.offsets.length, 2);
+    expect(restored.offsets[0], const Offset(10, 20));
+  });
 }
