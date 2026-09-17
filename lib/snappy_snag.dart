@@ -682,6 +682,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       } else {
         // 破棄して新規撮影を選択した場合、下書きを即時消去
         await _SnappyDraftData.clear();
+        // ダイアログのポップ（破棄アニメーション）が完全に完了し、
+        // 画面上からダイアログが消去されるのを待機してから新規キャプチャを開始する
+        if (!mounted) return;
+        await WidgetsBinding.instance.endOfFrame;
+        await Future.delayed(const Duration(milliseconds: 100));
       }
     }
 
