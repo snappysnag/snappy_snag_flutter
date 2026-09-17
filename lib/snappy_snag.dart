@@ -503,7 +503,23 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   }
 
   void _showErrorDialog(String message) {
+    final isUserMode = SnappySnag().mode == SnappySnagMode.user;
     final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
+
+    // ユーザーモード（一般ユーザー）の場合は技術的・内部的なダイアログを出さず、
+    // 親切な案内トースト/SnackBarのみを表示して不安を与えない
+    if (isUserMode) {
+      debugPrint('⚠️ SnappySnag [UserMode] Suppressed error dialog: $message');
+      ScaffoldMessenger.of(targetContext).showSnackBar(
+        SnackBar(
+          content: Text(_SdkLocale.userModeUnavailable),
+          backgroundColor: Colors.black87,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
 
     // パッケージロック制限（locked / package / archived / free plan）の判定を最優先で行う
     String instruction = 'Please verify your SDK configuration.';
@@ -609,12 +625,13 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
     if (imageBytes != null && mounted) {
       try {
-        // ★ 第2の防壁: ユーザーモードまたはリモートキルスイッチ（isDevChatEnabled == false）時は
-        // 内部チケット一覧を一般露出させず、直接フィードバック送信フローへスキップ
+        // ★ 認証＆有効性の事前検証:
+        // モードに関わらずサーバーと通信して API Key と Package Name の整合性を検証する。
+        // 不正なキーやパッケージ不一致（401/403）があればここで SnappySnagException がスローされ、
+        // ユーザーにお絵描きやメモの手間をかけさせる前にエラーを検知・停止できる。
+        final fetched = await _fetchExistingFeedbacks(screenClassName, screenSignature);
         final isUserMode = SnappySnag().mode == SnappySnagMode.user || SnappySnag().isDevChatEnabled == false;
-        final duplicates = isUserMode
-            ? <dynamic>[]
-            : await _fetchExistingFeedbacks(screenClassName, screenSignature);
+        final duplicates = isUserMode ? <dynamic>[] : fetched;
         _hideLoadingOverlay();
         if (!mounted) return;
 
@@ -1102,15 +1119,15 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     );
 
     final success = feedbackRes.statusCode == 200;
-    final shouldClose = success || feedbackRes.statusCode == 401 || feedbackRes.statusCode == 403;
 
-    if (shouldClose) {
+    if (success) {
       setState(() {
         _overlayMode = _SnappyOverlayMode.none;
         _isCapturing = false;
       });
       _drawingCompleter?.complete();
     } else {
+      // 送信失敗時は入力内容・描画内容を破棄せず、再試行できるようにモーダルを維持する
       setState(() {
         _isSendingFeedback = false;
       });
@@ -1119,22 +1136,30 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     // トースト等の通知
     if (mounted) {
       final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
+      final isUserMode = SnappySnag().mode == SnappySnagMode.user;
       String message = _SdkLocale.statusSuccess;
       if (!success) {
-        if (feedbackRes.errorMessage != null && feedbackRes.errorMessage!.isNotEmpty) {
-          message = feedbackRes.errorMessage!;
+        if (isUserMode) {
+          // 一般ユーザー向け: 不安を与えない親切な共通案内
+          message = _SdkLocale.statusGenericError;
+          debugPrint('⚠️ SnappySnag [UserMode] Submit failed (code: ${feedbackRes.statusCode}, msg: ${feedbackRes.errorMessage})');
         } else {
-          if (feedbackRes.statusCode == 429) {
-            message = _SdkLocale.statusRateLimit;
-          } else if (feedbackRes.statusCode == 401) {
-            message = _SdkLocale.statusInvalidKey;
-          } else if (feedbackRes.statusCode == 403) {
-            message = _SdkLocale.statusUnauthorizedPackage;
+          // 開発者モード向け: 原因特定のための詳細メッセージ
+          if (feedbackRes.errorMessage != null && feedbackRes.errorMessage!.isNotEmpty) {
+            message = feedbackRes.errorMessage!;
           } else {
-            if (!kIsWeb && Platform.isMacOS) {
-              message = 'Network error: macOS network.client entitlement may be missing.';
+            if (feedbackRes.statusCode == 429) {
+              message = _SdkLocale.statusRateLimit;
+            } else if (feedbackRes.statusCode == 401) {
+              message = _SdkLocale.statusInvalidKey;
+            } else if (feedbackRes.statusCode == 403) {
+              message = _SdkLocale.statusUnauthorizedPackage;
             } else {
-              message = _SdkLocale.statusNetworkError;
+              if (!kIsWeb && Platform.isMacOS) {
+                message = 'Network error: macOS network.client entitlement may be missing.';
+              } else {
+                message = _SdkLocale.statusNetworkError;
+              }
             }
           }
         }
@@ -2945,12 +2970,18 @@ class _SdkLocale {
   static String get statusRateLimit => _isJa
       ? '送信頻度の上限を超えました。1分ほど待って再度お試しください。'
       : 'Rate limit exceeded. Please wait a minute before retrying.';
+  static String get statusGenericError => _isJa
+      ? 'フィードバックの送信に失敗しました。しばらく時間をおいて再度お試しください。'
+      : 'Failed to send feedback. Please try again later.';
+  static String get userModeUnavailable => _isJa
+      ? '現在フィードバック機能をご利用いただけません。しばらく時間をおいて再度お試しください。'
+      : 'The feedback feature is currently unavailable. Please try again later.';
   static String get statusInvalidKey => _isJa
-      ? '送信失敗: APIキーが無効または停止されています。'
-      : 'Failed to send: Invalid or inactive API Key.';
+      ? '[開発エラー] APIキーが無効または停止されています。'
+      : '[Dev Error] Invalid or inactive API Key.';
   static String get statusUnauthorizedPackage => _isJa
-      ? '送信失敗: このアプリパッケージは許可されていません。'
-      : 'Failed to send: This app package is not authorized.';
+      ? '[開発エラー] このアプリパッケージは許可されていません。'
+      : '[Dev Error] This app package is not authorized.';
   static String get statusNetworkError => _isJa
       ? 'フィードバックの送信に失敗しました（ネットワークまたはサーバーエラー）。'
       : 'Failed to send feedback (Network or Server Error).';
