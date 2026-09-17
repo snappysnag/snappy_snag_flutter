@@ -13,9 +13,15 @@ void main() {
   });
 
   test(
-    'SnappySnag initializes without throwing error when packageName is empty',
+    'SnappySnag initializes without throwing error when packageName is omitted or empty',
     () {
       final snappy = SnappySnag();
+      expect(
+        () => snappy.initialize(
+          apiKey: 'test_api_key_123456789',
+        ),
+        returnsNormally,
+      );
       expect(
         () => snappy.initialize(
           apiKey: 'test_api_key_123456789',

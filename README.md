@@ -34,7 +34,7 @@ void main() {
   // 1. Initialize the SDK
   SnappySnag().initialize(
     apiKey: 'snag_live_your_api_key_here',
-    packageName: 'your.package.name',
+    // packageName: 'your.package.name', // Optional: Lock API key usage to your app's bundle ID
     // Optional: Identify user/tester to automatically unlock developer tickets/chat for team members
     user: const SnappySnagUser(
       email: 'developer@example.com',

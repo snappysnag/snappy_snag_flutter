@@ -298,10 +298,10 @@ class SnappySnag {
   /// Returns custom navigatorKey if provided to `initialize()`, otherwise returns the default `SnappySnag.navigatorKey`.
   GlobalKey<NavigatorState>? get navigatorKey => _customNavigatorKey ?? SnappySnag.defaultNavigatorKey;
 
-  /// Initialize the SnappySnag SDK with a Project/API Key, Package Name, optional SnappySnagUser, and optional custom NavigatorKey.
+  /// Initialize the SnappySnag SDK with a Project/API Key, optional Package Name, optional SnappySnagUser, and optional custom NavigatorKey.
   void initialize({
     required String apiKey,
-    required String packageName,
+    String? packageName,
     SnappySnagMode mode = SnappySnagMode.user,
     GlobalKey<NavigatorState>? navigatorKey,
     SnappySnagUser? user,
@@ -327,7 +327,7 @@ class SnappySnag {
     }
     _isEnabled = enabled;
     _apiKey = apiKey;
-    _packageName = packageName.trim();
+    _packageName = packageName?.trim();
     _customNavigatorKey = navigatorKey;
     _user = user;
     _customMetadata = customMetadata;
@@ -342,11 +342,6 @@ class SnappySnag {
 
     if (_apiKey == null || _apiKey!.trim().isEmpty) {
       debugPrint('⚠️ SnappySnag Warning: apiKey is empty or not configured.');
-    }
-    if (_packageName == null || _packageName!.isEmpty) {
-      debugPrint(
-        '⚠️ SnappySnag Warning: packageName is empty or not configured.',
-      );
     }
     debugPrint('🚀 SnappySnag initialized.');
   }
@@ -568,14 +563,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
   Future<void> _triggerCapture() async {
     final apiKey = SnappySnag()._apiKey;
-    final packageName = SnappySnag()._packageName;
 
-    if (apiKey == null ||
-        apiKey.trim().isEmpty ||
-        packageName == null ||
-        packageName.trim().isEmpty) {
+    if (apiKey == null || apiKey.trim().isEmpty) {
       _showErrorDialog(
-        'SnappySnag is not properly configured. Please check that apiKey and packageName are set during initialization.',
+        'SnappySnag is not properly configured. Please check that apiKey is set during initialization.',
       );
       return;
     }
