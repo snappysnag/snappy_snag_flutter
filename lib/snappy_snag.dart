@@ -76,6 +76,8 @@ class SnappySnag {
   SnappySnagMode get mode => _mode;
   bool _isDevChatEnabled = true;
   bool get isDevChatEnabled => _isDevChatEnabled;
+  bool _enableWidgetTree = true;
+  bool get enableWidgetTree => _enableWidgetTree;
 
   /// Current user/reporter information.
   SnappySnagUser? get user => _user;
@@ -307,15 +309,17 @@ class SnappySnag {
     SnappySnagUser? user,
     Map<String, dynamic>? customMetadata,
     bool enabled = true,
-    bool? showTriggerButton,
+    bool showTriggerButton = false,
+    bool enableWidgetTree = true,
     String? supabaseUrl,
     bool forceDevInRelease = false,
   }) {
-    // mode によるデフォルト表示制御:
-    // dev モード: 開発・検証用としてデフォルト表示 (true)
-    // user モード: 一般ユーザー向けとしてデフォルト非表示 (false)（設定画面やシェイクから起動を推奨）
-    _baseTriggerButtonVisibility = showTriggerButton ?? (mode == SnappySnagMode.dev);
+    // 常駐ボタンの表示制御:
+    // 安全のため、modeに関わらずデフォルトは非表示 (false)。
+    // テスト等で画面にボタンを出したい場合は showTriggerButton: true を指定する。
+    _baseTriggerButtonVisibility = showTriggerButton;
     _updateTriggerButtonVisibility();
+    _enableWidgetTree = enableWidgetTree;
     // ★ 第1の防壁: Releaseモード時の安全ガード
     // 本番ビルド時に mode: SnappySnagMode.dev が指定されていても、
     // forceDevInRelease: true が明示されていない限り自動的に user モードへフォールバック
@@ -691,10 +695,12 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     }
 
     // === 【超高速先行キャプチャ】画面遷移に備え、ボタンタップしたその瞬間のデータを即座にフリーズ ===
-    final Map<String, dynamic> widgetTree = WidgetTreeDumper.dump(
-      // ignore: use_build_context_synchronously
-      targetContext,
-    );
+    final Map<String, dynamic> widgetTree = SnappySnag().enableWidgetTree
+        ? WidgetTreeDumper.dump(
+            // ignore: use_build_context_synchronously
+            targetContext,
+          )
+        : <String, dynamic>{};
     final String screenClassName = WidgetTreeDumper.findScreenName(
       // ignore: use_build_context_synchronously
       targetContext,
@@ -1060,7 +1066,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         body: jsonEncode({
           'device_id': deviceId,
           'screenshot_base64': base64Image,
-          'widget_tree': (_includeAccountAndDiagnostics || SnappySnag().mode != SnappySnagMode.user) ? widgetTree : <String, dynamic>{},
+          'widget_tree': (SnappySnag().enableWidgetTree && (_includeAccountAndDiagnostics || SnappySnag().mode != SnappySnagMode.user)) ? widgetTree : <String, dynamic>{},
           'memo': memo,
           'screen_class_name': screenClassName,
           'screen_signature': screenSignature,
