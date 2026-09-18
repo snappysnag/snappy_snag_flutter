@@ -71,19 +71,16 @@ class MyApp extends StatelessWidget {
 
 ### 2. Trigger Button Visibility & Control
 
-By default, the floating capture button visibility adapts automatically to your `mode`:
-* **`SnappySnagMode.dev`**: Displayed by default (`showTriggerButton: true`) for rapid QA and internal bug reporting.
-* **`SnappySnagMode.user`**: Hidden by default (`showTriggerButton: false`) to keep production screens clean, guiding users to trigger feedback via [manual launch](#3-launch-feedback-mode-manually-eg-from-settings-or-in-app-menu) or device shake.
+By default, the floating capture button is **hidden across all modes (`showTriggerButton: false`)** to keep your application's UI completely undisturbed.
 
-You can customize this behavior at any time:
+You can display or control the trigger button as needed:
 
-* **Explicitly Override Default Visibility**:
+* **Enable Floating Button for Rapid Testing**:
+  Pass `showTriggerButton: true` in `initialize()` to display the floating overlay button immediately:
   ```dart
   SnappySnag().initialize(
     apiKey: '...',
-    packageName: '...',
-    // Force show in user mode, or force hide in dev mode:
-    showTriggerButton: true, // or false
+    showTriggerButton: true, // Display floating button immediately
   );
   ```
 
@@ -109,7 +106,24 @@ You can customize this behavior at any time:
   SnappySnag().setTriggerButtonVisibility(true);
   ```
 
-### 3. Launch Feedback Mode Manually (e.g. from Settings or In-App Menu)
+### 3. Widget Tree Hierarchy & Privacy Opt-Out (`enableWidgetTree`)
+
+By default (`enableWidgetTree: true`), SnappySnag extracts the Flutter UI hierarchy (up to 10 levels deep) to give Gemini AI complete context on nested layouts and styling:
+
+* **Automatic On-Device PII Redaction**:
+  * Text fields, passwords, and user input widgets are automatically redacted before sending.
+  * Long text labels (> 15 characters) are truncated.
+* **Complete Hierarchy Opt-Out for Strict Compliance**:
+  If your application operates under strict security or regulatory compliance (e.g. healthcare, banking) where sending UI component structures is restricted, you can completely opt out:
+  ```dart
+  SnappySnag().initialize(
+    apiKey: '...',
+    enableWidgetTree: false, // Disables widget tree traversal completely
+  );
+  ```
+  > 💡 When `enableWidgetTree: false`, SnappySnag skips tree traversal entirely and relies strictly on screenshot visual cues and user annotations for AI analysis. The dashboard will automatically reflect this as `Visual Screenshot Analysis (UI Tree Excluded)`.
+
+### 4. Launch Feedback Mode Manually (e.g. from Settings or In-App Menu)
 
 When the floating button is hidden (via `showTriggerButton: false` or `SnappySnagHideButton`), or if you prefer triggering feedback through your own custom UI (such as a "Report Bug" button in a Settings or Help drawer), call `SnappySnag.startFeedbackMode`:
 
@@ -126,7 +140,7 @@ ListTile(
 
 > 💡 When invoked, it displays a guided prompt modal and temporarily reveals the capture button, allowing the user to navigate anywhere in the app to capture and highlight the issue.
 
-### 4. Build for TestFlight / Internal Testing
+### 5. Build for TestFlight / Internal Testing
 
 To compile your app with SnappySnag enabled, build with the `--dart-define` flag:
 
@@ -135,7 +149,7 @@ flutter build ipa --dart-define=ENABLE_SNAPPY_SNAG=true
 flutter build appbundle --dart-define=ENABLE_SNAPPY_SNAG=true
 ```
 
-### 5. Build for App Store / Google Play Store (Production)
+### 6. Build for App Store / Google Play Store (Production)
 
 To compile your app for production release, build normally. SnappySnag will automatically be disabled, will not render the overlay button, and will not register any shake listeners:
 
@@ -151,13 +165,15 @@ In team and client work, building separate app binaries (one for internal develo
 ### 1. One-Build Sharing: Role-Based Developer In-App Features
 With `mode: SnappySnagMode.dev`, you can let your development team view **existing internal tickets, duplicate warnings, and discussion threads**, while ensuring clients and external testers only see a clean, distraction-free **feedback submission screen**.
 
+> 🔒 **Default Safety Note**: Newly created projects default to **Disabled** for developer tickets and chat. You can switch this to **Allowed Only** or **Everyone** anytime in your dashboard. Furthermore, if the SDK is running with `mode: SnappySnagMode.user`, developer tickets are **always strictly hidden**, irrespective of dashboard settings.
+
 Control access effortlessly from your **Web Dashboard** > **Project Settings** > **General & SDK**:
-* 👥 **Allowed Only (Recommended)**:
+* 🛑 **Disabled (Default)**: Suppresses developer tickets and chat completely across all client devices.
+* 👥 **Allowed Only (Recommended for Teams)**:
   * **Team Members**: Owners and developers registered in your dashboard's "Team & Members" automatically get full access to internal tickets and chat threads when their `reporterEmail` matches.
   * **Additional Allowed Emails**: Seamlessly whitelist client leads or external QA testers by email address without touching your code or re-deploying.
   * **Unauthenticated / Unknown Testers**: Automatically skip internal tickets and transition directly to the feedback submission screen. Chat submissions are rejected with `403 Forbidden`.
 * 🌐 **Everyone**: Displays developer tickets and chat to anyone running the dev-mode app.
-* 🛑 **Disabled (Remote Kill-Switch)**: Instantly suppresses internal tickets and chat worldwide across all mobile instances.
 
 ### 2. Automatic Release Guard (`kReleaseMode`)
 When you build your application in **Release Mode** (`flutter build ipa` / `flutter build appbundle`), SnappySnag automatically checks Flutter's `kReleaseMode`. Even if `mode: SnappySnagMode.dev` was inadvertently left configured in your source code, SnappySnag automatically falls back to `SnappySnagMode.user`, completely hiding developer tickets and comments.
