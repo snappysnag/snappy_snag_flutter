@@ -9,6 +9,7 @@ SnappySnag is a visual bug reporting and AI auto-fix suggestion tool for Flutter
 * 🎨 **Clean & Annotated Screenshot Preservation**: Pin coordinates are stored as normalized vectors, keeping the original screenshot crystal clear without destructive image stamping.
 * 🌳 **Widget Tree Dumper**: Automatically dumps the widget hierarchy (up to a depth of 10 levels) for precise widget mapping.
 * 🤖 **AI Auto-Fix suggestions**: Generates human-focused technical guides and cursor-compatible agent prompts.
+* 💬 **Interactive AI Discussion & Version Sync**: Directly ask follow-up questions to Gemini about architecture, alternative fixes, or trade-offs. Seamlessly sync discussion consensus into refined Version 2/3 technical guides and agent prompts with syntax-highlighted code snippets.
 * 💾 **Offline Draft & Resilience**: Automatically saves drawing annotations, pins, and comments locally on connection failure or accidental dismissal. Seamlessly resume or discard drafts on the next capture without wasting user efforts.
 * ⚡ **Pre-Validation Error Guard**: Instantly validates API key configuration and bundle identifiers before users spend time drawing or writing, preventing post-submit authentication surprises.
 * 👥 **One-Build Role-Based Sharing**: Show internal tickets and duplicate warnings to developers while keeping external clients on a clean, simple feedback flow in the exact same build.
