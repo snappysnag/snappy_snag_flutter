@@ -439,13 +439,19 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   final TextEditingController _commentTextController = TextEditingController();
   bool _isFeedbackDialogOpen = false;
 
-  // お絵描きキャンバス用ステート
+  // お絵描き＆ピン留めキャンバス用ステート
   Uint8List? _drawingImageBytes;
   Map<String, dynamic> _drawingWidgetTree = {};
   String _drawingScreenClassName = '';
   String _drawingScreenSignature = '';
   List<DrawingPoint> _drawingPoints = [];
-  SnappyDrawingTool _activeTool = SnappyDrawingTool.redPen;
+  List<SnappyPin> _pins = [];
+  SnappyPin? _editingPin;
+  Offset? _dragStartGlobal;
+  double? _dragStartPinX;
+  double? _dragStartPinY;
+  final TextEditingController _pinCommentController = TextEditingController();
+  SnappyDrawingTool _activeTool = SnappyDrawingTool.pin;
   bool _isSendingFeedback = false;
   bool _isMemoOpen = false;
   bool _isPrivacyConfirmOpen = false;
@@ -673,6 +679,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
               screenClassName: draft.screenClassName,
               screenSignature: draft.screenSignature,
               initialCustomPoints: draft.drawingPoints,
+              initialPins: draft.pins,
               initialMemo: draft.memo,
               initialAspectRatio: draft.drawingAspectRatio,
             );
@@ -1039,6 +1046,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     required Uint8List imageBytes,
     required Map<String, dynamic> widgetTree,
     required String memo,
+    List<SnappyPin> pins = const [],
     required String screenClassName,
     required String screenSignature,
   }) async {
@@ -1068,6 +1076,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
           'screenshot_base64': base64Image,
           'widget_tree': (SnappySnag().enableWidgetTree && (_includeAccountAndDiagnostics || SnappySnag().mode != SnappySnagMode.user)) ? widgetTree : <String, dynamic>{},
           'memo': memo,
+          'pins': pins.map((p) => p.toJson()).toList(),
           'screen_class_name': screenClassName,
           'screen_signature': screenSignature,
           'tags': [
@@ -1129,6 +1138,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     required String screenSignature,
     List<Rect>? sensitiveBounds,
     List<DrawingPoint>? initialCustomPoints,
+    List<SnappyPin>? initialPins,
     String? initialMemo,
     double? initialAspectRatio,
   }) async {
@@ -1162,7 +1172,9 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       _drawingScreenClassName = screenClassName;
       _drawingScreenSignature = screenSignature;
       _drawingPoints = initialPoints;
-      _activeTool = SnappyDrawingTool.redPen;
+      _pins = initialPins != null ? List<SnappyPin>.from(initialPins) : [];
+      _editingPin = null;
+      _activeTool = SnappyDrawingTool.pin;
       _isSendingFeedback = false;
       _isMemoOpen = false;
       _isPrivacyConfirmOpen = false;
@@ -1175,10 +1187,15 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     return _drawingCompleter!.future;
   }
 
+  void _renumberPins() {
+    for (int i = 0; i < _pins.length; i++) {
+      _pins[i] = _pins[i].copyWith(number: i + 1);
+    }
+  }
+
   Future<void> _cancelDrawingFlow() async {
-    final memo = _feedbackMemoController.text.trim();
-    // ユーザーがお絵描きやメモを追加しているか判定
-    final hasUserEdits = memo.isNotEmpty || _drawingPoints.any((p) => p.rect == null);
+    // ユーザーがピン留め、モザイクを追加しているか判定
+    final hasUserEdits = _pins.isNotEmpty || _drawingPoints.any((p) => p.rect == null);
 
     if (hasUserEdits && mounted) {
       // 全画面OverlayEntryの内側で確実に最前面に表示するため、インラインモーダルを開く
@@ -1202,20 +1219,18 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   }
 
   Future<void> _sendFeedbackInlineFlow() async {
-    final memo = _feedbackMemoController.text;
-    if (memo.trim().isEmpty) {
+    // ピンが1つ以上あり、かつコメントが存在するか確認
+    final validPins = _pins.where((p) => p.comment.trim().isNotEmpty).toList();
+    if (validPins.isEmpty) {
       if (mounted) {
         final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
         ScaffoldMessenger.of(messengerContext).showSnackBar(
           SnackBar(
-            content: Text(_SdkLocale.memoPromptSnackBar),
+            content: Text(_SdkLocale.pinRequiredSnackBar),
             backgroundColor: Colors.orange,
           ),
         );
       }
-      setState(() {
-        _isMemoOpen = true;
-      });
       return;
     }
 
@@ -1232,21 +1247,24 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   }
 
   Future<void> _executeFeedbackSubmission() async {
-    final memo = _feedbackMemoController.text;
+    // ピンのコメント一覧から全体の概要テキストを自動合成（下位互換およびIssue概要用）
+    final validPins = _pins.where((p) => p.comment.trim().isNotEmpty).toList();
+    final memo = validPins.map((p) => '【Pin ${p.number}】${p.comment.trim()}').join('\n');
     setState(() {
       _isPrivacyConfirmOpen = false;
       _isSendingFeedback = true;
     });
 
-    // 1. 赤ペンとマスキングが載ったキャンバスを再キャプチャする
+    // 1. モザイクマスキングのみが載ったキャンバスを再キャプチャする（ピンや赤ペンは画像に焼き込まない）
     final Uint8List? editedBytes = await _canvasScreenshotController.capture();
     final finalBytes = editedBytes ?? _drawingImageBytes!;
 
-    // 2. 送信処理
+    // 2. 送信処理（ピン情報も一緒に送信）
     final feedbackRes = await _sendFeedback(
       imageBytes: finalBytes,
       widgetTree: _drawingWidgetTree,
       memo: memo,
+      pins: _pins,
       screenClassName: _drawingScreenClassName,
       screenSignature: _drawingScreenSignature,
     );
@@ -1474,51 +1492,26 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         ? '🟡'
                                         : (severity == 'low' ? '🔵' : '⚪'));
 
-                                return InkWell(
-                                  onTap: () {
-                                    if (SnappySnag().isDevChatEnabled == false) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(_SdkLocale.chatDisabled),
-                                          backgroundColor: const Color(0xFF2E2E38),
-                                          duration: const Duration(seconds: 3),
-                                        ),
-                                      );
-                                      return;
-                                    }
-                                    _showCommentsThreadSheet(
-                                      item['id'].toString(),
-                                      memo,
-                                    );
-                                  },
-                                  child: Container(
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black26,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: Colors.white12),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            '$emoji $memo',
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.white70,
-                                            ),
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black26,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.white12),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          '$emoji $memo',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.white70,
                                           ),
                                         ),
-                                        Icon(
-                                          item['has_comments'] == true
-                                              ? Icons.chat_bubble
-                                              : Icons.chat_bubble_outline,
-                                          size: 16,
-                                          color: Colors.amber,
-                                        ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
                                 );
                               },
@@ -1864,71 +1857,200 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                 child: Center(
                                   child: AspectRatio(
                                     aspectRatio: canvasRatio,
-                                    child: Screenshot(
-                                      controller: _canvasScreenshotController,
-                                      child: LayoutBuilder(
-                                        builder: (layoutContext, constraints) {
-                                          final canvasSize = Size(constraints.maxWidth, constraints.maxHeight);
-                                          return Stack(
-                                            children: [
-                                              // 背景画像
-                                              Positioned.fill(
-                                                child: Image.memory(
-                                                  _drawingImageBytes!,
-                                                  fit: BoxFit.contain,
+                                    child: LayoutBuilder(
+                                      builder: (layoutContext, constraints) {
+                                        final canvasSize = Size(constraints.maxWidth, constraints.maxHeight);
+                                        return Stack(
+                                          children: [
+                                            // 1. スクショ保存対象（背景画像 + モザイクのみ）
+                                            // ※ ピンはスクショ画像自体には焼き込まず、メタデータとして座標とコメントを保存・連携する
+                                            Positioned.fill(
+                                              child: Screenshot(
+                                                controller: _canvasScreenshotController,
+                                                child: Stack(
+                                                  children: [
+                                                    Positioned.fill(
+                                                      child: Image.memory(
+                                                        _drawingImageBytes!,
+                                                        fit: BoxFit.contain,
+                                                      ),
+                                                    ),
+                                                    Positioned.fill(
+                                                      child: CustomPaint(
+                                                        painter: DrawingPainter(points: _drawingPoints),
+                                                        size: Size.infinite,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
-                                              // 描画キャンバス
-                                              Positioned.fill(
-                                                child: GestureDetector(
-                                                  onPanStart: (details) {
-                                                    if (_isSendingFeedback || _isMemoOpen) return;
-                                                    setState(() {
-                                                      final double strokeWidth = _activeTool == SnappyDrawingTool.mosaic ? 24.0 : 4.0;
-                                                      final Color color = _activeTool == SnappyDrawingTool.mosaic ? const Color(0xEE303036) : Colors.red;
-                                                      _drawingPoints.add(
-                                                        DrawingPoint(
-                                                          offsets: [details.localPosition],
-                                                          color: color,
-                                                          strokeWidth: strokeWidth,
-                                                          tool: _activeTool,
-                                                          recordedSize: canvasSize,
+                                            ),
+
+                                            // 2. お絵描き・ピン配置ジェスチャー受付レイヤー
+                                            Positioned.fill(
+                                              child: GestureDetector(
+                                                behavior: HitTestBehavior.translucent,
+                                                onTapUp: (details) {
+                                                  if (_isSendingFeedback || _isMemoOpen || _editingPin != null) return;
+                                                  if (_activeTool == SnappyDrawingTool.pin) {
+                                                    // ピン配置の上限チェック（最大5個）
+                                                    if (_pins.length >= 5) {
+                                                      final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
+                                                      ScaffoldMessenger.of(messengerContext).showSnackBar(
+                                                        SnackBar(
+                                                          content: Text(_SdkLocale.pinLimitReached),
+                                                          duration: const Duration(seconds: 2),
+                                                          behavior: SnackBarBehavior.floating,
+                                                          backgroundColor: Colors.black87,
                                                         ),
                                                       );
+                                                      return;
+                                                    }
+
+                                                    final double xRatio = (details.localPosition.dx / canvasSize.width).clamp(0.0, 1.0);
+                                                    final double yRatio = (details.localPosition.dy / canvasSize.height).clamp(0.0, 1.0);
+                                                    final int nextNumber = _pins.isEmpty
+                                                        ? 1
+                                                        : (_pins.map((p) => p.number).reduce((a, b) => a > b ? a : b) + 1);
+                                                    final newPin = SnappyPin(
+                                                      id: 'pin_${DateTime.now().millisecondsSinceEpoch}',
+                                                      number: nextNumber,
+                                                      xRatio: xRatio,
+                                                      yRatio: yRatio,
+                                                      comment: '',
+                                                    );
+                                                    setState(() {
+                                                      _pins.add(newPin);
+                                                      _editingPin = newPin;
+                                                      _pinCommentController.text = '';
+                                                    });
+                                                  }
+                                                },
+                                                onPanStart: (details) {
+                                                  if (_isSendingFeedback || _isMemoOpen || _editingPin != null) return;
+                                                  if (_activeTool != SnappyDrawingTool.mosaic) return;
+                                                  setState(() {
+                                                    const double strokeWidth = 24.0;
+                                                    const Color color = Color(0xEE303036);
+                                                    _drawingPoints.add(
+                                                      DrawingPoint(
+                                                        offsets: [details.localPosition],
+                                                        color: color,
+                                                        strokeWidth: strokeWidth,
+                                                        tool: SnappyDrawingTool.mosaic,
+                                                        recordedSize: canvasSize,
+                                                      ),
+                                                    );
+                                                  });
+                                                },
+                                                onPanUpdate: (details) {
+                                                  if (_isSendingFeedback || _isMemoOpen || _editingPin != null) return;
+                                                  if (_activeTool != SnappyDrawingTool.mosaic) return;
+                                                  setState(() {
+                                                    if (_drawingPoints.isNotEmpty) {
+                                                      _drawingPoints.last.offsets.add(details.localPosition);
+                                                    }
+                                                  });
+                                                },
+                                                onPanEnd: (details) {
+                                                  if (_isSendingFeedback || _isMemoOpen || _editingPin != null) return;
+                                                  if (_activeTool != SnappyDrawingTool.mosaic) return;
+                                                  setState(() {
+                                                    if (_drawingPoints.isNotEmpty) {
+                                                      _drawingPoints.last.offsets.add(null);
+                                                    }
+                                                  });
+                                                },
+                                              ),
+                                            ),
+
+                                            // 3. ピンのオーバーレイ表示（画像には焼き込まれない）
+                                            ..._pins.map((pin) {
+                                              final pinPixelX = pin.xRatio * canvasSize.width;
+                                              final pinPixelY = pin.yRatio * canvasSize.height;
+                                              const pinSize = 34.0;
+
+                                              return Positioned(
+                                                left: (pinPixelX - pinSize / 2).clamp(0.0, canvasSize.width - pinSize),
+                                                top: (pinPixelY - pinSize).clamp(0.0, canvasSize.height - pinSize),
+                                                child: GestureDetector(
+                                                  behavior: HitTestBehavior.opaque,
+                                                  onTap: () {
+                                                    if (_isSendingFeedback || _isMemoOpen) return;
+                                                    setState(() {
+                                                      _editingPin = pin;
+                                                      _pinCommentController.text = pin.comment;
                                                     });
                                                   },
-                                    onPanUpdate: (details) {
-                                      if (_isSendingFeedback || _isMemoOpen) return;
-                                      setState(() {
-                                        if (_drawingPoints.isNotEmpty) {
-                                          _drawingPoints.last.offsets.add(
-                                            details.localPosition,
-                                          );
-                                        }
-                                      });
-                                    },
-                                    onPanEnd: (details) {
-                                      if (_isSendingFeedback || _isMemoOpen) return;
-                                      setState(() {
-                                        if (_drawingPoints.isNotEmpty) {
-                                          _drawingPoints.last.offsets.add(null);
-                                        }
-                                      });
-                                    },
-                                    child: CustomPaint(
-                                      painter: DrawingPainter(points: _drawingPoints),
-                                      size: Size.infinite,
+                                                  onPanStart: (details) {
+                                                    if (_isSendingFeedback || _isMemoOpen || _editingPin != null) return;
+                                                    _dragStartGlobal = details.globalPosition;
+                                                    _dragStartPinX = pin.xRatio * canvasSize.width;
+                                                    _dragStartPinY = pin.yRatio * canvasSize.height;
+                                                  },
+                                                  onPanUpdate: (details) {
+                                                    if (_isSendingFeedback || _isMemoOpen || _editingPin != null) return;
+                                                    if (_dragStartGlobal == null || _dragStartPinX == null || _dragStartPinY == null) return;
+                                                    final dx = details.globalPosition.dx - _dragStartGlobal!.dx;
+                                                    final dy = details.globalPosition.dy - _dragStartGlobal!.dy;
+                                                    final newDx = (_dragStartPinX! + dx).clamp(0.0, canvasSize.width);
+                                                    final newDy = (_dragStartPinY! + dy).clamp(0.0, canvasSize.height);
+                                                    final newXRatio = (newDx / canvasSize.width).clamp(0.0, 1.0);
+                                                    final newYRatio = (newDy / canvasSize.height).clamp(0.0, 1.0);
+
+                                                    setState(() {
+                                                      final idx = _pins.indexWhere((p) => p.id == pin.id);
+                                                      if (idx != -1) {
+                                                        _pins[idx] = pin.copyWith(xRatio: newXRatio, yRatio: newYRatio);
+                                                      }
+                                                    });
+                                                  },
+                                                  onPanEnd: (_) {
+                                                    _dragStartGlobal = null;
+                                                    _dragStartPinX = null;
+                                                    _dragStartPinY = null;
+                                                  },
+                                                  child: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Container(
+                                                        width: pinSize,
+                                                        height: pinSize,
+                                                        decoration: BoxDecoration(
+                                                          color: const Color(0xFFF95738),
+                                                          shape: BoxShape.circle,
+                                                          border: Border.all(color: Colors.white, width: 2),
+                                                          boxShadow: const [
+                                                            BoxShadow(
+                                                              color: Colors.black45,
+                                                              blurRadius: 6,
+                                                              offset: Offset(0, 3),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        child: Center(
+                                                          child: Text(
+                                                            '${pin.number}',
+                                                            style: const TextStyle(
+                                                              color: Colors.white,
+                                                              fontWeight: FontWeight.bold,
+                                                              fontSize: 14,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              );
+                                            }),
+                                          ],
+                                        );
+                                      },
                                     ),
                                   ),
                                 ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                              ),
 
                     // 2. 下部フローティングツールバー
                     Positioned(
@@ -1955,20 +2077,45 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            // 1. 赤ペン
-                            IconButton(
-                              icon: Icon(
-                                Icons.edit,
-                                color: _activeTool == SnappyDrawingTool.redPen
-                                    ? Colors.red
-                                    : Colors.grey,
-                              ),
-                              tooltip: 'Red Pen',
-                              onPressed: _isSendingFeedback
-                                  ? null
-                                  : () => setState(
-                                        () => _activeTool = SnappyDrawingTool.redPen,
+                            // 1. ピン留めツール（デフォルト）
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.place,
+                                    color: _activeTool == SnappyDrawingTool.pin
+                                        ? const Color(0xFFF95738)
+                                        : Colors.grey,
+                                  ),
+                                  tooltip: 'Pin Marker (Max 5)',
+                                  onPressed: _isSendingFeedback
+                                      ? null
+                                      : () => setState(
+                                            () => _activeTool = SnappyDrawingTool.pin,
+                                          ),
+                                ),
+                                if (_pins.isNotEmpty)
+                                  Positioned(
+                                    right: 4,
+                                    top: 4,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF95738),
+                                        borderRadius: BorderRadius.circular(10),
                                       ),
+                                      child: Text(
+                                        '${_pins.length}/5',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                             // 2. モザイクペン
                             IconButton(
@@ -1985,54 +2132,45 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         () => _activeTool = SnappyDrawingTool.mosaic,
                                       ),
                             ),
-                            // 4. メモ
-                            IconButton(
-                              icon: Icon(
-                                Icons.comment,
-                                color: _feedbackMemoController.text.trim().isNotEmpty
-                                    ? Colors.amber
-                                    : Colors.grey,
-                              ),
-                              tooltip: 'Memo',
-                              onPressed: _isSendingFeedback
-                                  ? null
-                                  : () => setState(
-                                        () => _isMemoOpen = true,
-                                      ),
-                            ),
-                            const SizedBox(width: 6),
-                            // 5. 元に戻す (Undo)
+                            const SizedBox(width: 8),
+                            // 3. 元に戻す (Undo: モザイクまたはピン)
                             IconButton(
                               icon: const Icon(
                                 Icons.undo,
                                 color: Colors.white70,
                               ),
                               tooltip: 'Undo',
-                              onPressed: _isSendingFeedback || _drawingPoints.isEmpty
+                              onPressed: _isSendingFeedback || (_drawingPoints.isEmpty && _pins.isEmpty)
                                   ? null
-                                  : () => setState(
-                                        () => _drawingPoints.removeLast(),
-                                      ),
+                                  : () => setState(() {
+                                        if (_pins.isNotEmpty) {
+                                          _pins.removeLast();
+                                        } else if (_drawingPoints.isNotEmpty) {
+                                          _drawingPoints.removeLast();
+                                        }
+                                      }),
                             ),
-                            // 6. 全消去 (Clear)
+                            // 4. 全消去 (Clear)
                             IconButton(
                               icon: const Icon(
                                 Icons.delete_outline,
                                 color: Colors.redAccent,
                               ),
                               tooltip: 'Clear',
-                              onPressed: _isSendingFeedback || _drawingPoints.isEmpty
+                              onPressed: _isSendingFeedback || (_drawingPoints.isEmpty && _pins.isEmpty)
                                   ? null
-                                  : () =>
-                                      setState(() => _drawingPoints.clear()),
+                                  : () => setState(() {
+                                        _drawingPoints.clear();
+                                        _pins.clear();
+                                      }),
                             ),
                           ],
                         ),
                       ),
                     ),
 
-                    // 3. メモ入力用フローティングオーバーレイ
-                    if (_isMemoOpen)
+                    // 3. ピンコメント入力用フローティングオーバーレイ
+                    if (_editingPin != null)
                       Positioned.fill(
                         child: Container(
                           color: Colors.black.withValues(alpha: 0.75),
@@ -2052,23 +2190,59 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                     mainAxisSize: MainAxisSize.min,
                                     crossAxisAlignment: CrossAxisAlignment.stretch,
                                     children: [
-                                      Text(
-                                        _SdkLocale.describeIssue,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
+                                      Row(
+                                        children: [
+                                          Container(
+                                            width: 28,
+                                            height: 28,
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xFFF95738),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                '${_editingPin!.number}',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            _SdkLocale.pinCommentTitle,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          const Spacer(),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                                            tooltip: _SdkLocale.delete,
+                                            onPressed: () {
+                                              setState(() {
+                                                _pins.removeWhere((p) => p.id == _editingPin!.id);
+                                                _renumberPins();
+                                                _editingPin = null;
+                                              });
+                                            },
+                                          ),
+                                        ],
                                       ),
                                       const SizedBox(height: 12),
                                       TextField(
-                                        controller: _feedbackMemoController,
+                                        controller: _pinCommentController,
                                         maxLength: 500,
                                         maxLengthEnforcement: MaxLengthEnforcement.enforced,
                                         maxLines: 4,
+                                        autofocus: true,
                                         style: const TextStyle(color: Colors.white),
                                         decoration: InputDecoration(
-                                          hintText: _SdkLocale.memoHint,
+                                          hintText: _SdkLocale.pinCommentHint,
                                           hintStyle: const TextStyle(color: Colors.grey),
                                           fillColor: Colors.black26,
                                           filled: true,
@@ -2088,7 +2262,20 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                           ),
                                         ),
                                         onPressed: () {
-                                          setState(() => _isMemoOpen = false);
+                                          final updatedComment = _pinCommentController.text.trim();
+                                          setState(() {
+                                            if (updatedComment.isEmpty) {
+                                              // コメントが空の場合はピンを削除して番号を振り直す
+                                              _pins.removeWhere((p) => p.id == _editingPin!.id);
+                                              _renumberPins();
+                                            } else {
+                                              final idx = _pins.indexWhere((p) => p.id == _editingPin!.id);
+                                              if (idx != -1) {
+                                                _pins[idx] = _editingPin!.copyWith(comment: updatedComment);
+                                              }
+                                            }
+                                            _editingPin = null;
+                                          });
                                         },
                                         child: Text(
                                           _SdkLocale.done,
@@ -2103,6 +2290,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                           ),
                         ),
                       ),
+
+
 
                     // 4. プライバシー確認用フローティングオーバーレイ（最前面に描画）
                     if (_isPrivacyConfirmOpen)
@@ -2336,6 +2525,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                   screenClassName: _drawingScreenClassName,
                                                   screenSignature: _drawingScreenSignature,
                                                   drawingPoints: _drawingPoints,
+                                                  pins: _pins,
                                                   memo: _feedbackMemoController.text,
                                                   drawingAspectRatio: _drawingAspectRatio,
                                                 );
@@ -2440,6 +2630,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                   screenClassName: _drawingScreenClassName,
                                                   screenSignature: _drawingScreenSignature,
                                                   drawingPoints: _drawingPoints,
+                                                  pins: _pins,
                                                   memo: _feedbackMemoController.text,
                                                   drawingAspectRatio: _drawingAspectRatio,
                                                 );
@@ -3101,8 +3292,63 @@ class WidgetTreeDumper {
 
 /// Drawing tool type for annotation and masking.
 enum SnappyDrawingTool {
-  redPen,
+  pin,
   mosaic,
+  @Deprecated('Use pin instead')
+  redPen,
+}
+
+/// スクリーンショット上の特定箇所を指し示すピンモデル
+class SnappyPin {
+  final String id;
+  final int number;
+  final double xRatio; // 0.0 ~ 1.0 (相対X座標)
+  final double yRatio; // 0.0 ~ 1.0 (相対Y座標)
+  final String comment;
+
+  SnappyPin({
+    required this.id,
+    required this.number,
+    required this.xRatio,
+    required this.yRatio,
+    this.comment = '',
+  });
+
+  SnappyPin copyWith({
+    String? id,
+    int? number,
+    double? xRatio,
+    double? yRatio,
+    String? comment,
+  }) {
+    return SnappyPin(
+      id: id ?? this.id,
+      number: number ?? this.number,
+      xRatio: xRatio ?? this.xRatio,
+      yRatio: yRatio ?? this.yRatio,
+      comment: comment ?? this.comment,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'number': number,
+        'x': xRatio,
+        'y': yRatio,
+        'xRatio': xRatio,
+        'yRatio': yRatio,
+        'comment': comment,
+      };
+
+  factory SnappyPin.fromJson(Map<String, dynamic> json) {
+    return SnappyPin(
+      id: json['id'] as String? ?? 'pin_${DateTime.now().millisecondsSinceEpoch}',
+      number: (json['number'] as num?)?.toInt() ?? 1,
+      xRatio: (json['xRatio'] as num?)?.toDouble() ?? (json['x'] as num?)?.toDouble() ?? 0.0,
+      yRatio: (json['yRatio'] as num?)?.toDouble() ?? (json['y'] as num?)?.toDouble() ?? 0.0,
+      comment: json['comment'] as String? ?? '',
+    );
+  }
 }
 
 /// 描画の一筆を表現するデータクラス
@@ -3189,6 +3435,7 @@ class _SnappyDraftData {
   final String screenClassName;
   final String screenSignature;
   final List<DrawingPoint> drawingPoints;
+  final List<SnappyPin> pins;
   final String memo;
   final double? drawingAspectRatio;
   final int timestamp;
@@ -3199,6 +3446,7 @@ class _SnappyDraftData {
     required this.screenClassName,
     required this.screenSignature,
     required this.drawingPoints,
+    this.pins = const [],
     required this.memo,
     this.drawingAspectRatio,
     required this.timestamp,
@@ -3210,6 +3458,7 @@ class _SnappyDraftData {
         'screenClassName': screenClassName,
         'screenSignature': screenSignature,
         'drawingPoints': drawingPoints.map((p) => p.toJson()).toList(),
+        'pins': pins.map((p) => p.toJson()).toList(),
         'memo': memo,
         if (drawingAspectRatio != null) 'drawingAspectRatio': drawingAspectRatio,
         'timestamp': timestamp,
@@ -3217,6 +3466,7 @@ class _SnappyDraftData {
 
   factory _SnappyDraftData.fromJson(Map<String, dynamic> json) {
     final rawPoints = json['drawingPoints'] as List<dynamic>? ?? [];
+    final rawPins = json['pins'] as List<dynamic>? ?? [];
     return _SnappyDraftData(
       imageBytes: base64Decode(json['imageBytesBase64'] as String),
       widgetTree: json['widgetTree'] as Map<String, dynamic>? ?? {},
@@ -3224,6 +3474,9 @@ class _SnappyDraftData {
       screenSignature: json['screenSignature'] as String? ?? '',
       drawingPoints: rawPoints
           .map((p) => DrawingPoint.fromJson(p as Map<String, dynamic>))
+          .toList(),
+      pins: rawPins
+          .map((p) => SnappyPin.fromJson(p as Map<String, dynamic>))
           .toList(),
       memo: json['memo'] as String? ?? '',
       drawingAspectRatio: (json['drawingAspectRatio'] as num?)?.toDouble(),
@@ -3259,6 +3512,7 @@ class _SnappyDraftData {
     required String screenClassName,
     required String screenSignature,
     required List<DrawingPoint> drawingPoints,
+    List<SnappyPin> pins = const [],
     required String memo,
     double? drawingAspectRatio,
   }) async {
@@ -3269,6 +3523,7 @@ class _SnappyDraftData {
         screenClassName: screenClassName,
         screenSignature: screenSignature,
         drawingPoints: drawingPoints,
+        pins: pins,
         memo: memo,
         drawingAspectRatio: drawingAspectRatio,
         timestamp: DateTime.now().millisecondsSinceEpoch,
@@ -3535,6 +3790,21 @@ class _SdkLocale {
       ? '（例: この画面のタイトルのフォントサイズが小さすぎます...）'
       : 'e.g., The title font size is too small on this screen...';
   static String get done => _isJa ? '完了' : 'Done';
+  static String get delete => _isJa ? '削除' : 'Delete';
+  static String get pinCommentTitle => _isJa ? 'ピンのコメント' : 'Pin Comment';
+  static String get pinCommentHint => _isJa ? 'この箇所へのコメントを入力...' : 'Add comment for this pin...';
+  static String get pinLimitReached => _isJa
+      ? 'ピンは最大5個まで配置できます。'
+      : 'You can place up to 5 pins.';
+  static String get memoOrPinRequiredSnackBar => _isJa
+      ? 'ピン留めしてコメントを追加するか、全体のメモを入力してください。'
+      : 'Please place a pin with comment or enter a general memo.';
+  static String get pinRequiredSnackBar => _isJa
+      ? '画面をタップしてピンを立て、コメントを入力してください。'
+      : 'Please tap the screen to place a pin and add a comment.';
+  static String get tapToPlacePinHint => _isJa
+      ? '画面をタップして指摘箇所にピンを立ててください'
+      : 'Tap on screen to place feedback pins';
 
   static String get analyzingScreen =>
       _isJa ? '画面を解析中...' : 'Analyzing screen...';

@@ -200,4 +200,28 @@ void main() {
     expect(restored.offsets.length, 2);
     expect(restored.offsets[0], const Offset(10, 20));
   });
+
+  test('SnappyPin JSON serialization and deserialization test', () {
+    final pin = SnappyPin(
+      id: 'pin_123',
+      number: 1,
+      xRatio: 0.45,
+      yRatio: 0.85,
+      comment: 'Button is misaligned',
+    );
+
+    final json = pin.toJson();
+    expect(json['id'], 'pin_123');
+    expect(json['number'], 1);
+    expect(json['x'], 0.45);
+    expect(json['y'], 0.85);
+    expect(json['comment'], 'Button is misaligned');
+
+    final restored = SnappyPin.fromJson(json);
+    expect(restored.id, 'pin_123');
+    expect(restored.number, 1);
+    expect(restored.xRatio, 0.45);
+    expect(restored.yRatio, 0.85);
+    expect(restored.comment, 'Button is misaligned');
+  });
 }

@@ -5,11 +5,13 @@ SnappySnag is a visual bug reporting and AI auto-fix suggestion tool for Flutter
 ## Features
 
 * 📸 **Prioritized Instant Screenshots**: Captured immediately on-press to freeze the screen state, even during fast page transitions.
+* 📍 **Multi-Point Pin Annotations**: Tap anywhere on the captured screen to drop numbered pins (1–5) and attach itemized feedback/bug details for each specific area.
+* 🎨 **Clean & Annotated Screenshot Preservation**: Pin coordinates are stored as normalized vectors, keeping the original screenshot crystal clear without destructive image stamping.
 * 🌳 **Widget Tree Dumper**: Automatically dumps the widget hierarchy (up to a depth of 10 levels) for precise widget mapping.
 * 🤖 **AI Auto-Fix suggestions**: Generates human-focused technical guides and cursor-compatible agent prompts.
-* 💾 **Offline Draft & Resilience**: Automatically saves drawing annotations and comments locally on connection failure or accidental dismissal. Seamlessly resume or discard drafts on the next capture without wasting user efforts.
+* 💾 **Offline Draft & Resilience**: Automatically saves drawing annotations, pins, and comments locally on connection failure or accidental dismissal. Seamlessly resume or discard drafts on the next capture without wasting user efforts.
 * ⚡ **Pre-Validation Error Guard**: Instantly validates API key configuration and bundle identifiers before users spend time drawing or writing, preventing post-submit authentication surprises.
-* 👥 **One-Build Role-Based Sharing**: Show internal tickets, duplicate warnings, and discussion threads to developers while keeping external clients on a clean, simple feedback flow in the exact same build.
+* 👥 **One-Build Role-Based Sharing**: Show internal tickets and duplicate warnings to developers while keeping external clients on a clean, simple feedback flow in the exact same build.
 * 🛡️ **Package Name Lock**: Prevents unauthorized API requests by locking your API Key to your registered bundle identifier.
 * 🚫 **Store Production Safe**: Easily disable the overlay button and sensor listeners completely in App Store/Google Play builds using the `enabled` configuration.
 
@@ -37,7 +39,7 @@ void main() {
   SnappySnag().initialize(
     apiKey: 'snag_live_your_api_key_here',
     // packageName: 'your.package.name', // Optional: Lock API key usage to your app's bundle ID
-    // Optional: Identify user/tester to automatically unlock developer tickets/chat for team members
+    // Optional: Identify user/tester to automatically unlock developer tickets for team members
     user: const SnappySnagUser(
       email: 'developer@example.com',
     ),
@@ -123,7 +125,14 @@ By default (`enableWidgetTree: true`), SnappySnag extracts the Flutter UI hierar
   ```
   > 💡 When `enableWidgetTree: false`, SnappySnag skips tree traversal entirely and relies strictly on screenshot visual cues and user annotations for AI analysis. The dashboard will automatically reflect this as `Visual Screenshot Analysis (UI Tree Excluded)`.
 
-### 4. Launch Feedback Mode Manually (e.g. from Settings or In-App Menu)
+### 4. Multi-Point Pin Drop & Itemized Feedback
+
+When users capture a screenshot, they can annotate specific UI elements with numbered pins (1–5) and write separate notes for each pin:
+* **Drop Pins**: Tap anywhere on the captured screenshot to place a pin marker.
+* **Itemized Notes**: Add targeted feedback or repro notes per pin, helping developers address multiple UI issues in a single report without confusing clutter.
+* **Non-Destructive Vectors**: Pin coordinates (`x`, `y` percentages) are stored separately from the image. The original screenshot remains intact and clean on your dashboard.
+
+### 5. Launch Feedback Mode Manually (e.g. from Settings or In-App Menu)
 
 When the floating button is hidden (via `showTriggerButton: false` or `SnappySnagHideButton`), or if you prefer triggering feedback through your own custom UI (such as a "Report Bug" button in a Settings or Help drawer), call `SnappySnag.startFeedbackMode`:
 
@@ -140,7 +149,7 @@ ListTile(
 
 > 💡 When invoked, it displays a guided prompt modal and temporarily reveals the capture button, allowing the user to navigate anywhere in the app to capture and highlight the issue.
 
-### 5. Build for TestFlight / Internal Testing
+### 6. Build for TestFlight / Internal Testing
 
 To compile your app with SnappySnag enabled, build with the `--dart-define` flag:
 
@@ -149,7 +158,7 @@ flutter build ipa --dart-define=ENABLE_SNAPPY_SNAG=true
 flutter build appbundle --dart-define=ENABLE_SNAPPY_SNAG=true
 ```
 
-### 6. Build for App Store / Google Play Store (Production)
+### 7. Build for App Store / Google Play Store (Production)
 
 To compile your app for production release, build normally. SnappySnag will automatically be disabled, will not render the overlay button, and will not register any shake listeners:
 
@@ -163,20 +172,20 @@ flutter build ipa
 In team and client work, building separate app binaries (one for internal developers and one for external clients) is time-consuming and prone to human error. SnappySnag provides a comprehensive defense and access control system to **safely share a single build** between developers and clients without risking internal leakages.
 
 ### 1. One-Build Sharing: Role-Based Developer In-App Features
-With `mode: SnappySnagMode.dev`, you can let your development team view **existing internal tickets, duplicate warnings, and discussion threads**, while ensuring clients and external testers only see a clean, distraction-free **feedback submission screen**.
+With `mode: SnappySnagMode.dev`, you can let your development team view **existing internal tickets and duplicate warnings**, while ensuring clients and external testers only see a clean, distraction-free **feedback submission screen**.
 
-> 🔒 **Default Safety Note**: Newly created projects default to **Disabled** for developer tickets and chat. You can switch this to **Allowed Only** or **Everyone** anytime in your dashboard. Furthermore, if the SDK is running with `mode: SnappySnagMode.user`, developer tickets are **always strictly hidden**, irrespective of dashboard settings.
+> 🔒 **Default Safety Note**: Newly created projects default to **Disabled** for developer tickets. You can switch this to **Allowed Only** or **Everyone** anytime in your dashboard. Furthermore, if the SDK is running with `mode: SnappySnagMode.user`, developer tickets are **always strictly hidden**, irrespective of dashboard settings.
 
 Control access effortlessly from your **Web Dashboard** > **Project Settings** > **General & SDK**:
-* 🛑 **Disabled (Default)**: Suppresses developer tickets and chat completely across all client devices.
+* 🛑 **Disabled (Default)**: Suppresses developer tickets completely across all client devices.
 * 👥 **Allowed Only (Recommended for Teams)**:
-  * **Team Members**: Owners and developers registered in your dashboard's "Team & Members" automatically get full access to internal tickets and chat threads when their `reporterEmail` matches.
+  * **Team Members**: Owners and developers registered in your dashboard's "Team & Members" automatically get full access to internal tickets when their `reporterEmail` matches.
   * **Additional Allowed Emails**: Seamlessly whitelist client leads or external QA testers by email address without touching your code or re-deploying.
-  * **Unauthenticated / Unknown Testers**: Automatically skip internal tickets and transition directly to the feedback submission screen. Chat submissions are rejected with `403 Forbidden`.
-* 🌐 **Everyone**: Displays developer tickets and chat to anyone running the dev-mode app.
+  * **Unauthenticated / Unknown Testers**: Automatically skip internal tickets and transition directly to the feedback submission screen.
+* 🌐 **Everyone**: Displays developer tickets to anyone running the dev-mode app.
 
 ### 2. Automatic Release Guard (`kReleaseMode`)
-When you build your application in **Release Mode** (`flutter build ipa` / `flutter build appbundle`), SnappySnag automatically checks Flutter's `kReleaseMode`. Even if `mode: SnappySnagMode.dev` was inadvertently left configured in your source code, SnappySnag automatically falls back to `SnappySnagMode.user`, completely hiding developer tickets and comments.
+When you build your application in **Release Mode** (`flutter build ipa` / `flutter build appbundle`), SnappySnag automatically checks Flutter's `kReleaseMode`. Even if `mode: SnappySnagMode.dev` was inadvertently left configured in your source code, SnappySnag automatically falls back to `SnappySnagMode.user`, completely hiding developer tickets.
 
 > 💡 **Internal Dogfooding in Release Builds**: If you intentionally wish to test developer mode in a release-compiled build (e.g. TestFlight distribution to internal team members), explicitly set `forceDevInRelease: true`:
 > ```dart
@@ -184,7 +193,7 @@ When you build your application in **Release Mode** (`flutter build ipa` / `flut
 >   apiKey: 'YOUR_KEY',
 >   packageName: 'com.example.app',
 >   mode: SnappySnagMode.dev,
->   forceDevInRelease: const bool.fromEnvironment('FORCE_DEV_CHAT', defaultValue: false),
+>   forceDevInRelease: const bool.fromEnvironment('FORCE_DEV_MODE', defaultValue: false),
 > );
 > ```
 
