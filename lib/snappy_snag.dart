@@ -447,6 +447,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   List<DrawingPoint> _drawingPoints = [];
   List<SnappyPin> _pins = [];
   SnappyPin? _editingPin;
+  List<dynamic> _existingFeedbacks = [];
+  List<ExistingPinItem> _existingPins = [];
+  bool _showExistingPins = true;
+  ExistingPinItem? _selectedExistingPin;
+  List<ExistingPinItem>? _nearbyExistingPins;
   Offset? _dragStartGlobal;
   double? _dragStartPinX;
   double? _dragStartPinY;
@@ -749,51 +754,23 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         _hideLoadingOverlay();
         if (!mounted) return;
 
-        if (duplicates.isNotEmpty) {
-          final bool shouldReportNew = await _showDuplicateWarningDialog(
-            duplicates: duplicates,
-            imageBytes: imageBytes,
-            widgetTree: widgetTree,
+        setState(() {
+          _isCapturing = false;
+          _capturedImageForFreeze = null;
+          _isFeedbackDialogOpen = true;
+        });
+        try {
+          await _startDrawingFlow(
+            imageBytes,
+            widgetTree,
             screenClassName: screenClassName,
+            screenSignature: screenSignature,
+            sensitiveBounds: sensitiveBounds,
+            existingFeedbacks: duplicates,
           );
-          if (shouldReportNew && mounted) {
-            setState(() {
-              _isCapturing = false;
-              _capturedImageForFreeze = null;
-              _isFeedbackDialogOpen = true;
-            });
-            try {
-              await _startDrawingFlow(
-                imageBytes,
-                widgetTree,
-                screenClassName: screenClassName,
-                screenSignature: screenSignature,
-                sensitiveBounds: sensitiveBounds,
-              );
-            } finally {
-              if (mounted) {
-                setState(() => _isFeedbackDialogOpen = false);
-              }
-            }
-          }
-        } else {
-          setState(() {
-            _isCapturing = false;
-            _capturedImageForFreeze = null;
-            _isFeedbackDialogOpen = true;
-          });
-          try {
-            await _startDrawingFlow(
-              imageBytes,
-              widgetTree,
-              screenClassName: screenClassName,
-              screenSignature: screenSignature,
-              sensitiveBounds: sensitiveBounds,
-            );
-          } finally {
-            if (mounted) {
-              setState(() => _isFeedbackDialogOpen = false);
-            }
+        } finally {
+          if (mounted) {
+            setState(() => _isFeedbackDialogOpen = false);
           }
         }
       } on SnappySnagException catch (se) {
@@ -1141,6 +1118,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     List<SnappyPin>? initialPins,
     String? initialMemo,
     double? initialAspectRatio,
+    List<dynamic>? existingFeedbacks,
   }) async {
     if (!mounted) return;
     _drawingCompleter = Completer<void>();
@@ -1166,6 +1144,29 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       }
     }
 
+    final parsedExistingFeedbacks = existingFeedbacks ?? <dynamic>[];
+    final List<ExistingPinItem> parsedExistingPins = [];
+    for (final fb in parsedExistingFeedbacks) {
+      final feedbackId = fb['id']?.toString() ?? '';
+      final userMemo = fb['user_memo']?.toString() ?? '';
+      final severity = fb['severity']?.toString() ?? 'unassessed';
+      final rawPins = fb['pins'];
+      if (rawPins is List) {
+        for (final p in rawPins) {
+          if (p is Map<String, dynamic>) {
+            parsedExistingPins.add(
+              ExistingPinItem(
+                feedbackId: feedbackId,
+                userMemo: userMemo,
+                severity: severity,
+                pin: SnappyPin.fromJson(p),
+              ),
+            );
+          }
+        }
+      }
+    }
+
     setState(() {
       _drawingImageBytes = imageBytes;
       _drawingWidgetTree = widgetTree;
@@ -1174,6 +1175,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       _drawingPoints = initialPoints;
       _pins = initialPins != null ? List<SnappyPin>.from(initialPins) : [];
       _editingPin = null;
+      _existingFeedbacks = parsedExistingFeedbacks;
+      _existingPins = parsedExistingPins;
+      _showExistingPins = true;
+      _selectedExistingPin = null;
+      _nearbyExistingPins = null;
       _activeTool = SnappyDrawingTool.pin;
       _isSendingFeedback = false;
       _isMemoOpen = false;
@@ -1212,6 +1218,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     setState(() {
       _isCancelDraftConfirmOpen = false;
       _isFailedSendDraftConfirmOpen = false;
+      _selectedExistingPin = null;
+      _nearbyExistingPins = null;
       _overlayMode = _SnappyOverlayMode.none;
       _isCapturing = false;
     });
@@ -1825,6 +1833,56 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                           ),
                           centerTitle: true,
                           actions: [
+                            if (_existingPins.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(16),
+                                  onTap: () {
+                                    setState(() {
+                                      _showExistingPins = !_showExistingPins;
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: _showExistingPins
+                                          ? const Color(0xFF8B5CF6).withValues(alpha: 0.25)
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: _showExistingPins
+                                            ? const Color(0xFF8B5CF6)
+                                            : Colors.white38,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          _showExistingPins ? Icons.location_on : Icons.location_off_outlined,
+                                          size: 14,
+                                          color: _showExistingPins
+                                              ? const Color(0xFFA78BFA)
+                                              : Colors.white60,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '${_SdkLocale.existingPinsToggle} (${_existingPins.length})',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: _showExistingPins
+                                                ? const Color(0xFFA78BFA)
+                                                : Colors.white60,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
                             TextButton(
                               onPressed: _isSendingFeedback
                                   ? null
@@ -1964,7 +2022,74 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                               ),
                                             ),
 
-                                            // 3. ピンのオーバーレイ表示（画像には焼き込まれない）
+                                            // 3. 過去チケットの既存ピン表示（SnappySnagMode.dev かつ _showExistingPins が有効な場合）
+                                            if (_showExistingPins)
+                                              ..._existingPins.map((item) {
+                                                final pin = item.pin;
+                                                final pinPixelX = pin.xRatio * canvasSize.width;
+                                                final pinPixelY = pin.yRatio * canvasSize.height;
+                                                const pinSize = 32.0;
+
+                                                return Positioned(
+                                                  left: (pinPixelX - pinSize / 2).clamp(0.0, canvasSize.width - pinSize),
+                                                  top: (pinPixelY - pinSize).clamp(0.0, canvasSize.height - pinSize),
+                                                  child: GestureDetector(
+                                                    behavior: HitTestBehavior.opaque,
+                                                    onTap: () {
+                                                      if (_isSendingFeedback || _isMemoOpen) return;
+                                                      // 近接・重複ピンの判定（半径28px以内のピンを抽出）
+                                                      const thresholdPixels = 28.0;
+                                                      final nearby = _existingPins.where((other) {
+                                                        final ox = other.pin.xRatio * canvasSize.width;
+                                                        final oy = other.pin.yRatio * canvasSize.height;
+                                                        final dx = ox - pinPixelX;
+                                                        final dy = oy - pinPixelY;
+                                                        return sqrt(dx * dx + dy * dy) <= thresholdPixels;
+                                                      }).toList();
+
+                                                      setState(() {
+                                                        if (nearby.length > 1) {
+                                                          _nearbyExistingPins = nearby;
+                                                          _selectedExistingPin = null;
+                                                        } else {
+                                                          _selectedExistingPin = item;
+                                                          _nearbyExistingPins = null;
+                                                        }
+                                                      });
+                                                    },
+                                                    child: Column(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Container(
+                                                          width: pinSize,
+                                                          height: pinSize,
+                                                          decoration: BoxDecoration(
+                                                            color: const Color(0xFF8B5CF6),
+                                                            shape: BoxShape.circle,
+                                                            border: Border.all(color: Colors.white, width: 2),
+                                                            boxShadow: const [
+                                                              BoxShadow(
+                                                                color: Colors.black45,
+                                                                blurRadius: 6,
+                                                                offset: Offset(0, 3),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          child: const Center(
+                                                            child: Icon(
+                                                              Icons.location_on,
+                                                              color: Colors.white,
+                                                              size: 18,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                );
+                                              }),
+
+                                            // 4. ピンのオーバーレイ表示（画像には焼き込まれない）
                                             ..._pins.map((pin) {
                                               final pinPixelX = pin.xRatio * canvasSize.width;
                                               final pinPixelY = pin.yRatio * canvasSize.height;
@@ -2293,7 +2418,273 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
 
 
-                    // 4. プライバシー確認用フローティングオーバーレイ（最前面に描画）
+                    // 4-A. 近接・重なりピンの一覧ピッカーモーダル（複数検知時に表示）
+                    if (_nearbyExistingPins != null)
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.75),
+                          padding: const EdgeInsets.all(24),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 400),
+                              child: Card(
+                                color: Colors.grey.shade900,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: const BorderSide(color: Color(0xFF8B5CF6), width: 1.5),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(18),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xFF8B5CF6),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(Icons.location_on, color: Colors.white, size: 16),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  _SdkLocale.nearbyPinsTitle,
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 15,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  _SdkLocale.nearbyPinsSub,
+                                                  style: TextStyle(
+                                                    color: Colors.grey.shade400,
+                                                    fontSize: 11,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                                            onPressed: () {
+                                              setState(() {
+                                                _nearbyExistingPins = null;
+                                              });
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      ConstrainedBox(
+                                        constraints: const BoxConstraints(maxHeight: 260),
+                                        child: ListView.separated(
+                                          shrinkWrap: true,
+                                          itemCount: _nearbyExistingPins!.length,
+                                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                                          itemBuilder: (context, index) {
+                                            final item = _nearbyExistingPins![index];
+                                            final commentText = item.pin.comment.trim().isNotEmpty
+                                                ? item.pin.comment.trim()
+                                                : _SdkLocale.noCommentForPin;
+                                            return InkWell(
+                                              onTap: () {
+                                                setState(() {
+                                                  final selected = item;
+                                                  _nearbyExistingPins = null;
+                                                  _selectedExistingPin = selected;
+                                                });
+                                              },
+                                              borderRadius: BorderRadius.circular(10),
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white.withValues(alpha: 0.05),
+                                                  borderRadius: BorderRadius.circular(10),
+                                                  border: Border.all(color: Colors.white12),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Container(
+                                                      width: 26,
+                                                      height: 26,
+                                                      decoration: const BoxDecoration(
+                                                        color: Color(0xFF8B5CF6),
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      child: const Center(
+                                                        child: Icon(Icons.location_on, color: Colors.white, size: 14),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 10),
+                                                    Expanded(
+                                                      child: Text(
+                                                        commentText,
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow.ellipsis,
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 13,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const Icon(Icons.chevron_right, color: Colors.white54, size: 18),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      OutlinedButton(
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: Colors.white70,
+                                          side: const BorderSide(color: Colors.white24),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            _nearbyExistingPins = null;
+                                          });
+                                        },
+                                        child: Text(_SdkLocale.close),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // 4-B. 過去チケットのピン詳細確認モーダル（タップ時に表示）
+                    if (_selectedExistingPin != null)
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.75),
+                          padding: const EdgeInsets.all(24),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 440),
+                              child: Card(
+                                color: Colors.grey.shade900,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: const BorderSide(color: Color(0xFF8B5CF6), width: 1.5),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(18),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            width: 28,
+                                            height: 28,
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xFF8B5CF6),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Center(
+                                              child: Icon(Icons.location_on, color: Colors.white, size: 16),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              _SdkLocale.existingPinDetailTitle,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                                            onPressed: () {
+                                              setState(() {
+                                                _selectedExistingPin = null;
+                                              });
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black38,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: Colors.white12),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              _SdkLocale.pinCommentTitle,
+                                              style: const TextStyle(
+                                                color: Color(0xFFC4B5FD),
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              _selectedExistingPin!.pin.comment.trim().isNotEmpty
+                                                  ? _selectedExistingPin!.pin.comment.trim()
+                                                  : _SdkLocale.noCommentForPin,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 13,
+                                                height: 1.4,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF8B5CF6),
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            _selectedExistingPin = null;
+                                          });
+                                        },
+                                        child: Text(
+                                          _SdkLocale.close,
+                                          style: const TextStyle(fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    // 5. プライバシー確認用フローティングオーバーレイ（最前面に描画）
                     if (_isPrivacyConfirmOpen)
                       Positioned.fill(
                         child: Container(
@@ -3351,6 +3742,21 @@ class SnappyPin {
   }
 }
 
+/// 過去に投稿された既存チケットのピン情報
+class ExistingPinItem {
+  final String feedbackId;
+  final String userMemo;
+  final String severity;
+  final SnappyPin pin;
+
+  ExistingPinItem({
+    required this.feedbackId,
+    required this.userMemo,
+    required this.severity,
+    required this.pin,
+  });
+}
+
 /// 描画の一筆を表現するデータクラス
 class DrawingPoint {
   final List<Offset?> offsets;
@@ -3805,6 +4211,13 @@ class _SdkLocale {
   static String get tapToPlacePinHint => _isJa
       ? '画面をタップして指摘箇所にピンを立ててください'
       : 'Tap on screen to place feedback pins';
+
+  static String get existingPinsToggle => _isJa ? '既存ピン' : 'Existing Pins';
+  static String get existingPinDetailTitle => _isJa ? '既存ピンのコメント' : 'Existing Pin Comment';
+  static String get nearbyPinsTitle => _isJa ? 'この付近のピンを選択' : 'Select a Pin Nearby';
+  static String get nearbyPinsSub => _isJa ? '重なり合っているピンが複数あります' : 'Multiple pins are grouped together';
+  static String get noCommentForPin => _isJa ? '（コメントなし）' : '(No comment)';
+  static String get close => _isJa ? '閉じる' : 'Close';
 
   static String get analyzingScreen =>
       _isJa ? '画面を解析中...' : 'Analyzing screen...';
