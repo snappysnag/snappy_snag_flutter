@@ -124,6 +124,21 @@ void main() {
     expect(snappy.enableWidgetTree, isFalse);
   });
 
+  test('SnappySnag enableShakeTrigger default is true and can be configured', () {
+    final snappy = SnappySnag();
+
+    snappy.initialize(
+      apiKey: 'test_key',
+    );
+    expect(snappy.enableShakeTrigger, isTrue);
+
+    snappy.initialize(
+      apiKey: 'test_key',
+      enableShakeTrigger: false,
+    );
+    expect(snappy.enableShakeTrigger, isFalse);
+  });
+
   test('SnappySnag trigger button visibility controls', () {
     final snappy = SnappySnag();
     snappy.initialize(
@@ -224,4 +239,84 @@ void main() {
     expect(restored.yRatio, 0.85);
     expect(restored.comment, 'Button is misaligned');
   });
+
+  testWidgets('WidgetTreeDumper findTargetAtPosition and resolveTargetPosition test', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: ElevatedButton(
+              key: const Key('my_test_button'),
+              onPressed: () {},
+              child: const Text('はじめる'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final context = tester.element(find.byType(ElevatedButton));
+    final btnRenderBox = context.findRenderObject() as RenderBox;
+    final btnCenter = btnRenderBox.localToGlobal(btnRenderBox.size.center(Offset.zero));
+
+    final target = WidgetTreeDumper.findTargetAtPosition(context, btnCenter);
+    expect(target, isNotNull);
+    expect(target?.widgetType.contains('Button'), isTrue);
+
+    final resolved = WidgetTreeDumper.resolveTargetPosition(context, target!);
+    expect(resolved, isNotNull);
+    expect(resolved, equals(btnCenter));
+  });
+
+  testWidgets('WidgetTreeDumper disambiguates multiple common buttons by text and position', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Column(
+            children: [
+              ElevatedButton(
+                onPressed: () {},
+                child: const Row(
+                  children: [
+                    Icon(Icons.arrow_forward),
+                    Text('キャンセル'),
+                  ],
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {},
+                child: const Row(
+                  children: [
+                    Icon(Icons.arrow_forward),
+                    Text('保存'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // 1つ目のボタンの矢印アイコンをタップしたと想定
+    final icon1Context = tester.element(find.byType(Icon).first);
+    final icon1Box = icon1Context.findRenderObject() as RenderBox;
+    final icon1Center = icon1Box.localToGlobal(icon1Box.size.center(Offset.zero));
+
+    final target1 = WidgetTreeDumper.findTargetAtPosition(icon1Context, icon1Center);
+    expect(target1, isNotNull);
+    // アイコン部分をタップしても、親ボタンの子孫テキスト「キャンセル」が自動抽出されていること
+    expect(target1?.widgetText, 'キャンセル');
+
+    // 2つ目のボタンの矢印アイコンをタップしたと想定
+    final icon2Context = tester.element(find.byType(Icon).last);
+    final icon2Box = icon2Context.findRenderObject() as RenderBox;
+    final icon2Center = icon2Box.localToGlobal(icon2Box.size.center(Offset.zero));
+
+    final target2 = WidgetTreeDumper.findTargetAtPosition(icon2Context, icon2Center);
+    expect(target2, isNotNull);
+    // アイコン部分をタップしても、親ボタンの子孫テキスト「保存」が自動抽出されていること
+    expect(target2?.widgetText, '保存');
+  });
 }
+

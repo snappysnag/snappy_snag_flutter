@@ -78,6 +78,8 @@ class SnappySnag {
   bool get isDevChatEnabled => _isDevChatEnabled;
   bool _enableWidgetTree = true;
   bool get enableWidgetTree => _enableWidgetTree;
+  bool _enableShakeTrigger = true;
+  bool get enableShakeTrigger => _enableShakeTrigger;
 
   /// Current user/reporter information.
   SnappySnagUser? get user => _user;
@@ -311,6 +313,7 @@ class SnappySnag {
     bool enabled = true,
     bool showTriggerButton = false,
     bool enableWidgetTree = true,
+    bool enableShakeTrigger = true,
     String? supabaseUrl,
     bool forceDevInRelease = false,
   }) {
@@ -320,6 +323,7 @@ class SnappySnag {
     _baseTriggerButtonVisibility = showTriggerButton;
     _updateTriggerButtonVisibility();
     _enableWidgetTree = enableWidgetTree;
+    _enableShakeTrigger = enableShakeTrigger;
     // ★ 第1の防壁: Releaseモード時の安全ガード
     // 本番ビルド時に mode: SnappySnagMode.dev が指定されていても、
     // forceDevInRelease: true が明示されていない限り自動的に user モードへフォールバック
@@ -446,12 +450,24 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   String _drawingScreenSignature = '';
   List<DrawingPoint> _drawingPoints = [];
   List<SnappyPin> _pins = [];
+  // ★ undo/redo 統合履歴スタック
+  // SnappyPin (ピン追加) または DrawingPoint (モザイク1ストローク) を時系列順に記録する
+  final List<Object> _undoStack = [];
+  final List<Object> _redoStack = [];
   SnappyPin? _editingPin;
+  // ★ 社内実験用内部フラグ（初期リリースでは非公開・無効化）
+  // 今後のアップデートでUI/UXの検証・改善が完了した際に公開検討
+  static const bool _enableSectionHighlights = false;
+
   List<dynamic> _existingFeedbacks = [];
   List<ExistingPinItem> _existingPins = [];
-  bool _showExistingPins = true;
+  List<ExistingSectionItem> _existingSections = [];
+  bool _showExistingPins = _enableSectionHighlights;
   ExistingPinItem? _selectedExistingPin;
   List<ExistingPinItem>? _nearbyExistingPins;
+  ExistingSectionItem? _selectedSection;
+  ExistingPinItem? _previewingPin;
+  bool _showAllScreenPinsModal = false;
   Offset? _dragStartGlobal;
   double? _dragStartPinX;
   double? _dragStartPinY;
@@ -469,6 +485,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   double? _drawingAspectRatio;
 
   DateTime? _lastShakeTime;
+  int _shakeFlipCount = 0;
+  DateTime? _firstFlipTime;
+  double _lastSignX = 0;
+  double _lastSignY = 0;
 
   @override
   void initState() {
@@ -477,19 +497,21 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   }
 
   void _initShakeDetection() {
-    // SDKが無効の場合はセンサー登録をスキップしてリソースを節約する
-    if (!SnappySnag().isEnabled) return;
+    // SDKが無効またはシェイク検知が無効化されている場合はセンサー登録をスキップ
+    if (!SnappySnag().isEnabled || !SnappySnag().enableShakeTrigger) return;
 
     // Webやデスクトップ（macOS/Windows/Linux）などの非モバイルプラットフォームではシェイク検知を無効化
     final isMobile = !kIsWeb && (Platform.isIOS || Platform.isAndroid);
     if (!isMobile) return;
 
-    // しきい値（Gフォース）。一般的なシェイクの強さ
-    const double shakeThreshold = 12.0;
+    // ★ 端末を傾けたり持ち上げただけの誤検知を完全に防止する高精度シェイク検知
+    // 1. しきい値: 傾き操作では届かない 22.0 m/s^2 以上の強い加速度
+    // 2. 往復検知: 加速度の向き（正負）が急激に反転（往復）した回数が短時間（600ms以内）に2回以上発生した場合のみトリガー
+    const double shakeThreshold = 22.0;
 
     _accelerometerSubscription = userAccelerometerEventStream().listen(
       (UserAccelerometerEvent event) {
-        if (_isCapturing) return;
+        if (_isCapturing || _isFeedbackDialogOpen || _overlayMode != _SnappyOverlayMode.none) return;
 
         // 加速度ベクトル長（G-force）を算出
         final double gForce = sqrt(
@@ -498,11 +520,38 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
         if (gForce > shakeThreshold) {
           final now = DateTime.now();
-          // チャタリング防止（前回の検知から1秒以上経過している場合のみトリガー）
-          if (_lastShakeTime == null ||
-              now.difference(_lastShakeTime!) > const Duration(seconds: 1)) {
-            _lastShakeTime = now;
-            _triggerCapture();
+          final currentSignX = event.x.abs() > 8.0 ? (event.x > 0 ? 1.0 : -1.0) : 0.0;
+          final currentSignY = event.y.abs() > 8.0 ? (event.y > 0 ? 1.0 : -1.0) : 0.0;
+
+          // 前回のフリップから600ms以上経過していたらカウントをリセット
+          if (_firstFlipTime == null || now.difference(_firstFlipTime!) > const Duration(milliseconds: 600)) {
+            _shakeFlipCount = 1;
+            _firstFlipTime = now;
+            _lastSignX = currentSignX;
+            _lastSignY = currentSignY;
+          } else {
+            // X軸またはY軸で急激な向きの反転（正負の切り替わり＝手首の往復運動）を検知
+            final bool isReversedX = (currentSignX != 0.0 && _lastSignX != 0.0 && currentSignX != _lastSignX);
+            final bool isReversedY = (currentSignY != 0.0 && _lastSignY != 0.0 && currentSignY != _lastSignY);
+
+            if (isReversedX || isReversedY) {
+              _shakeFlipCount++;
+              _lastSignX = currentSignX != 0.0 ? currentSignX : _lastSignX;
+              _lastSignY = currentSignY != 0.0 ? currentSignY : _lastSignY;
+
+              // 2回以上の急峻な往復（フリップ）を確認した時点で本物の「シェイク」と認定
+              if (_shakeFlipCount >= 2) {
+                _shakeFlipCount = 0;
+                _firstFlipTime = null;
+
+                // チャタリング防止（前回の撮影トリガーから2秒以上経過している場合のみ実行）
+                if (_lastShakeTime == null || now.difference(_lastShakeTime!) > const Duration(seconds: 2)) {
+                  _lastShakeTime = now;
+                  debugPrint('📱 SnappySnag: Genuine device shake detected (gForce: ${gForce.toStringAsFixed(1)}). Triggering capture.');
+                  _triggerCapture();
+                }
+              }
+            }
           }
         }
       },
@@ -678,6 +727,13 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
             _isFeedbackDialogOpen = true;
           });
           try {
+            // ★ 下書き再開時はサーバーリクエストを行わず、保存時点のキャッシュを使用する
+            // これによりオフライン環境でも即座に再開でき、「全指摘一覧」ボタンも正しく表示される
+            final isUserMode = SnappySnag().mode == SnappySnagMode.user || draft.isDevChatEnabled == false;
+            final existingFeedbacksForDraft = isUserMode ? <dynamic>[] : draft.existingFeedbacks;
+            // キャッシュ済みの isDevChatEnabled を復元する
+            SnappySnag()._isDevChatEnabled = draft.isDevChatEnabled;
+
             await _startDrawingFlow(
               draft.imageBytes,
               draft.widgetTree,
@@ -687,6 +743,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
               initialPins: draft.pins,
               initialMemo: draft.memo,
               initialAspectRatio: draft.drawingAspectRatio,
+              existingFeedbacks: existingFeedbacksForDraft,
             );
           } finally {
             if (mounted) {
@@ -1146,26 +1203,190 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
     final parsedExistingFeedbacks = existingFeedbacks ?? <dynamic>[];
     final List<ExistingPinItem> parsedExistingPins = [];
+    final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
+    final targetRenderBox = targetContext.findRenderObject() as RenderBox?;
+    final targetOrigin = (targetRenderBox != null && targetRenderBox.attached)
+        ? targetRenderBox.localToGlobal(Offset.zero)
+        : Offset.zero;
+    final targetSize = (targetRenderBox != null && targetRenderBox.attached && targetRenderBox.hasSize)
+        ? targetRenderBox.size
+        : (MediaQuery.maybeOf(targetContext)?.size ?? mediaSize);
+
     for (final fb in parsedExistingFeedbacks) {
       final feedbackId = fb['id']?.toString() ?? '';
       final userMemo = fb['user_memo']?.toString() ?? '';
       final severity = fb['severity']?.toString() ?? 'unassessed';
+      final rawScreenshot = fb['screenshot_url']?.toString();
+
+      // ★ スクショURLの解決: 既に完全なURL（http/https）ならそのまま使用。
+      // もし内部パス（例: "projectId/feedbackId.png"）の場合は、Supabase Storage のパブリック/認証URL形式へフォールバック
+      String? resolvedScreenshotUrl;
+      if (rawScreenshot != null && rawScreenshot.trim().isNotEmpty) {
+        final trimmed = rawScreenshot.trim();
+        if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+          resolvedScreenshotUrl = trimmed;
+        } else {
+          // ストレージ内部パスの場合の補完
+          final cleanPath = trimmed.startsWith('/') ? trimmed.substring(1) : trimmed;
+          resolvedScreenshotUrl = '${SnappySnag().supabaseUrl}/storage/v1/object/public/feedback-assets/$cleanPath';
+        }
+      }
+      debugPrint('📸 SnappySnag: Feedback [$feedbackId] rawScreenshot: "$rawScreenshot", resolved: "$resolvedScreenshotUrl"');
+
       final rawPins = fb['pins'];
       if (rawPins is List) {
         for (final p in rawPins) {
           if (p is Map<String, dynamic>) {
+            final pin = SnappyPin.fromJson(p);
+            // feedback_logs の pins 内で "is_active": false となっているものは除外
+            if (!pin.isActive) continue;
+
+            Offset? resolvedRatio;
+            if (pin.target != null) {
+              try {
+                final resolvedPos = WidgetTreeDumper.resolveTargetPosition(
+                  targetContext,
+                  pin.target!,
+                  fallbackPosition: Offset(pin.xRatio, pin.yRatio),
+                );
+                if (resolvedPos != null && targetSize.width > 0 && targetSize.height > 0) {
+                  resolvedRatio = Offset(
+                    ((resolvedPos.dx - targetOrigin.dx) / targetSize.width).clamp(0.0, 1.0),
+                    ((resolvedPos.dy - targetOrigin.dy) / targetSize.height).clamp(0.0, 1.0),
+                  );
+                }
+              } catch (e) {
+                debugPrint('⚠️ SnappySnag: Failed to resolve target position: $e');
+              }
+            }
             parsedExistingPins.add(
               ExistingPinItem(
                 feedbackId: feedbackId,
                 userMemo: userMemo,
                 severity: severity,
-                pin: SnappyPin.fromJson(p),
+                pin: pin,
+                resolvedRatio: resolvedRatio,
+                screenshotUrl: resolvedScreenshotUrl,
               ),
             );
           }
         }
       }
     }
+
+    // ★ セクション（ブロック要素）の検出・ハイライトグループ化
+    final List<ExistingSectionItem> parsedExistingSections = [];
+    final Map<String, List<ExistingPinItem>> sectionPinGroups = {};
+    final Map<String, Rect> sectionRects = {};
+    final Map<String, String> sectionNames = {};
+
+    for (final item in parsedExistingPins) {
+      final target = item.pin.target;
+      if (target != null) {
+        try {
+          final rect = WidgetTreeDumper.resolveTargetRect(
+            targetContext,
+            target,
+            fallbackPosition: Offset(item.pin.xRatio, item.pin.yRatio),
+          );
+          if (rect != null) {
+            final groupKey = '${target.widgetType}_${target.widgetKey ?? ""}_${(rect.left / 10).round()}_${(rect.top / 10).round()}';
+            sectionPinGroups.putIfAbsent(groupKey, () => []).add(item);
+            sectionRects[groupKey] = rect;
+            final label = (target.widgetText != null && target.widgetText!.isNotEmpty)
+                ? '${target.widgetType} ("${target.widgetText}")'
+                : target.widgetType;
+            sectionNames[groupKey] = label;
+          }
+        } catch (e) {
+          debugPrint('⚠️ SnappySnag: Error resolving target section rect: $e');
+        }
+      }
+    }
+
+    final List<ExistingSectionItem> rawSections = [];
+    sectionPinGroups.forEach((key, pinList) {
+      final rect = sectionRects[key]!;
+      final name = sectionNames[key]!;
+      rawSections.add(
+        ExistingSectionItem(
+          id: key,
+          sectionName: name,
+          screenRect: rect,
+          pins: pinList,
+        ),
+      );
+    });
+
+    // 画面全体の面積を取得（50%以上の巨大親コンテナ判定用）
+    final double screenTotalArea = (targetSize.width > 0 && targetSize.height > 0)
+        ? (targetSize.width * targetSize.height)
+        : (mediaSize.width * mediaSize.height);
+
+    // 面積の大きい順（外枠コンテナ・親Card・AppBar）にソートして包含マージを実行
+    rawSections.sort((a, b) {
+      final areaA = a.screenRect.width * a.screenRect.height;
+      final areaB = b.screenRect.width * b.screenRect.height;
+      return areaB.compareTo(areaA);
+    });
+
+    final List<ExistingSectionItem> mergedSections = [];
+    for (final sec in rawSections) {
+      bool mergedIntoParent = false;
+      final childArea = sec.screenRect.width * sec.screenRect.height;
+
+      for (int i = 0; i < mergedSections.length; i++) {
+        final parent = mergedSections[i];
+        final parentRect = parent.screenRect;
+        final childRect = sec.screenRect;
+        final parentArea = parentRect.width * parentRect.height;
+
+        // ★ 画面全体の50%以上を占めるような巨大要素（背景・Scaffold等）は、
+        // カレンダーやヘッダー等の独立した子セクションを飲み込まないようマージ親から除外
+        final isParentTooHuge = screenTotalArea > 0 && (parentArea / screenTotalArea) >= 0.5;
+        if (isParentTooHuge) {
+          continue;
+        }
+
+        // 中心点が親に含まれているか、または包含率が高い場合
+        final centerInParent = parentRect.contains(childRect.center);
+        final overlapLeft = max(parentRect.left, childRect.left);
+        final overlapTop = max(parentRect.top, childRect.top);
+        final overlapRight = min(parentRect.right, childRect.right);
+        final overlapBottom = min(parentRect.bottom, childRect.bottom);
+        final overlapWidth = max(0.0, overlapRight - overlapLeft);
+        final overlapHeight = max(0.0, overlapBottom - overlapTop);
+        final overlapArea = overlapWidth * overlapHeight;
+        final overlapRatio = childArea > 0 ? (overlapArea / childArea) : 0.0;
+
+        if (centerInParent || overlapRatio >= 0.7) {
+          // 親セクションにピンを統合し、子要素の個別枠線は親枠線に一本化
+          final updatedPins = List<ExistingPinItem>.from(parent.pins)..addAll(sec.pins);
+          mergedSections[i] = ExistingSectionItem(
+            id: parent.id,
+            sectionName: parent.sectionName,
+            screenRect: parent.screenRect,
+            pins: updatedPins,
+          );
+          mergedIntoParent = true;
+          break;
+        }
+      }
+
+      if (!mergedIntoParent) {
+        mergedSections.add(sec);
+      }
+    }
+
+    // 描画順: 面積の大きい背景/親コンテナを先に描き、小さいセクション（ボタン、ヘッダー、カード等）を前面に描画する
+    // これにより重なり合っても内側のセクションを確実にタップできるようにする
+    mergedSections.sort((a, b) {
+      final areaA = a.screenRect.width * a.screenRect.height;
+      final areaB = b.screenRect.width * b.screenRect.height;
+      return areaB.compareTo(areaA);
+    });
+
+    parsedExistingSections.addAll(mergedSections);
 
     setState(() {
       _drawingImageBytes = imageBytes;
@@ -1174,12 +1395,18 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       _drawingScreenSignature = screenSignature;
       _drawingPoints = initialPoints;
       _pins = initialPins != null ? List<SnappyPin>.from(initialPins) : [];
+      _undoStack.clear();
+      _redoStack.clear();
       _editingPin = null;
       _existingFeedbacks = parsedExistingFeedbacks;
       _existingPins = parsedExistingPins;
-      _showExistingPins = true;
+      _existingSections = parsedExistingSections;
+      _showExistingPins = _enableSectionHighlights;
       _selectedExistingPin = null;
       _nearbyExistingPins = null;
+      _selectedSection = null;
+      _previewingPin = null;
+      _showAllScreenPinsModal = false;
       _activeTool = SnappyDrawingTool.pin;
       _isSendingFeedback = false;
       _isMemoOpen = false;
@@ -1191,6 +1418,36 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       _overlayMode = _SnappyOverlayMode.drawing;
     });
     return _drawingCompleter!.future;
+  }
+
+  /// ネットワーク画像の実際のピクセルサイズを取得する（キャッシュ対応）
+  /// ピン座標計算で _drawingAspectRatio の代わりに使用し、EXIF回転等による誤差を防ぐ
+  final Map<String, Size> _imageSizeCache = {};
+  Future<Size> _resolveImageSize(String url) async {
+    if (_imageSizeCache.containsKey(url)) return _imageSizeCache[url]!;
+    final completer = Completer<Size>();
+    final imageProvider = NetworkImage(url);
+    final stream = imageProvider.resolve(ImageConfiguration.empty);
+    late ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (ImageInfo info, bool _) {
+        final size = Size(
+          info.image.width.toDouble(),
+          info.image.height.toDouble(),
+        );
+        _imageSizeCache[url] = size;
+        if (!completer.isCompleted) completer.complete(size);
+        stream.removeListener(listener);
+      },
+      onError: (dynamic exception, StackTrace? stackTrace) {
+        if (!completer.isCompleted) {
+          completer.completeError(exception, stackTrace);
+        }
+        stream.removeListener(listener);
+      },
+    );
+    stream.addListener(listener);
+    return completer.future;
   }
 
   void _renumberPins() {
@@ -1833,49 +2090,41 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                           ),
                           centerTitle: true,
                           actions: [
-                            if (_existingPins.isNotEmpty)
+                            if (_existingPins.isNotEmpty) ...[
                               Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(16),
                                   onTap: () {
                                     setState(() {
-                                      _showExistingPins = !_showExistingPins;
+                                      _showAllScreenPinsModal = true;
                                     });
                                   },
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: _showExistingPins
-                                          ? const Color(0xFF8B5CF6).withValues(alpha: 0.25)
-                                          : Colors.transparent,
+                                      color: Colors.white.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(16),
                                       border: Border.all(
-                                        color: _showExistingPins
-                                            ? const Color(0xFF8B5CF6)
-                                            : Colors.white38,
+                                        color: Colors.white24,
                                         width: 1,
                                       ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(
-                                          _showExistingPins ? Icons.location_on : Icons.location_off_outlined,
+                                        const Icon(
+                                          Icons.list_alt,
                                           size: 14,
-                                          color: _showExistingPins
-                                              ? const Color(0xFFA78BFA)
-                                              : Colors.white60,
+                                          color: Colors.white70,
                                         ),
-                                        const SizedBox(width: 4),
+                                        const SizedBox(width: 3),
                                         Text(
-                                          '${_SdkLocale.existingPinsToggle} (${_existingPins.length})',
-                                          style: TextStyle(
+                                          '${_SdkLocale.allScreenPinsBtn} (${_existingPins.length})',
+                                          style: const TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,
-                                            color: _showExistingPins
-                                                ? const Color(0xFFA78BFA)
-                                                : Colors.white60,
+                                            color: Colors.white70,
                                           ),
                                         ),
                                       ],
@@ -1883,6 +2132,57 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                   ),
                                 ),
                               ),
+                              if (_enableSectionHighlights && _existingSections.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(16),
+                                    onTap: () {
+                                      setState(() {
+                                        _showExistingPins = !_showExistingPins;
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: _showExistingPins
+                                            ? const Color(0xFF8B5CF6).withValues(alpha: 0.25)
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: _showExistingPins
+                                              ? const Color(0xFF8B5CF6)
+                                              : Colors.white38,
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            _showExistingPins ? Icons.layers : Icons.layers_outlined,
+                                            size: 14,
+                                            color: _showExistingPins
+                                                ? const Color(0xFFA78BFA)
+                                                : Colors.white60,
+                                          ),
+                                          const SizedBox(width: 3),
+                                          Text(
+                                            '${_SdkLocale.existingPinsToggle} (${_existingSections.length})',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: _showExistingPins
+                                                  ? const Color(0xFFA78BFA)
+                                                  : Colors.white60,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                             TextButton(
                               onPressed: _isSendingFeedback
                                   ? null
@@ -1970,15 +2270,42 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                     final int nextNumber = _pins.isEmpty
                                                         ? 1
                                                         : (_pins.map((p) => p.number).reduce((a, b) => a > b ? a : b) + 1);
+                                                    // タップ座標に対応する最前面UI要素のアンカー情報を特定
+                                                    // ※ overlayContext ではなくアプリ画面（targetContext）のツリーを走査し、
+                                                    // キャンバス比率 (xRatio, yRatio) からアプリ画面のグローバル座標に変換して渡す
+                                                    final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
+                                                    final targetRenderBox = targetContext.findRenderObject() as RenderBox?;
+                                                    final targetOrigin = (targetRenderBox != null && targetRenderBox.attached)
+                                                        ? targetRenderBox.localToGlobal(Offset.zero)
+                                                        : Offset.zero;
+                                                    final targetSize = (targetRenderBox != null && targetRenderBox.attached && targetRenderBox.hasSize)
+                                                        ? targetRenderBox.size
+                                                        : MediaQuery.of(targetContext).size;
+                                                    final screenGlobalPos = Offset(
+                                                      targetOrigin.dx + (xRatio * targetSize.width),
+                                                      targetOrigin.dy + (yRatio * targetSize.height),
+                                                    );
+                                                    final detectedTarget = WidgetTreeDumper.findTargetAtPosition(
+                                                      targetContext,
+                                                      screenGlobalPos,
+                                                    );
+                                                    if (detectedTarget != null) {
+                                                      debugPrint('🎯 SnappySnag: Pin placed on element -> [${detectedTarget.widgetType}] (Text: "${detectedTarget.widgetText ?? ''}", Key: "${detectedTarget.widgetKey ?? ''}") at screen pos: $screenGlobalPos');
+                                                    } else {
+                                                      debugPrint('⚠️ SnappySnag: No specific UI element detected at screen pos: $screenGlobalPos. Falling back to relative coordinate.');
+                                                    }
                                                     final newPin = SnappyPin(
                                                       id: 'pin_${DateTime.now().millisecondsSinceEpoch}',
                                                       number: nextNumber,
                                                       xRatio: xRatio,
                                                       yRatio: yRatio,
                                                       comment: '',
+                                                      target: detectedTarget,
                                                     );
                                                     setState(() {
                                                       _pins.add(newPin);
+                                                      _undoStack.add(newPin);
+                                                      _redoStack.clear();
                                                       _editingPin = newPin;
                                                       _pinCommentController.text = '';
                                                     });
@@ -2016,70 +2343,103 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                   setState(() {
                                                     if (_drawingPoints.isNotEmpty) {
                                                       _drawingPoints.last.offsets.add(null);
+                                                      // 1ストローク完了時点で履歴スタックに記録
+                                                      _undoStack.add(_drawingPoints.last);
+                                                      _redoStack.clear();
                                                     }
                                                   });
                                                 },
                                               ),
                                             ),
 
-                                            // 3. 過去チケットの既存ピン表示（SnappySnagMode.dev かつ _showExistingPins が有効な場合）
-                                            if (_showExistingPins)
-                                              ..._existingPins.map((item) {
-                                                final pin = item.pin;
-                                                final pinPixelX = pin.xRatio * canvasSize.width;
-                                                final pinPixelY = pin.yRatio * canvasSize.height;
-                                                const pinSize = 32.0;
+                                            // 3. 過去指摘のあるセクション・ブロックのハイライト枠線表示（SnappySnagMode.dev かつ _enableSectionHighlights かつ _showExistingPins が有効な場合）
+                                            if (_enableSectionHighlights && _showExistingPins)
+                                              ..._existingSections.map((sec) {
+                                                // アプリ画面座標からキャンバス内相対比率へマッピング
+                                                final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
+                                                final targetRenderBox = targetContext.findRenderObject() as RenderBox?;
+                                                final targetOrigin = (targetRenderBox != null && targetRenderBox.attached)
+                                                    ? targetRenderBox.localToGlobal(Offset.zero)
+                                                    : Offset.zero;
+                                                final targetSize = (targetRenderBox != null && targetRenderBox.attached && targetRenderBox.hasSize)
+                                                    ? targetRenderBox.size
+                                                    : (MediaQuery.maybeOf(targetContext)?.size ?? canvasSize);
+
+                                                final double leftRatio = targetSize.width > 0
+                                                    ? ((sec.screenRect.left - targetOrigin.dx) / targetSize.width).clamp(0.0, 1.0)
+                                                    : 0.0;
+                                                final double topRatio = targetSize.height > 0
+                                                    ? ((sec.screenRect.top - targetOrigin.dy) / targetSize.height).clamp(0.0, 1.0)
+                                                    : 0.0;
+                                                final double widthRatio = targetSize.width > 0
+                                                    ? (sec.screenRect.width / targetSize.width).clamp(0.0, 1.0)
+                                                    : 0.0;
+                                                final double heightRatio = targetSize.height > 0
+                                                    ? (sec.screenRect.height / targetSize.height).clamp(0.0, 1.0)
+                                                    : 0.0;
+
+                                                final double pixelLeft = leftRatio * canvasSize.width;
+                                                final double pixelTop = topRatio * canvasSize.height;
+                                                final double pixelWidth = (widthRatio * canvasSize.width).clamp(32.0, canvasSize.width);
+                                                final double pixelHeight = (heightRatio * canvasSize.height).clamp(24.0, canvasSize.height);
 
                                                 return Positioned(
-                                                  left: (pinPixelX - pinSize / 2).clamp(0.0, canvasSize.width - pinSize),
-                                                  top: (pinPixelY - pinSize).clamp(0.0, canvasSize.height - pinSize),
+                                                  left: pixelLeft.clamp(0.0, canvasSize.width - 32),
+                                                  top: pixelTop.clamp(0.0, canvasSize.height - 24),
+                                                  width: pixelWidth.clamp(0.0, canvasSize.width - pixelLeft),
+                                                  height: pixelHeight.clamp(0.0, canvasSize.height - pixelTop),
                                                   child: GestureDetector(
                                                     behavior: HitTestBehavior.opaque,
                                                     onTap: () {
                                                       if (_isSendingFeedback || _isMemoOpen) return;
-                                                      // 近接・重複ピンの判定（半径28px以内のピンを抽出）
-                                                      const thresholdPixels = 28.0;
-                                                      final nearby = _existingPins.where((other) {
-                                                        final ox = other.pin.xRatio * canvasSize.width;
-                                                        final oy = other.pin.yRatio * canvasSize.height;
-                                                        final dx = ox - pinPixelX;
-                                                        final dy = oy - pinPixelY;
-                                                        return sqrt(dx * dx + dy * dy) <= thresholdPixels;
-                                                      }).toList();
-
                                                       setState(() {
-                                                        if (nearby.length > 1) {
-                                                          _nearbyExistingPins = nearby;
-                                                          _selectedExistingPin = null;
-                                                        } else {
-                                                          _selectedExistingPin = item;
-                                                          _nearbyExistingPins = null;
-                                                        }
+                                                        _selectedSection = sec;
                                                       });
                                                     },
-                                                    child: Column(
-                                                      mainAxisSize: MainAxisSize.min,
+                                                    child: Stack(
+                                                      clipBehavior: Clip.none,
                                                       children: [
                                                         Container(
-                                                          width: pinSize,
-                                                          height: pinSize,
                                                           decoration: BoxDecoration(
-                                                            color: const Color(0xFF8B5CF6),
-                                                            shape: BoxShape.circle,
-                                                            border: Border.all(color: Colors.white, width: 2),
-                                                            boxShadow: const [
-                                                              BoxShadow(
-                                                                color: Colors.black45,
-                                                                blurRadius: 6,
-                                                                offset: Offset(0, 3),
-                                                              ),
-                                                            ],
+                                                            color: const Color(0xFF8B5CF6).withValues(alpha: 0.14),
+                                                            borderRadius: BorderRadius.circular(8),
+                                                            border: Border.all(
+                                                              color: const Color(0xFF8B5CF6),
+                                                              width: 2.0,
+                                                            ),
                                                           ),
-                                                          child: const Center(
-                                                            child: Icon(
-                                                              Icons.location_on,
-                                                              color: Colors.white,
-                                                              size: 18,
+                                                        ),
+                                                        Positioned(
+                                                          top: -10,
+                                                          right: 4,
+                                                          child: Container(
+                                                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                                            decoration: BoxDecoration(
+                                                              color: const Color(0xFF8B5CF6),
+                                                              borderRadius: BorderRadius.circular(10),
+                                                              border: Border.all(color: Colors.white, width: 1.5),
+                                                              boxShadow: const [
+                                                                BoxShadow(
+                                                                  color: Colors.black45,
+                                                                  blurRadius: 4,
+                                                                  offset: Offset(0, 2),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                            child: Row(
+                                                              mainAxisSize: MainAxisSize.min,
+                                                              children: [
+                                                                const Icon(Icons.comment, size: 10, color: Colors.white),
+                                                                const SizedBox(width: 3),
+                                                                Text(
+                                                                  '${_SdkLocale.issueBadgePrefix}${sec.pins.length}${_SdkLocale.issueBadgeSuffix}',
+                                                                  style: const TextStyle(
+                                                                    color: Colors.white,
+                                                                    fontSize: 10,
+                                                                    fontWeight: FontWeight.bold,
+                                                                  ),
+                                                                ),
+                                                              ],
                                                             ),
                                                           ),
                                                         ),
@@ -2131,6 +2491,37 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                     });
                                                   },
                                                   onPanEnd: (_) {
+                                                    // ドラッグ移動完了時に移動先のUI要素アンカー情報を再取得・更新
+                                                    if (_dragStartGlobal != null) {
+                                                      final currentPin = _pins.firstWhere((p) => p.id == pin.id, orElse: () => pin);
+                                                      final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
+                                                      final targetRenderBox = targetContext.findRenderObject() as RenderBox?;
+                                                      final targetOrigin = (targetRenderBox != null && targetRenderBox.attached)
+                                                          ? targetRenderBox.localToGlobal(Offset.zero)
+                                                          : Offset.zero;
+                                                      final targetSize = (targetRenderBox != null && targetRenderBox.attached && targetRenderBox.hasSize)
+                                                          ? targetRenderBox.size
+                                                          : MediaQuery.of(targetContext).size;
+                                                      final screenGlobalPos = Offset(
+                                                        targetOrigin.dx + (currentPin.xRatio * targetSize.width),
+                                                        targetOrigin.dy + (currentPin.yRatio * targetSize.height),
+                                                      );
+                                                      final newTarget = WidgetTreeDumper.findTargetAtPosition(
+                                                        targetContext,
+                                                        screenGlobalPos,
+                                                      );
+                                                      if (newTarget != null) {
+                                                        debugPrint('🎯 SnappySnag: Pin moved to element -> [${newTarget.widgetType}] (Text: "${newTarget.widgetText ?? ''}", Key: "${newTarget.widgetKey ?? ''}") at screen pos: $screenGlobalPos');
+                                                      } else {
+                                                        debugPrint('⚠️ SnappySnag: Pin moved to relative coordinate (no specific element detected at $screenGlobalPos)');
+                                                      }
+                                                      setState(() {
+                                                        final idx = _pins.indexWhere((p) => p.id == pin.id);
+                                                        if (idx != -1) {
+                                                          _pins[idx] = currentPin.copyWith(target: newTarget);
+                                                        }
+                                                      });
+                                                    }
                                                     _dragStartGlobal = null;
                                                     _dragStartPinX = null;
                                                     _dragStartPinY = null;
@@ -2258,24 +2649,45 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                       ),
                             ),
                             const SizedBox(width: 8),
-                            // 3. 元に戻す (Undo: モザイクまたはピン)
+                            // 3. 元に戻す (Undo: 操作の時系列順)
                             IconButton(
                               icon: const Icon(
                                 Icons.undo,
                                 color: Colors.white70,
                               ),
                               tooltip: 'Undo',
-                              onPressed: _isSendingFeedback || (_drawingPoints.isEmpty && _pins.isEmpty)
+                              onPressed: _isSendingFeedback || _undoStack.isEmpty
                                   ? null
                                   : () => setState(() {
-                                        if (_pins.isNotEmpty) {
-                                          _pins.removeLast();
-                                        } else if (_drawingPoints.isNotEmpty) {
-                                          _drawingPoints.removeLast();
+                                        final last = _undoStack.removeLast();
+                                        _redoStack.add(last);
+                                        if (last is SnappyPin) {
+                                          _pins.removeWhere((p) => p.id == last.id);
+                                        } else if (last is DrawingPoint) {
+                                          _drawingPoints.remove(last);
                                         }
                                       }),
                             ),
-                            // 4. 全消去 (Clear)
+                            // 4. やり直す (Redo: undo した操作を復元)
+                            IconButton(
+                              icon: const Icon(
+                                Icons.redo,
+                                color: Colors.white70,
+                              ),
+                              tooltip: 'Redo',
+                              onPressed: _isSendingFeedback || _redoStack.isEmpty
+                                  ? null
+                                  : () => setState(() {
+                                        final next = _redoStack.removeLast();
+                                        _undoStack.add(next);
+                                        if (next is SnappyPin) {
+                                          _pins.add(next);
+                                        } else if (next is DrawingPoint) {
+                                          _drawingPoints.add(next);
+                                        }
+                                      }),
+                            ),
+                            // 5. 全消去 (Clear)
                             IconButton(
                               icon: const Icon(
                                 Icons.delete_outline,
@@ -2287,6 +2699,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                   : () => setState(() {
                                         _drawingPoints.clear();
                                         _pins.clear();
+                                        _undoStack.clear();
+                                        _redoStack.clear();
                                       }),
                             ),
                           ],
@@ -2297,393 +2711,990 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                     // 3. ピンコメント入力用フローティングオーバーレイ
                     if (_editingPin != null)
                       Positioned.fill(
-                        child: Container(
-                          color: Colors.black.withValues(alpha: 0.75),
-                          padding: const EdgeInsets.all(24),
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 480),
-                              child: Card(
-                                color: Colors.grey.shade900,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  side: BorderSide(color: Colors.grey.shade800),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Container(
-                                            width: 28,
-                                            height: 28,
-                                            decoration: const BoxDecoration(
-                                              color: Color(0xFFF95738),
-                                              shape: BoxShape.circle,
+                        child: LayoutBuilder(
+                          builder: (context, modalConstraints) {
+                            final isLandscape = modalConstraints.maxWidth > modalConstraints.maxHeight;
+                            return Container(
+                              color: Colors.black.withValues(alpha: 0.75),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: isLandscape ? 8 : 20,
+                              ),
+                              child: Center(
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: 480,
+                                    maxHeight: isLandscape ? modalConstraints.maxHeight * 0.95 : 540,
+                                  ),
+                                  child: Card(
+                                    color: Colors.grey.shade900,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      side: BorderSide(color: Colors.grey.shade800),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: SingleChildScrollView(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  width: 28,
+                                                  height: 28,
+                                                  decoration: const BoxDecoration(
+                                                    color: Color(0xFFF95738),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: Center(
+                                                    child: Text(
+                                                      '${_editingPin!.number}',
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  _SdkLocale.pinCommentTitle,
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 16,
+                                                  ),
+                                                ),
+                                                const Spacer(),
+                                                IconButton(
+                                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                                                  tooltip: _SdkLocale.delete,
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _pins.removeWhere((p) => p.id == _editingPin!.id);
+                                                      _renumberPins();
+                                                      _editingPin = null;
+                                                    });
+                                                  },
+                                                ),
+                                              ],
                                             ),
-                                            child: Center(
-                                              child: Text(
-                                                '${_editingPin!.number}',
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 13,
+                                            const SizedBox(height: 12),
+                                            TextField(
+                                              controller: _pinCommentController,
+                                              maxLength: 500,
+                                              maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                                              maxLines: isLandscape ? 2 : 4,
+                                              autofocus: true,
+                                              style: const TextStyle(color: Colors.white),
+                                              decoration: InputDecoration(
+                                                hintText: _SdkLocale.pinCommentHint,
+                                                hintStyle: const TextStyle(color: Colors.grey),
+                                                fillColor: Colors.black26,
+                                                filled: true,
+                                                border: OutlineInputBorder(
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  borderSide: BorderSide(color: Colors.grey.shade800),
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            _SdkLocale.pinCommentTitle,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
+                                            const SizedBox(height: 16),
+                                            ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.amber,
+                                                foregroundColor: Colors.black,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                              ),
+                                              onPressed: () {
+                                                final updatedComment = _pinCommentController.text.trim();
+                                                setState(() {
+                                                  if (updatedComment.isEmpty) {
+                                                    // コメントが空の場合はピンを削除して番号を振り直す
+                                                    _pins.removeWhere((p) => p.id == _editingPin!.id);
+                                                    _renumberPins();
+                                                  } else {
+                                                    final idx = _pins.indexWhere((p) => p.id == _editingPin!.id);
+                                                    if (idx != -1) {
+                                                      _pins[idx] = _editingPin!.copyWith(comment: updatedComment);
+                                                    }
+                                                  }
+                                                  _editingPin = null;
+                                                });
+                                              },
+                                              child: Text(
+                                                _SdkLocale.done,
+                                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                              ),
                                             ),
-                                          ),
-                                          const Spacer(),
-                                          IconButton(
-                                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                                            tooltip: _SdkLocale.delete,
-                                            onPressed: () {
-                                              setState(() {
-                                                _pins.removeWhere((p) => p.id == _editingPin!.id);
-                                                _renumberPins();
-                                                _editingPin = null;
-                                              });
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      TextField(
-                                        controller: _pinCommentController,
-                                        maxLength: 500,
-                                        maxLengthEnforcement: MaxLengthEnforcement.enforced,
-                                        maxLines: 4,
-                                        autofocus: true,
-                                        style: const TextStyle(color: Colors.white),
-                                        decoration: InputDecoration(
-                                          hintText: _SdkLocale.pinCommentHint,
-                                          hintStyle: const TextStyle(color: Colors.grey),
-                                          fillColor: Colors.black26,
-                                          filled: true,
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                            borderSide: BorderSide(color: Colors.grey.shade800),
-                                          ),
+                                          ],
                                         ),
                                       ),
-                                      const SizedBox(height: 16),
-                                      ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.amber,
-                                          foregroundColor: Colors.black,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                        onPressed: () {
-                                          final updatedComment = _pinCommentController.text.trim();
-                                          setState(() {
-                                            if (updatedComment.isEmpty) {
-                                              // コメントが空の場合はピンを削除して番号を振り直す
-                                              _pins.removeWhere((p) => p.id == _editingPin!.id);
-                                              _renumberPins();
-                                            } else {
-                                              final idx = _pins.indexWhere((p) => p.id == _editingPin!.id);
-                                              if (idx != -1) {
-                                                _pins[idx] = _editingPin!.copyWith(comment: updatedComment);
-                                              }
-                                            }
-                                            _editingPin = null;
-                                          });
-                                        },
-                                        child: Text(
-                                          _SdkLocale.done,
-                                          style: const TextStyle(fontWeight: FontWeight.bold),
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
                       ),
 
 
 
-                    // 4-A. 近接・重なりピンの一覧ピッカーモーダル（複数検知時に表示）
-                    if (_nearbyExistingPins != null)
+                    // 4-A. セクション詳細モーダル（タップしたセクション・ブロック内の指摘一覧）
+                    if (_selectedSection != null)
                       Positioned.fill(
-                        child: Container(
-                          color: Colors.black.withValues(alpha: 0.75),
-                          padding: const EdgeInsets.all(24),
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 400),
-                              child: Card(
-                                color: Colors.grey.shade900,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  side: const BorderSide(color: Color(0xFF8B5CF6), width: 1.5),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(18),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      Row(
+                        child: LayoutBuilder(
+                          builder: (context, modalConstraints) {
+                            final isLandscape = modalConstraints.maxWidth > modalConstraints.maxHeight;
+                            return Container(
+                              color: Colors.black.withValues(alpha: 0.75),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: isLandscape ? 8 : 20,
+                              ),
+                              child: Center(
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: 420,
+                                    maxHeight: isLandscape ? modalConstraints.maxHeight * 0.95 : 540,
+                                  ),
+                                  child: Card(
+                                    color: Colors.grey.shade900,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      side: const BorderSide(color: Color(0xFF8B5CF6), width: 1.5),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment: CrossAxisAlignment.stretch,
                                         children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(6),
-                                            decoration: const BoxDecoration(
-                                              color: Color(0xFF8B5CF6),
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: const Icon(Icons.location_on, color: Colors.white, size: 16),
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(6),
+                                                decoration: const BoxDecoration(
+                                                  color: Color(0xFF8B5CF6),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(Icons.layers, color: Colors.white, size: 16),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      _selectedSection!.sectionName,
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 15,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      '${_SdkLocale.sectionPinsTitle} (${_selectedSection!.pins.length}${_SdkLocale.issueBadgeSuffix})',
+                                                      style: TextStyle(
+                                                        color: Colors.grey.shade400,
+                                                        fontSize: 11,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    _selectedSection = null;
+                                                  });
+                                                },
+                                              ),
+                                            ],
                                           ),
-                                          const SizedBox(width: 10),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  _SdkLocale.nearbyPinsTitle,
+                                          const SizedBox(height: 10),
+                                          Flexible(
+                                            child: ConstrainedBox(
+                                              constraints: BoxConstraints(maxHeight: isLandscape ? 160 : 280),
+                                              child: ListView.separated(
+                                                shrinkWrap: true,
+                                                itemCount: _selectedSection!.pins.length,
+                                                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                                                itemBuilder: (context, index) {
+                                                  final item = _selectedSection!.pins[index];
+                                                  final commentText = item.pin.comment.trim().isNotEmpty
+                                                      ? item.pin.comment.trim()
+                                                      : _SdkLocale.noCommentForPin;
+                                                  return InkWell(
+                                                    onTap: () {
+                                                      setState(() {
+                                                        _previewingPin = item;
+                                                      });
+                                                    },
+                                                    borderRadius: BorderRadius.circular(10),
+                                                    child: Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.white.withValues(alpha: 0.05),
+                                                        borderRadius: BorderRadius.circular(10),
+                                                        border: Border.all(color: Colors.white12),
+                                                      ),
+                                                      child: Row(
+                                                        children: [
+                                                          Container(
+                                                            width: 24,
+                                                            height: 24,
+                                                            decoration: const BoxDecoration(
+                                                              color: Color(0xFF8B5CF6),
+                                                              shape: BoxShape.circle,
+                                                            ),
+                                                            child: Center(
+                                                              child: Text(
+                                                                '${item.pin.number}',
+                                                                style: const TextStyle(
+                                                                  color: Colors.white,
+                                                                  fontSize: 11,
+                                                                  fontWeight: FontWeight.bold,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          const SizedBox(width: 10),
+                                                          Expanded(
+                                                            child: Column(
+                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                              children: [
+                                                                Text(
+                                                                  commentText,
+                                                                  maxLines: 2,
+                                                                  overflow: TextOverflow.ellipsis,
+                                                                  style: const TextStyle(
+                                                                    color: Colors.white,
+                                                                    fontSize: 13,
+                                                                  ),
+                                                                ),
+                                                                if (item.screenshotUrl != null)
+                                                                  Padding(
+                                                                    padding: const EdgeInsets.only(top: 2),
+                                                                    child: Row(
+                                                                      children: [
+                                                                        const Icon(Icons.image_outlined, size: 10, color: Color(0xFFA78BFA)),
+                                                                        const SizedBox(width: 3),
+                                                                        Text(
+                                                                          _SdkLocale.previewOriginalScreenshot,
+                                                                          style: const TextStyle(
+                                                                            color: Color(0xFFA78BFA),
+                                                                            fontSize: 10,
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                  ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                          const Icon(Icons.chevron_right, color: Colors.white54, size: 18),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          OutlinedButton(
+                                            style: OutlinedButton.styleFrom(
+                                              foregroundColor: Colors.white70,
+                                              side: const BorderSide(color: Colors.white24),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                            onPressed: () {
+                                              setState(() {
+                                                _selectedSection = null;
+                                              });
+                                            },
+                                            child: Text(_SdkLocale.close),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+
+                    // 4-B. この画面の全指摘一覧モーダル（AppBarの「全指摘一覧」ボタンから起動）
+                    if (_showAllScreenPinsModal)
+                      Positioned.fill(
+                        child: LayoutBuilder(
+                          builder: (context, modalConstraints) {
+                            final isLandscape = modalConstraints.maxWidth > modalConstraints.maxHeight;
+                            return Container(
+                              color: Colors.black.withValues(alpha: 0.75),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: isLandscape ? 8 : 20,
+                              ),
+                              child: Center(
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: 440,
+                                    maxHeight: isLandscape ? modalConstraints.maxHeight * 0.95 : 560,
+                                  ),
+                                  child: Card(
+                                    color: Colors.grey.shade900,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      side: const BorderSide(color: Colors.white24, width: 1.5),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(6),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white.withValues(alpha: 0.15),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(Icons.list_alt, color: Colors.white, size: 16),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      _SdkLocale.allScreenPinsTitle,
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 15,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      _SdkLocale.allScreenPinsSub,
+                                                      style: TextStyle(
+                                                        color: Colors.grey.shade400,
+                                                        fontSize: 11,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    _showAllScreenPinsModal = false;
+                                                  });
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 10),
+                                          Flexible(
+                                            child: ConstrainedBox(
+                                              constraints: BoxConstraints(maxHeight: isLandscape ? 170 : 320),
+                                              child: ListView.separated(
+                                                shrinkWrap: true,
+                                                itemCount: _existingPins.length,
+                                                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                                                itemBuilder: (context, index) {
+                                                  final item = _existingPins[index];
+                                                  final commentText = item.pin.comment.trim().isNotEmpty
+                                                      ? item.pin.comment.trim()
+                                                      : _SdkLocale.noCommentForPin;
+                                                  return InkWell(
+                                                    onTap: () {
+                                                      setState(() {
+                                                        _previewingPin = item;
+                                                      });
+                                                    },
+                                                    borderRadius: BorderRadius.circular(10),
+                                                    child: Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.white.withValues(alpha: 0.05),
+                                                        borderRadius: BorderRadius.circular(10),
+                                                        border: Border.all(color: Colors.white12),
+                                                      ),
+                                                      child: Row(
+                                                        children: [
+                                                          Container(
+                                                            width: 24,
+                                                            height: 24,
+                                                            decoration: const BoxDecoration(
+                                                              color: Color(0xFF8B5CF6),
+                                                              shape: BoxShape.circle,
+                                                            ),
+                                                            child: Center(
+                                                              child: Text(
+                                                                '${item.pin.number}',
+                                                                style: const TextStyle(
+                                                                  color: Colors.white,
+                                                                  fontSize: 11,
+                                                                  fontWeight: FontWeight.bold,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          const SizedBox(width: 10),
+                                                          Expanded(
+                                                            child: Column(
+                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                              children: [
+                                                                Text(
+                                                                  commentText,
+                                                                  maxLines: 2,
+                                                                  overflow: TextOverflow.ellipsis,
+                                                                  style: const TextStyle(
+                                                                    color: Colors.white,
+                                                                    fontSize: 13,
+                                                                  ),
+                                                                ),
+                                                                if (item.pin.target != null)
+                                                                  Padding(
+                                                                    padding: const EdgeInsets.only(top: 2),
+                                                                    child: Text(
+                                                                      '${_SdkLocale.elementAttachedBadge}: ${item.pin.target!.widgetType}',
+                                                                      style: const TextStyle(
+                                                                        color: Color(0xFFA78BFA),
+                                                                        fontSize: 10,
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                          const Icon(Icons.chevron_right, color: Colors.white54, size: 18),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          OutlinedButton(
+                                            style: OutlinedButton.styleFrom(
+                                              foregroundColor: Colors.white70,
+                                              side: const BorderSide(color: Colors.white24),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                            onPressed: () {
+                                              setState(() {
+                                                _showAllScreenPinsModal = false;
+                                              });
+                                            },
+                                            child: Text(_SdkLocale.close),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+
+                    // 4-C. 選択した指摘ピンの元スクショ ＆ ピン位置プレビューモーダル
+                    if (_previewingPin != null)
+                      Positioned.fill(
+                        child: LayoutBuilder(
+                          builder: (context, modalConstraints) {
+                            final isLandscape = modalConstraints.maxWidth > modalConstraints.maxHeight;
+                            return Container(
+                              color: Colors.black.withValues(alpha: 0.88),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: isLandscape ? 8 : 20,
+                              ),
+                              child: Center(
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: isLandscape ? 600 : 480,
+                                    maxHeight: isLandscape ? modalConstraints.maxHeight * 0.96 : 680,
+                                  ),
+                                  child: Card(
+                                    color: Colors.grey.shade900,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      side: const BorderSide(color: Color(0xFF8B5CF6), width: 1.5),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(14),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                                        children: [
+                                          // ヘッダー（縦横共通）
+                                          Row(
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(Icons.arrow_back, color: Colors.white70, size: 20),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    _previewingPin = null;
+                                                  });
+                                                },
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Expanded(
+                                                child: Text(
+                                                  _SdkLocale.previewOriginalScreenshot,
                                                   style: const TextStyle(
                                                     color: Colors.white,
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 15,
                                                   ),
                                                 ),
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  _SdkLocale.nearbyPinsSub,
-                                                  style: TextStyle(
-                                                    color: Colors.grey.shade400,
-                                                    fontSize: 11,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    _previewingPin = null;
+                                                  });
+                                                },
+                                              ),
+                                            ],
                                           ),
-                                          IconButton(
-                                            icon: const Icon(Icons.close, color: Colors.white70, size: 20),
-                                            onPressed: () {
-                                              setState(() {
-                                                _nearbyExistingPins = null;
-                                              });
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      ConstrainedBox(
-                                        constraints: const BoxConstraints(maxHeight: 260),
-                                        child: ListView.separated(
-                                          shrinkWrap: true,
-                                          itemCount: _nearbyExistingPins!.length,
-                                          separatorBuilder: (_, __) => const SizedBox(height: 8),
-                                          itemBuilder: (context, index) {
-                                            final item = _nearbyExistingPins![index];
-                                            final commentText = item.pin.comment.trim().isNotEmpty
-                                                ? item.pin.comment.trim()
-                                                : _SdkLocale.noCommentForPin;
-                                            return InkWell(
-                                              onTap: () {
-                                                setState(() {
-                                                  final selected = item;
-                                                  _nearbyExistingPins = null;
-                                                  _selectedExistingPin = selected;
-                                                });
-                                              },
-                                              borderRadius: BorderRadius.circular(10),
-                                              child: Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white.withValues(alpha: 0.05),
-                                                  borderRadius: BorderRadius.circular(10),
-                                                  border: Border.all(color: Colors.white12),
-                                                ),
-                                                child: Row(
-                                                  children: [
-                                                    Container(
-                                                      width: 26,
-                                                      height: 26,
-                                                      decoration: const BoxDecoration(
-                                                        color: Color(0xFF8B5CF6),
-                                                        shape: BoxShape.circle,
-                                                      ),
-                                                      child: const Center(
-                                                        child: Icon(Icons.location_on, color: Colors.white, size: 14),
+                                          const SizedBox(height: 6),
+                                           if (isLandscape)
+                                            // 横画面: 左（画像）＋ 右（コメント＋ボタン）の横並びレイアウト
+                                            Expanded(
+                                              child: Row(
+                                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                                children: [
+                                                  // 左側: スクショ画像エリア（実画像サイズでピン座標計算）
+                                                  Expanded(
+                                                    child: ClipRRect(
+                                                      borderRadius: BorderRadius.circular(10),
+                                                      child: Container(
+                                                        color: Colors.black,
+                                                        child: _previewingPin!.screenshotUrl != null && _previewingPin!.screenshotUrl!.isNotEmpty
+                                                            ? LayoutBuilder(
+                                                                builder: (context, constraints) {
+                                                                  final pWidth = constraints.maxWidth;
+                                                                  final pHeight = constraints.maxHeight;
+                                                                  final pin = _previewingPin!.pin;
+                                                                  const pinSize = 30.0;
+                                                                  final url = _previewingPin!.screenshotUrl!;
+
+                                                                  return FutureBuilder<Size>(
+                                                                    future: _resolveImageSize(url),
+                                                                    builder: (context, snapshot) {
+                                                                      // 実画像サイズが取れたらそれを使う。取れなければ _drawingAspectRatio にフォールバック
+                                                                      final double imgAspect = snapshot.hasData && snapshot.data!.height > 0
+                                                                          ? snapshot.data!.width / snapshot.data!.height
+                                                                          : (_drawingAspectRatio ?? (9 / 16));
+                                                                      final containerAspect = pWidth / (pHeight > 0 ? pHeight : 1.0);
+                                                                      double renderW = pWidth;
+                                                                      double renderH = pHeight;
+                                                                      double offsetX = 0.0;
+                                                                      double offsetY = 0.0;
+
+                                                                      if (containerAspect > imgAspect) {
+                                                                        renderW = pHeight * imgAspect;
+                                                                        offsetX = (pWidth - renderW) / 2.0;
+                                                                      } else {
+                                                                        renderH = pWidth / (imgAspect > 0 ? imgAspect : 1.0);
+                                                                        offsetY = (pHeight - renderH) / 2.0;
+                                                                      }
+
+                                                                      final pinX = (offsetX + (pin.xRatio * renderW) - (pinSize / 2.0)).clamp(0.0, pWidth - pinSize);
+                                                                      final pinY = (offsetY + (pin.yRatio * renderH) - (pinSize / 2.0)).clamp(0.0, pHeight - pinSize);
+
+                                                                      return Stack(
+                                                                        fit: StackFit.expand,
+                                                                        children: [
+                                                                          Image.network(
+                                                                            url,
+                                                                            fit: BoxFit.contain,
+                                                                            loadingBuilder: (context, child, loadingProgress) {
+                                                                              if (loadingProgress == null) return child;
+                                                                              return const Center(
+                                                                                child: CircularProgressIndicator(color: Color(0xFF8B5CF6)),
+                                                                              );
+                                                                            },
+                                                                            errorBuilder: (context, error, stackTrace) {
+                                                                              debugPrint('⚠️ SnappySnag: Failed to load screenshot image from $url: $error');
+                                                                              return Center(
+                                                                                child: Column(
+                                                                                  mainAxisSize: MainAxisSize.min,
+                                                                                  children: [
+                                                                                    const Icon(Icons.broken_image_outlined, color: Colors.white38, size: 36),
+                                                                                    const SizedBox(height: 8),
+                                                                                    Text(
+                                                                                      _SdkLocale.originalScreenshotNotFound,
+                                                                                      style: const TextStyle(color: Colors.white60, fontSize: 12),
+                                                                                    ),
+                                                                                  ],
+                                                                                ),
+                                                                              );
+                                                                            },
+                                                                          ),
+                                                                          if (snapshot.hasData)
+                                                                            Positioned(
+                                                                              left: pinX,
+                                                                              top: pinY,
+                                                                              child: Container(
+                                                                                width: pinSize,
+                                                                                height: pinSize,
+                                                                                decoration: BoxDecoration(
+                                                                                  color: const Color(0xFF8B5CF6),
+                                                                                  shape: BoxShape.circle,
+                                                                                  border: Border.all(color: Colors.white, width: 2),
+                                                                                  boxShadow: const [
+                                                                                    BoxShadow(
+                                                                                      color: Colors.black54,
+                                                                                      blurRadius: 6,
+                                                                                      offset: Offset(0, 3),
+                                                                                    ),
+                                                                                  ],
+                                                                                ),
+                                                                                child: Center(
+                                                                                  child: Text(
+                                                                                    '${pin.number}',
+                                                                                    style: const TextStyle(
+                                                                                      color: Colors.white,
+                                                                                      fontWeight: FontWeight.bold,
+                                                                                      fontSize: 12,
+                                                                                    ),
+                                                                                  ),
+                                                                                ),
+                                                                              ),
+                                                                            ),
+                                                                        ],
+                                                                      );
+                                                                    },
+                                                                  );
+                                                                },
+                                                              )
+                                                            : Center(
+                                                                child: Text(
+                                                                  _SdkLocale.originalScreenshotNotFound,
+                                                                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                                                                ),
+                                                              ),
                                                       ),
                                                     ),
-                                                    const SizedBox(width: 10),
-                                                    Expanded(
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  // 右側: コメント＋戻るボタン
+                                                  SizedBox(
+                                                    width: 200,
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                                      children: [
+                                                        Expanded(
+                                                          child: Container(
+                                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                            decoration: BoxDecoration(
+                                                              color: Colors.black38,
+                                                              borderRadius: BorderRadius.circular(8),
+                                                              border: Border.all(color: Colors.white12),
+                                                            ),
+                                                            child: Column(
+                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                              children: [
+                                                                // ① 問題修正: Row→Column で「要素：xxx」が長くてもオーバーフローしない
+                                                                Text(
+                                                                  _SdkLocale.pinCommentTitle,
+                                                                  style: const TextStyle(
+                                                                    color: Color(0xFFC4B5FD),
+                                                                    fontSize: 11,
+                                                                    fontWeight: FontWeight.bold,
+                                                                  ),
+                                                                ),
+                                                                if (_previewingPin!.pin.target != null) ...[
+                                                                  const SizedBox(height: 2),
+                                                                  Text(
+                                                                    '${_SdkLocale.elementAttachedBadge}: ${_previewingPin!.pin.target!.widgetType}',
+                                                                    style: const TextStyle(
+                                                                      color: Color(0xFFA78BFA),
+                                                                      fontSize: 10,
+                                                                      fontWeight: FontWeight.bold,
+                                                                      overflow: TextOverflow.ellipsis,
+                                                                    ),
+                                                                    maxLines: 1,
+                                                                    overflow: TextOverflow.ellipsis,
+                                                                  ),
+                                                                ],
+                                                                const SizedBox(height: 4),
+                                                                Expanded(
+                                                                  child: SingleChildScrollView(
+                                                                    child: Text(
+                                                                      _previewingPin!.pin.comment.trim().isNotEmpty
+                                                                          ? _previewingPin!.pin.comment.trim()
+                                                                          : _SdkLocale.noCommentForPin,
+                                                                      style: const TextStyle(
+                                                                        color: Colors.white,
+                                                                        fontSize: 13,
+                                                                        height: 1.3,
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        const SizedBox(height: 8),
+                                                        ElevatedButton(
+                                                          style: ElevatedButton.styleFrom(
+                                                            backgroundColor: const Color(0xFF8B5CF6),
+                                                            foregroundColor: Colors.white,
+                                                            padding: const EdgeInsets.symmetric(vertical: 10),
+                                                            shape: RoundedRectangleBorder(
+                                                              borderRadius: BorderRadius.circular(8),
+                                                            ),
+                                                          ),
+                                                          onPressed: () {
+                                                            setState(() {
+                                                              _previewingPin = null;
+                                                            });
+                                                          },
+                                                          child: Text(
+                                                            _SdkLocale.back,
+                                                            style: const TextStyle(fontWeight: FontWeight.bold),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            )
+                                           else ...[
+                                            // 縦画面: 元スクショプレビュー（当時の画像上にピンをオーバーレイ）
+                                            Expanded(
+                                              child: ClipRRect(
+                                                borderRadius: BorderRadius.circular(10),
+                                                child: Container(
+                                                  color: Colors.black,
+                                                  child: _previewingPin!.screenshotUrl != null && _previewingPin!.screenshotUrl!.isNotEmpty
+                                                      ? LayoutBuilder(
+                                                          builder: (context, constraints) {
+                                                            final pWidth = constraints.maxWidth;
+                                                            final pHeight = constraints.maxHeight;
+                                                            final pin = _previewingPin!.pin;
+                                                            const pinSize = 30.0;
+                                                            final url = _previewingPin!.screenshotUrl!;
+
+                                                            return FutureBuilder<Size>(
+                                                              future: _resolveImageSize(url),
+                                                              builder: (context, snapshot) {
+                                                                // 実画像サイズが取れたらそれを使う。取れなければ _drawingAspectRatio にフォールバック
+                                                                final double imgAspect = snapshot.hasData && snapshot.data!.height > 0
+                                                                    ? snapshot.data!.width / snapshot.data!.height
+                                                                    : (_drawingAspectRatio ?? (9 / 16));
+                                                                final containerAspect = pWidth / (pHeight > 0 ? pHeight : 1.0);
+                                                                double renderW = pWidth;
+                                                                double renderH = pHeight;
+                                                                double offsetX = 0.0;
+                                                                double offsetY = 0.0;
+
+                                                                if (containerAspect > imgAspect) {
+                                                                  // 左右に黒帯（レターボックス）
+                                                                  renderW = pHeight * imgAspect;
+                                                                  offsetX = (pWidth - renderW) / 2.0;
+                                                                } else {
+                                                                  // 上下に黒帯
+                                                                  renderH = pWidth / (imgAspect > 0 ? imgAspect : 1.0);
+                                                                  offsetY = (pHeight - renderH) / 2.0;
+                                                                }
+
+                                                                final pinX = (offsetX + (pin.xRatio * renderW) - (pinSize / 2.0)).clamp(0.0, pWidth - pinSize);
+                                                                final pinY = (offsetY + (pin.yRatio * renderH) - (pinSize / 2.0)).clamp(0.0, pHeight - pinSize);
+
+                                                                return Stack(
+                                                                  fit: StackFit.expand,
+                                                                  children: [
+                                                                    Image.network(
+                                                                      url,
+                                                                      fit: BoxFit.contain,
+                                                                      loadingBuilder: (context, child, loadingProgress) {
+                                                                        if (loadingProgress == null) return child;
+                                                                        return const Center(
+                                                                          child: CircularProgressIndicator(color: Color(0xFF8B5CF6)),
+                                                                        );
+                                                                      },
+                                                                      errorBuilder: (context, error, stackTrace) {
+                                                                        debugPrint('⚠️ SnappySnag: Failed to load screenshot image from $url: $error');
+                                                                        return Center(
+                                                                          child: Column(
+                                                                            mainAxisSize: MainAxisSize.min,
+                                                                            children: [
+                                                                              const Icon(Icons.broken_image_outlined, color: Colors.white38, size: 36),
+                                                                              const SizedBox(height: 8),
+                                                                              Text(
+                                                                                _SdkLocale.originalScreenshotNotFound,
+                                                                                style: const TextStyle(color: Colors.white60, fontSize: 12),
+                                                                              ),
+                                                                            ],
+                                                                          ),
+                                                                        );
+                                                                      },
+                                                                    ),
+                                                                    if (snapshot.hasData)
+                                                                      Positioned(
+                                                                        left: pinX,
+                                                                        top: pinY,
+                                                                        child: Container(
+                                                                          width: pinSize,
+                                                                          height: pinSize,
+                                                                          decoration: BoxDecoration(
+                                                                            color: const Color(0xFF8B5CF6),
+                                                                            shape: BoxShape.circle,
+                                                                            border: Border.all(color: Colors.white, width: 2),
+                                                                            boxShadow: const [
+                                                                              BoxShadow(
+                                                                                color: Colors.black54,
+                                                                                blurRadius: 6,
+                                                                                offset: Offset(0, 3),
+                                                                              ),
+                                                                            ],
+                                                                          ),
+                                                                          child: Center(
+                                                                            child: Text(
+                                                                              '${pin.number}',
+                                                                              style: const TextStyle(
+                                                                                color: Colors.white,
+                                                                                fontWeight: FontWeight.bold,
+                                                                                fontSize: 12,
+                                                                              ),
+                                                                            ),
+                                                                          ),
+                                                                        ),
+                                                                      ),
+                                                                  ],
+                                                                );
+                                                              },
+                                                            );
+                                                          },
+                                                        )
+                                                      : Center(
+                                                          child: Text(
+                                                            _SdkLocale.originalScreenshotNotFound,
+                                                            style: const TextStyle(color: Colors.white60, fontSize: 12),
+                                                          ),
+                                                        ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            // 指摘コメント表示
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black38,
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(color: Colors.white12),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      Text(
+                                                        _SdkLocale.pinCommentTitle,
+                                                        style: const TextStyle(
+                                                          color: Color(0xFFC4B5FD),
+                                                          fontSize: 11,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                      if (_previewingPin!.pin.target != null)
+                                                        Text(
+                                                          '${_SdkLocale.elementAttachedBadge}: ${_previewingPin!.pin.target!.widgetType}',
+                                                          style: const TextStyle(
+                                                            color: Color(0xFFA78BFA),
+                                                            fontSize: 10,
+                                                            fontWeight: FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  ConstrainedBox(
+                                                    constraints: const BoxConstraints(maxHeight: 80),
+                                                    child: SingleChildScrollView(
                                                       child: Text(
-                                                        commentText,
-                                                        maxLines: 2,
-                                                        overflow: TextOverflow.ellipsis,
+                                                        _previewingPin!.pin.comment.trim().isNotEmpty
+                                                            ? _previewingPin!.pin.comment.trim()
+                                                            : _SdkLocale.noCommentForPin,
                                                         style: const TextStyle(
                                                           color: Colors.white,
                                                           fontSize: 13,
+                                                          height: 1.3,
                                                         ),
                                                       ),
                                                     ),
-                                                    const Icon(Icons.chevron_right, color: Colors.white54, size: 18),
-                                                  ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: const Color(0xFF8B5CF6),
+                                                foregroundColor: Colors.white,
+                                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(8),
                                                 ),
                                               ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      OutlinedButton(
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor: Colors.white70,
-                                          side: const BorderSide(color: Colors.white24),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            _nearbyExistingPins = null;
-                                          });
-                                        },
-                                        child: Text(_SdkLocale.close),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                    // 4-B. 過去チケットのピン詳細確認モーダル（タップ時に表示）
-                    if (_selectedExistingPin != null)
-                      Positioned.fill(
-                        child: Container(
-                          color: Colors.black.withValues(alpha: 0.75),
-                          padding: const EdgeInsets.all(24),
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 440),
-                              child: Card(
-                                color: Colors.grey.shade900,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  side: const BorderSide(color: Color(0xFF8B5CF6), width: 1.5),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(18),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Container(
-                                            width: 28,
-                                            height: 28,
-                                            decoration: const BoxDecoration(
-                                              color: Color(0xFF8B5CF6),
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: const Center(
-                                              child: Icon(Icons.location_on, color: Colors.white, size: 16),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              _SdkLocale.existingPinDetailTitle,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 15,
-                                              ),
-                                            ),
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.close, color: Colors.white70, size: 20),
-                                            onPressed: () {
-                                              setState(() {
-                                                _selectedExistingPin = null;
-                                              });
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black38,
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(color: Colors.white12),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              _SdkLocale.pinCommentTitle,
-                                              style: const TextStyle(
-                                                color: Color(0xFFC4B5FD),
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              _selectedExistingPin!.pin.comment.trim().isNotEmpty
-                                                  ? _selectedExistingPin!.pin.comment.trim()
-                                                  : _SdkLocale.noCommentForPin,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 13,
-                                                height: 1.4,
+                                              onPressed: () {
+                                                setState(() {
+                                                  _previewingPin = null;
+                                                });
+                                              },
+                                              child: Text(
+                                                _SdkLocale.back,
+                                                style: const TextStyle(fontWeight: FontWeight.bold),
                                               ),
                                             ),
                                           ],
-                                        ),
+                                        ],
                                       ),
-                                      const SizedBox(height: 16),
-                                      ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFF8B5CF6),
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            _selectedExistingPin = null;
-                                          });
-                                        },
-                                        child: Text(
-                                          _SdkLocale.close,
-                                          style: const TextStyle(fontWeight: FontWeight.bold),
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
                       ),
+
                     // 5. プライバシー確認用フローティングオーバーレイ（最前面に描画）
                     if (_isPrivacyConfirmOpen)
                       Positioned.fill(
@@ -2919,6 +3930,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                   pins: _pins,
                                                   memo: _feedbackMemoController.text,
                                                   drawingAspectRatio: _drawingAspectRatio,
+                                                  existingFeedbacks: _existingFeedbacks,
+                                                  isDevChatEnabled: SnappySnag().isDevChatEnabled,
                                                 );
                                               }
                                               final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
@@ -3024,6 +4037,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                   pins: _pins,
                                                   memo: _feedbackMemoController.text,
                                                   drawingAspectRatio: _drawingAspectRatio,
+                                                  existingFeedbacks: _existingFeedbacks,
+                                                  isDevChatEnabled: SnappySnag().isDevChatEnabled,
                                                 );
                                               }
                                               final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
@@ -3679,6 +4694,699 @@ class WidgetTreeDumper {
     ];
     return noiseTypes.contains(clean);
   }
+
+  /// Unicode私用領域（PUA: \uE000-\uF8FF, \uF0000以上）などのアイコンフォント外字であるかを判定
+  static bool _isPrivateUseAreaIconText(String? str) {
+    if (str == null) return false;
+    final trimmed = str.trim();
+    if (trimmed.isEmpty) return false;
+    // 長さが3文字以下で、文字コードがPUA（私用領域）にある場合はアイコンと見なす
+    if (trimmed.runes.length <= 2) {
+      for (final rune in trimmed.runes) {
+        if ((rune >= 0xE000 && rune <= 0xF8FF) ||
+            (rune >= 0xF0000 && rune <= 0xFFFFD) ||
+            (rune >= 0x100000 && rune <= 0x10FFFD)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /// 画面上のタップ座標から、最も適合するUIウィジェットのアンカー情報（SnappyPinTarget）を抽出する
+  static SnappyPinTarget? findTargetAtPosition(BuildContext context, Offset globalPos) {
+    Element? topScaffoldElement;
+    void findTopScaffold(Element element) {
+      if (element.widget.runtimeType.toString() == 'Scaffold') {
+        topScaffoldElement = element;
+      }
+      element.visitChildren(findTopScaffold);
+    }
+    context.visitChildElements(findTopScaffold);
+    final Element searchRoot = topScaffoldElement ?? (context as Element);
+
+    final List<_CandidateTarget> candidates = [];
+    final Set<int> visited = {};
+    int traversalOrder = 0;
+
+    void search(Element element, List<String> currentPath) {
+      if (visited.contains(element.hashCode)) return;
+      visited.add(element.hashCode);
+      final currentOrder = ++traversalOrder;
+
+      final widget = element.widget;
+      if (widget is Offstage && widget.offstage) return;
+      if (widget is Visibility && !widget.visible) return;
+      if (widget is TickerMode && !widget.enabled) return;
+
+      final typeStr = widget.runtimeType.toString();
+      final clean = _cleanType(typeStr);
+
+      final List<String> nextPath = List<String>.from(currentPath);
+      if (!_isNoiseWidget(clean) && !_isStandardOrFrameworkWidget(clean)) {
+        nextPath.add(clean);
+      }
+
+      final renderBox = element.findRenderObject();
+      if (renderBox is RenderBox && renderBox.hasSize && renderBox.attached) {
+        try {
+          final pos = renderBox.localToGlobal(Offset.zero);
+          final size = renderBox.size;
+          final rect = Rect.fromLTWH(pos.dx, pos.dy, size.width, size.height);
+
+          // タップ座標がウィジェットの境界内に含まれているか
+          if (rect.contains(globalPos)) {
+            final keyStr = widget.key?.toString();
+            String? text;
+            if (widget is Text && widget.data != null) {
+              text = widget.data;
+            } else if (widget is RichText) {
+              text = widget.text.toPlainText();
+            } else if (widget is EditableText) {
+              text = widget.controller.text;
+            } else if (widget is TextField) {
+              text = widget.controller?.text ?? widget.decoration?.hintText;
+            }
+
+            // TextFieldなどの入力欄の場合でテキストがまだ取れていない時は子孫からEditableTextを探す
+            if ((text == null || text!.trim().isEmpty) &&
+                (clean.contains('TextField') || clean.contains('TextFormField') || clean.contains('EditableText'))) {
+              void findInputText(Element el) {
+                if (text != null && text!.trim().isNotEmpty) return;
+                final w = el.widget;
+                if (w is EditableText) {
+                  text = w.controller.text;
+                } else if (w is Text && w.data != null && w.data!.trim().isNotEmpty) {
+                  text = w.data!.trim();
+                }
+                if (text == null || text!.isEmpty) {
+                  el.visitChildren(findInputText);
+                }
+              }
+              element.visitChildren(findInputText);
+            }
+
+            // テキストコードによるアイコン（外字フォント・PUA）の場合はテキストとして扱わない（アイコン扱い）
+            final bool isIconGlyph = _isPrivateUseAreaIconText(text);
+
+            // テキストの有効性チェック（空文字、空白のみ、または私用領域アイコンはテキスト除外）
+            final rawText = text;
+            final bool hasValidText = !isIconGlyph && rawText != null && rawText.trim().isNotEmpty;
+            final String? trimmedText = hasValidText ? rawText!.trim() : null;
+
+            // 祖先（ancestors）を遡って、ボタンや操作可能コンテナがないかを探索
+            Element? clickableAncestor;
+            String? ancestorType;
+            String? ancestorKey;
+            Rect? ancestorRect;
+
+            element.visitAncestorElements((ancestor) {
+              if (ancestor == searchRoot) return false;
+              final aWidget = ancestor.widget;
+              final aType = _cleanType(aWidget.runtimeType.toString());
+
+              // 内部・低レベルフレームワークウィジェットは除外（_で始まるもの、RawGestureDetector、Scopeなど）
+              if (aType.startsWith('_') ||
+                  aType == 'RawGestureDetector' ||
+                  aType.endsWith('Scope') ||
+                  aType == 'Semantics' ||
+                  aType == 'Focus' ||
+                  aType == 'FocusScope' ||
+                  aType == 'IgnorePointer' ||
+                  aType == 'AbsorbPointer' ||
+                  aType == 'KeyedSubtree') {
+                return true;
+              }
+
+              // 操作可能コンテナ、ボタン、テキスト入力欄、ヘッダー/バーコンテナ
+              final isClickable = aType.contains('Button') ||
+                  aType.contains('InkWell') ||
+                  aType.contains('GestureDetector') ||
+                  aType.contains('Card') ||
+                  aType.contains('ListTile') ||
+                  aType.contains('Chip') ||
+                  aType.contains('TextField') ||
+                  aType.contains('TextFormField') ||
+                  aType.contains('AppBar') ||
+                  aType.contains('Header') ||
+                  aType.contains('Bar');
+
+              if (isClickable) {
+                final aBox = ancestor.findRenderObject();
+                if (aBox is RenderBox && aBox.hasSize && aBox.attached) {
+                  try {
+                    final aPos = aBox.localToGlobal(Offset.zero);
+                    final aSize = aBox.size;
+                    final aR = Rect.fromLTWH(aPos.dx, aPos.dy, aSize.width, aSize.height);
+                    if (aR.contains(globalPos)) {
+                      clickableAncestor = ancestor;
+                      ancestorType = aType;
+                      ancestorKey = aWidget.key?.toString();
+                      ancestorRect = aR;
+                      // アプリ独自のカスタムボタン（例: OneStaStartButton 等）やTextFieldを見つけたら即座に確定
+                      if (!aType.startsWith('GestureDetector') && !aType.startsWith('InkResponse')) {
+                        return false;
+                      }
+                    }
+                  } catch (_) {}
+                }
+              }
+              return true;
+            });
+
+            // 祖先にボタン等の操作可能コンテナが存在する場合、そのコンテナを候補として登録
+            if (clickableAncestor != null && ancestorType != null && ancestorRect != null) {
+              final cArea = ancestorRect!.width * ancestorRect!.height;
+              final localXRatio = ancestorRect!.width > 0 ? ((globalPos.dx - ancestorRect!.left) / ancestorRect!.width).clamp(0.0, 1.0) : 0.5;
+              final localYRatio = ancestorRect!.height > 0 ? ((globalPos.dy - ancestorRect!.top) / ancestorRect!.height).clamp(0.0, 1.0) : 0.5;
+
+              // ボタン内部にテキストがあればそれをアンカーテキストとして拝借する
+              // タップ位置そのものにテキストがない場合（アイコンや矢印をタップした場合）、
+              // ボタン（clickableAncestor）の子孫要素全体から、タップ座標に最も近いテキストを選択する
+              String? buttonText = trimmedText;
+              if (buttonText == null || buttonText.isEmpty) {
+                double minDistance = double.infinity;
+                String? closestText;
+
+                void findClosestChildText(Element el) {
+                  final w = el.widget;
+                  String? candidate;
+                  if (w is Text && w.data != null && !_isPrivateUseAreaIconText(w.data) && w.data!.trim().isNotEmpty) {
+                    candidate = w.data!.trim();
+                  } else if (w is RichText) {
+                    final plain = w.text.toPlainText().trim();
+                    if (!_isPrivateUseAreaIconText(plain) && plain.isNotEmpty) {
+                      candidate = plain;
+                    }
+                  } else if (w is EditableText) {
+                    final plain = w.controller.text.trim();
+                    if (plain.isNotEmpty) {
+                      candidate = plain;
+                    }
+                  }
+
+                  if (candidate != null && candidate.isNotEmpty) {
+                    final rBox = el.findRenderObject();
+                    if (rBox is RenderBox && rBox.hasSize && rBox.attached) {
+                      try {
+                        final pos = rBox.localToGlobal(Offset.zero);
+                        final center = Offset(pos.dx + rBox.size.width * 0.5, pos.dy + rBox.size.height * 0.5);
+                        final dist = (center - globalPos).distance;
+                        if (dist < minDistance) {
+                          minDistance = dist;
+                          closestText = candidate;
+                        }
+                      } catch (_) {
+                        if (closestText == null) closestText = candidate;
+                      }
+                    } else if (closestText == null) {
+                      closestText = candidate;
+                    }
+                  }
+
+                  el.visitChildren(findClosestChildText);
+                }
+
+                clickableAncestor!.visitChildren(findClosestChildText);
+                buttonText = closestText;
+              }
+
+              final finalButtonText = buttonText;
+              final resolvedText = (finalButtonText != null && finalButtonText.length > 30)
+                  ? finalButtonText.substring(0, 30)
+                  : finalButtonText;
+
+              final isForeContainer = ancestorType!.contains('AppBar') ||
+                  ancestorType!.contains('Header') ||
+                  ancestorType!.contains('NavigationBar');
+
+              candidates.add(
+                _CandidateTarget(
+                  area: cArea,
+                  depth: nextPath.length,
+                  priority: isForeContainer ? 110 : 100, // ヘッダー系コンテナは110点、ボタン/TextFieldは100点
+                  traversalIndex: currentOrder,
+                  target: SnappyPinTarget(
+                    widgetKey: ancestorKey,
+                    widgetType: ancestorType!,
+                    widgetText: resolvedText,
+                    widgetPath: nextPath.length > 5 ? nextPath.sublist(nextPath.length - 5) : nextPath,
+                    localXRatio: localXRatio,
+                    localYRatio: localYRatio,
+                  ),
+                ),
+              );
+            }
+
+            // ウィジェット自体の優先度判定
+            // 制御・ラッパー・ノイズウィジェットは単体候補として絶対に採用しない
+            final isNoise = clean.startsWith('_') ||
+                clean == 'ScrollSemantics' ||
+                clean.endsWith('Scope') ||
+                clean == 'IgnorePointer' ||
+                clean == 'AbsorbPointer' ||
+                clean == 'Semantics' ||
+                clean == 'Focus' ||
+                clean == 'FocusScope' ||
+                clean == 'RawGestureDetector' ||
+                clean == 'KeyedSubtree';
+
+            if (!isNoise) {
+              int priority = 0;
+              final isInputWidget = clean.contains('TextField') || clean.contains('TextFormField') || clean.contains('EditableText');
+              final isButtonSelf = clean.contains('Button') || clean.contains('InkWell') || clean.contains('Tile') || clean.contains('Card') || isInputWidget;
+              final isForeElement = clean.contains('AppBar') || clean.contains('Header') || clean.contains('NavigationBar');
+
+              if (isForeElement) {
+                priority = 110; // ヘッダー・AppBar要素は最前面として優先
+              } else if (isButtonSelf) {
+                priority = 100;
+              } else if (keyStr != null && keyStr.isNotEmpty) {
+                priority = 80;
+              } else if (hasValidText) {
+                priority = 60;
+              } else if (clean.contains('Image') || clean.contains('Icon') || isIconGlyph) {
+                priority = 40; // 画像やアイコン（外字フォント含む）
+              }
+
+              if (priority > 0) {
+                final area = size.width * size.height;
+                final localXRatio = size.width > 0 ? ((globalPos.dx - pos.dx) / size.width).clamp(0.0, 1.0) : 0.5;
+                final localYRatio = size.height > 0 ? ((globalPos.dy - pos.dy) / size.height).clamp(0.0, 1.0) : 0.5;
+
+                candidates.add(
+                  _CandidateTarget(
+                    area: area,
+                    depth: nextPath.length,
+                    priority: priority,
+                    traversalIndex: currentOrder,
+                    target: SnappyPinTarget(
+                      widgetKey: keyStr,
+                      widgetType: clean,
+                      widgetText: trimmedText != null && trimmedText.length > 30 ? trimmedText.substring(0, 30) : trimmedText,
+                      widgetPath: nextPath.length > 5 ? nextPath.sublist(nextPath.length - 5) : nextPath,
+                      localXRatio: localXRatio,
+                      localYRatio: localYRatio,
+                    ),
+                  ),
+                );
+              }
+            }
+          }
+        } catch (_) {}
+      }
+
+      element.visitChildren((child) => search(child, nextPath));
+    }
+
+    search(searchRoot, []);
+
+    if (candidates.isEmpty) return null;
+
+    // ソート順:
+    // 1. priority（ヘッダー: 110, ボタン/TextField: 100, Key: 80, テキスト: 60, アイコン/画像: 40）
+    // 2. traversalIndex（重なりがある場合、ツリーで後から描画された前面レイヤーを最優先）
+    // 3. area（より具体的で小さい要素を優先）
+    // 4. depth（より深い特化ウィジェットを優先）
+    candidates.sort((a, b) {
+      // 画面の重なり（後勝ち）を強く反映させるため、priority が近い場合は traversalIndex を優先考慮
+      final prioDiff = b.priority.compareTo(a.priority);
+      if (prioDiff != 0) return prioDiff;
+      final orderDiff = b.traversalIndex.compareTo(a.traversalIndex);
+      if (orderDiff != 0) return orderDiff;
+      final areaDiff = a.area.compareTo(b.area);
+      if (areaDiff != 0) return areaDiff;
+      return b.depth.compareTo(a.depth);
+    });
+
+    return candidates.first.target;
+  }
+
+  /// 現在の画面ウィジェットツリーを走査し、ターゲット情報に最も合致するUI要素のグローバル座標を算出する
+  static Offset? resolveTargetPosition(
+    BuildContext context,
+    SnappyPinTarget target, {
+    Offset? fallbackPosition,
+  }) {
+    Element? topScaffoldElement;
+    void findTopScaffold(Element element) {
+      if (element.widget.runtimeType.toString() == 'Scaffold') {
+        topScaffoldElement = element;
+      }
+      element.visitChildren(findTopScaffold);
+    }
+    context.visitChildElements(findTopScaffold);
+    final Element searchRoot = topScaffoldElement ?? (context as Element);
+
+    // 画面全体のルートRenderBoxを取得（同一共通コンポーネントが複数ある場合の近接判定用）
+    final rootRenderBox = searchRoot.findRenderObject() as RenderBox?;
+    final rootOrigin = (rootRenderBox != null && rootRenderBox.attached)
+        ? rootRenderBox.localToGlobal(Offset.zero)
+        : Offset.zero;
+    final rootSize = (rootRenderBox != null && rootRenderBox.attached && rootRenderBox.hasSize)
+        ? rootRenderBox.size
+        : (MediaQuery.maybeOf(context)?.size ?? Size.zero);
+
+    _MatchResult? bestMatch;
+    final Set<int> visited = {};
+
+    void search(Element element, List<String> currentPath) {
+      if (visited.contains(element.hashCode)) return;
+      visited.add(element.hashCode);
+
+      final widget = element.widget;
+      if (widget is Offstage && widget.offstage) return;
+      if (widget is Visibility && !widget.visible) return;
+      if (widget is TickerMode && !widget.enabled) return;
+
+      final typeStr = widget.runtimeType.toString();
+      final clean = _cleanType(typeStr);
+
+      final List<String> nextPath = List<String>.from(currentPath);
+      if (!_isNoiseWidget(clean) && !_isStandardOrFrameworkWidget(clean)) {
+        nextPath.add(clean);
+      }
+
+      final keyStr = widget.key?.toString();
+      String? text;
+      if (widget is Text && widget.data != null) {
+        text = widget.data;
+      } else if (widget is RichText) {
+        text = widget.text.toPlainText();
+      } else if (widget is EditableText) {
+        text = widget.controller.text;
+      } else if (widget is TextField) {
+        text = widget.controller?.text ?? widget.decoration?.hintText;
+      } else if (target.widgetText != null && target.widgetText!.isNotEmpty) {
+        // ボタンやコンテナの場合、子孫のTextウィジェットからテキストを探してマッチングに使用
+        void findDescendantText(Element el) {
+          if (text != null && text!.trim().isNotEmpty) return;
+          final w = el.widget;
+          if (w is Text && w.data != null && !_isPrivateUseAreaIconText(w.data) && w.data!.trim().isNotEmpty) {
+            text = w.data!.trim();
+          } else if (w is RichText) {
+            final plain = w.text.toPlainText().trim();
+            if (!_isPrivateUseAreaIconText(plain) && plain.isNotEmpty) {
+              text = plain;
+            }
+          } else if (w is EditableText) {
+            final plain = w.controller.text.trim();
+            if (plain.isNotEmpty) {
+              text = plain;
+            }
+          }
+          if (text == null || text!.isEmpty) {
+            el.visitChildren(findDescendantText);
+          }
+        }
+        element.visitChildren(findDescendantText);
+      }
+
+      int score = 0;
+
+      // 1. Key の完全一致 (最優先: 100点)
+      if (target.widgetKey != null && keyStr != null && target.widgetKey == keyStr) {
+        score += 100;
+      }
+
+      // 2. ウィジェットの型一致 (20点)
+      if (target.widgetType == clean) {
+        score += 20;
+      }
+
+      // 3. テキストの一致判定
+      final String? currentText = text?.trim();
+      final String? targetText = target.widgetText?.trim();
+      if (targetText != null && currentText != null && currentText.isNotEmpty) {
+        if (currentText == targetText) {
+          // 完全一致: 最も信頼度が高いため高配点 (50点)
+          score += 50;
+        } else {
+          // 数字のみ、または短い文字列（4文字以下、例: "3" と "30"）の場合は誤判定防止のため部分一致を不許可
+          final isNumericOrShort = currentText.length <= 4 ||
+              targetText.length <= 4 ||
+              int.tryParse(currentText) != null ||
+              int.tryParse(targetText) != null;
+          if (!isNumericOrShort) {
+            if (currentText.startsWith(targetText) || targetText.startsWith(currentText)) {
+              score += 20; // 長文の部分一致
+            }
+          }
+        }
+      }
+
+      // 4. パスの合致 (最大20点)
+      if (target.widgetPath.isNotEmpty && nextPath.isNotEmpty) {
+        int commonAncestors = 0;
+        for (final p in target.widgetPath) {
+          if (nextPath.contains(p)) commonAncestors++;
+        }
+        score += (commonAncestors * 5).clamp(0, 20);
+      }
+
+      final renderBox = element.findRenderObject();
+      if (renderBox is RenderBox && renderBox.hasSize && renderBox.attached) {
+        try {
+          final pos = renderBox.localToGlobal(Offset.zero);
+          final size = renderBox.size;
+          if (size.width > 0 && size.height > 0) {
+            // ★ ユーザー指示: 要素吸着時は要素の中心（50% / 50%）にピタッと吸着させる
+            final resolvedOffset = Offset(
+              pos.dx + (size.width * 0.5),
+              pos.dy + (size.height * 0.5),
+            );
+
+            // 5. 相対座標の近接度ボーナス (最大30点)
+            // カレンダーの日付や同型セル、共通ボタンが複数ある場合、元ピンの画面位置に近いものを優先
+            int positionBonus = 0;
+            final refRatioX = fallbackPosition?.dx ?? target.localXRatio;
+            final refRatioY = fallbackPosition?.dy ?? target.localYRatio;
+            if (rootSize.width > 0 && rootSize.height > 0 && refRatioX != null && refRatioY != null) {
+              final elemCenterRatioX = (resolvedOffset.dx - rootOrigin.dx) / rootSize.width;
+              final elemCenterRatioY = (resolvedOffset.dy - rootOrigin.dy) / rootSize.height;
+              // 元の画面相対比率と候補要素の中心比率のユークリッド距離
+              final dist = sqrt(
+                pow(elemCenterRatioX - refRatioX, 2) +
+                pow(elemCenterRatioY - refRatioY, 2),
+              );
+              // 距離が近いほど高得点（最大30点）
+              positionBonus = ((1.0 - dist.clamp(0.0, 1.0)) * 30).round();
+            }
+
+            final totalScore = score + positionBonus;
+
+            // 型一致(20点) + 近接ボーナス(最大30点) または テキスト一致(40点) などで25点以上なら吸着候補とする
+            if (totalScore >= 25) {
+              if (bestMatch == null || totalScore > bestMatch!.score) {
+                bestMatch = _MatchResult(
+                  score: totalScore,
+                  offset: resolvedOffset,
+                  matchedType: clean,
+                  matchedText: text,
+                  matchedKey: keyStr,
+                );
+              }
+            }
+          }
+        } catch (_) {}
+      }
+
+      element.visitChildren((child) => search(child, nextPath));
+    }
+
+    search(searchRoot, []);
+    final match = bestMatch;
+    if (match != null) {
+      debugPrint('📍 SnappySnag: Target resolved successfully -> [${match.matchedType}] (Text: "${match.matchedText ?? ''}", Key: "${match.matchedKey ?? ''}") at center pos: ${match.offset} (score: ${match.score})');
+      return match.offset;
+    } else {
+      debugPrint('⚠️ SnappySnag: Target resolution failed for [${target.widgetType}] (Text: "${target.widgetText ?? ''}", Key: "${target.widgetKey ?? ''}"). Falling back to relative ratio.');
+      return null;
+    }
+  }
+
+  /// ターゲット情報に合致するUI要素の画面内 Rect（大枠の領域）を特定する
+  /// 見つからない場合（画面外・スクロール等）は null を返す
+  static Rect? resolveTargetRect(
+    BuildContext context,
+    SnappyPinTarget target, {
+    Offset? fallbackPosition,
+  }) {
+    final searchRoot = context as Element;
+    _MatchResult? bestMatch;
+
+    final rootBox = context.findRenderObject() as RenderBox?;
+    final rootOrigin = (rootBox != null && rootBox.attached)
+        ? rootBox.localToGlobal(Offset.zero)
+        : Offset.zero;
+    final rootSize = (rootBox != null && rootBox.attached && rootBox.hasSize)
+        ? rootBox.size
+        : MediaQuery.of(context).size;
+
+    void search(Element element, List<String> currentPath) {
+      final widget = element.widget;
+      final rawType = widget.runtimeType.toString();
+      final clean = _cleanType(rawType);
+
+      final nextPath = List<String>.from(currentPath);
+      if (!_isNoiseWidget(clean) && !_isStandardOrFrameworkWidget(clean)) {
+        nextPath.add(clean);
+      }
+
+      final keyStr = widget.key?.toString();
+      String? text;
+      if (widget is Text && widget.data != null) {
+        text = widget.data;
+      } else if (widget is RichText) {
+        text = widget.text.toPlainText();
+      } else if (widget is EditableText) {
+        text = widget.controller.text;
+      } else if (widget is TextField) {
+        text = widget.controller?.text ?? widget.decoration?.hintText;
+      } else if (target.widgetText != null && target.widgetText!.isNotEmpty) {
+        void findDescendantText(Element el) {
+          if (text != null && text!.trim().isNotEmpty) return;
+          final w = el.widget;
+          if (w is Text && w.data != null && !_isPrivateUseAreaIconText(w.data) && w.data!.trim().isNotEmpty) {
+            text = w.data!.trim();
+          } else if (w is RichText) {
+            final plain = w.text.toPlainText().trim();
+            if (!_isPrivateUseAreaIconText(plain) && plain.isNotEmpty) {
+              text = plain;
+            }
+          } else if (w is EditableText) {
+            final plain = w.controller.text.trim();
+            if (plain.isNotEmpty) {
+              text = plain;
+            }
+          }
+          if (text == null || text!.isEmpty) {
+            el.visitChildren(findDescendantText);
+          }
+        }
+        element.visitChildren(findDescendantText);
+      }
+
+      int score = 0;
+      if (target.widgetKey != null && keyStr != null && target.widgetKey == keyStr) {
+        score += 100;
+      }
+      if (target.widgetType == clean) {
+        score += 20;
+      }
+      final String? currentText = text?.trim();
+      final String? targetText = target.widgetText?.trim();
+      if (targetText != null && currentText != null && currentText.isNotEmpty) {
+        if (currentText == targetText) {
+          score += 50;
+        } else {
+          final isNumericOrShort = currentText.length <= 4 ||
+              targetText.length <= 4 ||
+              int.tryParse(currentText) != null ||
+              int.tryParse(targetText) != null;
+          if (!isNumericOrShort) {
+            if (currentText.startsWith(targetText) || targetText.startsWith(currentText)) {
+              score += 20;
+            }
+          }
+        }
+      }
+      if (target.widgetPath.isNotEmpty && nextPath.isNotEmpty) {
+        int commonAncestors = 0;
+        for (final p in target.widgetPath) {
+          if (nextPath.contains(p)) commonAncestors++;
+        }
+        score += (commonAncestors * 5).clamp(0, 20);
+      }
+
+      final renderBox = element.findRenderObject();
+      if (renderBox is RenderBox && renderBox.hasSize && renderBox.attached) {
+        try {
+          final pos = renderBox.localToGlobal(Offset.zero);
+          final size = renderBox.size;
+          if (size.width > 0 && size.height > 0) {
+            final resolvedOffset = Offset(
+              pos.dx + (size.width * 0.5),
+              pos.dy + (size.height * 0.5),
+            );
+
+            int positionBonus = 0;
+            final refRatioX = fallbackPosition?.dx ?? target.localXRatio;
+            final refRatioY = fallbackPosition?.dy ?? target.localYRatio;
+            if (rootSize.width > 0 && rootSize.height > 0 && refRatioX != null && refRatioY != null) {
+              final elemCenterRatioX = (resolvedOffset.dx - rootOrigin.dx) / rootSize.width;
+              final elemCenterRatioY = (resolvedOffset.dy - rootOrigin.dy) / rootSize.height;
+              final dist = sqrt(
+                pow(elemCenterRatioX - refRatioX, 2) +
+                pow(elemCenterRatioY - refRatioY, 2),
+              );
+              positionBonus = ((1.0 - dist.clamp(0.0, 1.0)) * 30).round();
+            }
+
+            final totalScore = score + positionBonus;
+
+            if (totalScore >= 25) {
+              if (bestMatch == null || totalScore > bestMatch!.score) {
+                // セクション領域の特定: 親コンテナ（AppBar / Card / セクションブロック）への昇格判定
+                Rect resolvedRect = Rect.fromLTWH(pos.dx, pos.dy, size.width, size.height);
+                String bestType = clean;
+
+                element.visitAncestorElements((ancestor) {
+                  final aWidget = ancestor.widget;
+                  final aRawType = aWidget.runtimeType.toString();
+                  final aClean = _cleanType(aRawType);
+
+                  if (aClean == 'Scaffold' || aClean == 'MaterialApp' || aClean == 'Navigator') {
+                    return false;
+                  }
+
+                  final isAppBarAncestor = aClean.contains('AppBar') || aClean.contains('SliverAppBar') || aClean.contains('Header');
+                  final isCardAncestor = aClean.contains('Card') || aClean.contains('Calendar') || aClean.contains('Section');
+
+                  if (isAppBarAncestor || isCardAncestor) {
+                    final aBox = ancestor.findRenderObject();
+                    if (aBox is RenderBox && aBox.hasSize && aBox.attached) {
+                      final aPos = aBox.localToGlobal(Offset.zero);
+                      final aSize = aBox.size;
+                      if (aSize.width > 0 && aSize.height > 0) {
+                        resolvedRect = Rect.fromLTWH(aPos.dx, aPos.dy, aSize.width, aSize.height);
+                        bestType = aClean;
+                        if (isAppBarAncestor) {
+                          return false; // AppBarは最上位ヘッダーとして即座に確定
+                        }
+                      }
+                    }
+                  }
+                  return true;
+                });
+
+                bestMatch = _MatchResult(
+                  score: totalScore,
+                  offset: resolvedOffset,
+                  matchedType: bestType,
+                  matchedText: text,
+                  matchedKey: keyStr,
+                  rect: resolvedRect,
+                );
+              }
+            }
+          }
+        } catch (_) {}
+      }
+
+      element.visitChildren((child) => search(child, nextPath));
+    }
+
+    search(searchRoot, []);
+    final match = bestMatch;
+    if (match != null && match.rect != null) {
+      debugPrint('📍 SnappySnag: Target section Rect resolved successfully -> [${match.matchedType}] ${match.rect} (score: ${match.score})');
+      return match.rect;
+    } else {
+      debugPrint('⚠️ SnappySnag: Target section Rect resolution failed for [${target.widgetType}]');
+      return null;
+    }
+  }
 }
 
 /// Drawing tool type for annotation and masking.
@@ -3689,13 +5397,104 @@ enum SnappyDrawingTool {
   redPen,
 }
 
+/// ピンが紐づくUIウィジェットの特定アンカー情報（異なる画面サイズ・解像度での要素吸着用）
+
+class _CandidateTarget {
+  final double area;
+  final int depth;
+  final int priority;
+  final int traversalIndex;
+  final SnappyPinTarget target;
+  _CandidateTarget({
+    required this.area,
+    required this.depth,
+    required this.priority,
+    required this.traversalIndex,
+    required this.target,
+  });
+}
+
+class _MatchResult {
+  final int score;
+  final Offset offset;
+  final String matchedType;
+  final String? matchedText;
+  final String? matchedKey;
+  final Rect? rect;
+  _MatchResult({
+    required this.score,
+    required this.offset,
+    required this.matchedType,
+    this.matchedText,
+    this.matchedKey,
+    this.rect,
+  });
+}
+class SnappyPinTarget {
+  final String? widgetKey;
+  final String widgetType;
+  final String? widgetText;
+  final List<String> widgetPath;
+  final double? localXRatio;
+  final double? localYRatio;
+
+  SnappyPinTarget({
+    this.widgetKey,
+    required this.widgetType,
+    this.widgetText,
+    this.widgetPath = const [],
+    this.localXRatio,
+    this.localYRatio,
+  });
+
+  SnappyPinTarget copyWith({
+    String? widgetKey,
+    String? widgetType,
+    String? widgetText,
+    List<String>? widgetPath,
+    double? localXRatio,
+    double? localYRatio,
+  }) {
+    return SnappyPinTarget(
+      widgetKey: widgetKey ?? this.widgetKey,
+      widgetType: widgetType ?? this.widgetType,
+      widgetText: widgetText ?? this.widgetText,
+      widgetPath: widgetPath ?? this.widgetPath,
+      localXRatio: localXRatio ?? this.localXRatio,
+      localYRatio: localYRatio ?? this.localYRatio,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        if (widgetKey != null) 'key': widgetKey,
+        'type': widgetType,
+        if (widgetText != null) 'text': widgetText,
+        if (widgetPath.isNotEmpty) 'path': widgetPath,
+        if (localXRatio != null) 'localX': localXRatio,
+        if (localYRatio != null) 'localY': localYRatio,
+      };
+
+  factory SnappyPinTarget.fromJson(Map<String, dynamic> json) {
+    return SnappyPinTarget(
+      widgetKey: json['key'] as String?,
+      widgetType: json['type'] as String? ?? 'Widget',
+      widgetText: json['text'] as String?,
+      widgetPath: (json['path'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      localXRatio: (json['localX'] as num?)?.toDouble(),
+      localYRatio: (json['localY'] as num?)?.toDouble(),
+    );
+  }
+}
+
 /// スクリーンショット上の特定箇所を指し示すピンモデル
 class SnappyPin {
   final String id;
   final int number;
-  final double xRatio; // 0.0 ~ 1.0 (相対X座標)
-  final double yRatio; // 0.0 ~ 1.0 (相対Y座標)
+  final double xRatio; // 0.0 ~ 1.0 (相対X座標 - フォールバック用)
+  final double yRatio; // 0.0 ~ 1.0 (相対Y座標 - フォールバック用)
   final String comment;
+  final SnappyPinTarget? target; // ★ 要素吸着用メタデータ
+  final bool isActive; // ★ ピンの有効状態 (feedback_logs の pins["is_active"])
 
   SnappyPin({
     required this.id,
@@ -3703,6 +5502,8 @@ class SnappyPin {
     required this.xRatio,
     required this.yRatio,
     this.comment = '',
+    this.target,
+    this.isActive = true,
   });
 
   SnappyPin copyWith({
@@ -3711,6 +5512,8 @@ class SnappyPin {
     double? xRatio,
     double? yRatio,
     String? comment,
+    SnappyPinTarget? target,
+    bool? isActive,
   }) {
     return SnappyPin(
       id: id ?? this.id,
@@ -3718,6 +5521,8 @@ class SnappyPin {
       xRatio: xRatio ?? this.xRatio,
       yRatio: yRatio ?? this.yRatio,
       comment: comment ?? this.comment,
+      target: target ?? this.target,
+      isActive: isActive ?? this.isActive,
     );
   }
 
@@ -3729,31 +5534,63 @@ class SnappyPin {
         'xRatio': xRatio,
         'yRatio': yRatio,
         'comment': comment,
+        'is_active': isActive,
+        if (target != null) 'target': target!.toJson(),
       };
 
   factory SnappyPin.fromJson(Map<String, dynamic> json) {
+    SnappyPinTarget? target;
+    if (json['target'] is Map<String, dynamic>) {
+      target = SnappyPinTarget.fromJson(json['target'] as Map<String, dynamic>);
+    }
+    final rawIsActive = json['is_active'] ?? json['isActive'];
+    final bool isActive = (rawIsActive == null)
+        ? true
+        : (rawIsActive is bool
+            ? rawIsActive
+            : (rawIsActive.toString().toLowerCase() != 'false' && rawIsActive.toString() != '0'));
     return SnappyPin(
       id: json['id'] as String? ?? 'pin_${DateTime.now().millisecondsSinceEpoch}',
       number: (json['number'] as num?)?.toInt() ?? 1,
       xRatio: (json['xRatio'] as num?)?.toDouble() ?? (json['x'] as num?)?.toDouble() ?? 0.0,
       yRatio: (json['yRatio'] as num?)?.toDouble() ?? (json['y'] as num?)?.toDouble() ?? 0.0,
       comment: json['comment'] as String? ?? '',
+      target: target,
+      isActive: isActive,
     );
   }
 }
-
 /// 過去に投稿された既存チケットのピン情報
 class ExistingPinItem {
   final String feedbackId;
   final String userMemo;
   final String severity;
   final SnappyPin pin;
+  final Offset? resolvedRatio; // ★ 要素吸着により解決された画面に対する相対比率(0.0~1.0)
+  final String? screenshotUrl; // ★ 投稿当時の元スクリーンショット画像URL/パス
 
   ExistingPinItem({
     required this.feedbackId,
     required this.userMemo,
     required this.severity,
     required this.pin,
+    this.resolvedRatio,
+    this.screenshotUrl,
+  });
+}
+
+/// 過去にピンが打たれた要素・セクションのグループ情報（ハイライト表示用）
+class ExistingSectionItem {
+  final String id;
+  final String sectionName;
+  final Rect screenRect; // アプリ画面（グローバル）上の座標・サイズ
+  final List<ExistingPinItem> pins;
+
+  ExistingSectionItem({
+    required this.id,
+    required this.sectionName,
+    required this.screenRect,
+    required this.pins,
   });
 }
 
@@ -3845,6 +5682,11 @@ class _SnappyDraftData {
   final String memo;
   final double? drawingAspectRatio;
   final int timestamp;
+  // ★ 下書き保存時点の既存ピン一覧（生JSONリスト）。再開時にサーバーリクエストを不要にする。
+  // スクショURLはString(軽量)であり、実際のバイナリは持たない。
+  final List<dynamic> existingFeedbacks;
+  // ★ 下書き保存時点の isDevChatEnabled フラグ。「全指摘一覧」ボタン表示に使用。
+  final bool isDevChatEnabled;
 
   _SnappyDraftData({
     required this.imageBytes,
@@ -3856,6 +5698,8 @@ class _SnappyDraftData {
     required this.memo,
     this.drawingAspectRatio,
     required this.timestamp,
+    this.existingFeedbacks = const [],
+    this.isDevChatEnabled = true,
   });
 
   Map<String, dynamic> toJson() => {
@@ -3868,6 +5712,8 @@ class _SnappyDraftData {
         'memo': memo,
         if (drawingAspectRatio != null) 'drawingAspectRatio': drawingAspectRatio,
         'timestamp': timestamp,
+        'existingFeedbacks': existingFeedbacks,
+        'isDevChatEnabled': isDevChatEnabled,
       };
 
   factory _SnappyDraftData.fromJson(Map<String, dynamic> json) {
@@ -3887,6 +5733,8 @@ class _SnappyDraftData {
       memo: json['memo'] as String? ?? '',
       drawingAspectRatio: (json['drawingAspectRatio'] as num?)?.toDouble(),
       timestamp: json['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch,
+      existingFeedbacks: json['existingFeedbacks'] as List<dynamic>? ?? [],
+      isDevChatEnabled: json['isDevChatEnabled'] as bool? ?? true,
     );
   }
 
@@ -3921,6 +5769,8 @@ class _SnappyDraftData {
     List<SnappyPin> pins = const [],
     required String memo,
     double? drawingAspectRatio,
+    List<dynamic> existingFeedbacks = const [],
+    bool isDevChatEnabled = true,
   }) async {
     try {
       final draft = _SnappyDraftData(
@@ -3933,6 +5783,8 @@ class _SnappyDraftData {
         memo: memo,
         drawingAspectRatio: drawingAspectRatio,
         timestamp: DateTime.now().millisecondsSinceEpoch,
+        existingFeedbacks: existingFeedbacks,
+        isDevChatEnabled: isDevChatEnabled,
       );
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_draftKey, jsonEncode(draft.toJson()));
@@ -4212,12 +6064,23 @@ class _SdkLocale {
       ? '画面をタップして指摘箇所にピンを立ててください'
       : 'Tap on screen to place feedback pins';
 
-  static String get existingPinsToggle => _isJa ? '既存ピン' : 'Existing Pins';
-  static String get existingPinDetailTitle => _isJa ? '既存ピンのコメント' : 'Existing Pin Comment';
+  static String get existingPinsToggle => _isJa ? '指摘エリア' : 'Issue Areas';
+  static String get existingPinDetailTitle => _isJa ? '指摘ピンの詳細' : 'Pin Details';
+  static String get sectionPinsTitle => _isJa ? 'このエリアの指摘一覧' : 'Issues in this area';
+  static String get sectionPinsSub => _isJa ? 'タップして元スクショとピン位置を確認' : 'Tap to preview screenshot and pin';
+  static String get allScreenPinsTitle => _isJa ? 'この画面の全指摘一覧' : 'All Issues on this Screen';
+  static String get allScreenPinsSub => _isJa ? '画面外・スクロール先を含むすべての指摘' : 'All pins including off-screen/scrolled areas';
+  static String get allScreenPinsBtn => _isJa ? '全指摘一覧' : 'All Issues';
+  static String get previewOriginalScreenshot => _isJa ? '元スクショプレビュー' : 'Screenshot Preview';
+  static String get originalScreenshotNotFound => _isJa ? '元スクショ画像がありません' : 'Original screenshot not found';
+  static String get issueBadgePrefix => _isJa ? '指摘 ' : 'Issues: ';
+  static String get issueBadgeSuffix => _isJa ? '件' : '';
   static String get nearbyPinsTitle => _isJa ? 'この付近のピンを選択' : 'Select a Pin Nearby';
   static String get nearbyPinsSub => _isJa ? '重なり合っているピンが複数あります' : 'Multiple pins are grouped together';
   static String get noCommentForPin => _isJa ? '（コメントなし）' : '(No comment)';
   static String get close => _isJa ? '閉じる' : 'Close';
+  static String get back => _isJa ? '戻る' : 'Back';
+  static String get elementAttachedBadge => _isJa ? '要素' : 'Element';
 
   static String get analyzingScreen =>
       _isJa ? '画面を解析中...' : 'Analyzing screen...';
