@@ -139,6 +139,27 @@ void main() {
     expect(snappy.enableShakeTrigger, isFalse);
   });
 
+  test('SnappySnag enableLogging default is false and can be configured', () {
+    final snappy = SnappySnag();
+
+    snappy.initialize(
+      apiKey: 'test_key',
+    );
+    expect(snappy.enableLogging, isFalse);
+
+    snappy.initialize(
+      apiKey: 'test_key',
+      enableLogging: true,
+    );
+    expect(snappy.enableLogging, isTrue);
+
+    snappy.initialize(
+      apiKey: 'test_key',
+      enableLogging: false,
+    );
+    expect(snappy.enableLogging, isFalse);
+  });
+
   test('SnappySnag trigger button visibility controls', () {
     final snappy = SnappySnag();
     snappy.initialize(

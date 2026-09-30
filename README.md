@@ -44,6 +44,8 @@ void main() {
     user: const SnappySnagUser(
       email: 'developer@example.com',
     ),
+    // Optional: Enable detailed console debug logs during development (defaults to false)
+    // enableLogging: kDebugMode,
     // Safely enable SnappySnag only when ENABLE_SNAPPY_SNAG=true is passed at build time.
     // It will automatically bypass overlay rendering and sensor listeners in production builds.
     enabled: const bool.fromEnvironment('ENABLE_SNAPPY_SNAG', defaultValue: false) || kDebugMode,
@@ -126,14 +128,31 @@ By default (`enableWidgetTree: true`), SnappySnag extracts the Flutter UI hierar
   ```
   > 💡 When `enableWidgetTree: false`, SnappySnag skips tree traversal entirely and relies strictly on screenshot visual cues and user annotations for AI analysis. The dashboard will automatically reflect this as `Visual Screenshot Analysis (UI Tree Excluded)`.
 
-### 4. Multi-Point Pin Drop & Itemized Feedback
+### 4. Logging & Console Output (`enableLogging`)
+
+By default, SnappySnag suppresses all debug output (`enableLogging: false`) to keep your host app's debug and release console output completely clean.
+
+To enable detailed console logs for debugging during development:
+
+```dart
+SnappySnag().initialize(
+  apiKey: '...',
+  enableLogging: kDebugMode, // Only enable detailed debug logs in debug mode
+);
+```
+
+> ⚠️ **Security & Privacy Note**: Disable logging (`enableLogging: false`) before releasing your application to production. Debug logs may contain sensitive operational details, including screen class names, UI widget attributes, and reporter user metadata.
+>
+> *Note: Critical configuration errors (such as missing `apiKey`, security guard dev-mode fallbacks, and macOS sandbox permission guides) will always be output regardless of `enableLogging`.*
+
+### 5. Multi-Point Pin Drop & Itemized Feedback
 
 When users capture a screenshot, they can annotate specific UI elements with numbered pins (1–5) and write separate notes for each pin:
 * **Drop Pins**: Tap anywhere on the captured screenshot to place a pin marker.
 * **Itemized Notes**: Add targeted feedback or repro notes per pin, helping developers address multiple UI issues in a single report without confusing clutter.
 * **Non-Destructive Vectors**: Pin coordinates (`x`, `y` percentages) are stored separately from the image. The original screenshot remains intact and clean on your dashboard.
 
-### 5. Launch Feedback Mode Manually (e.g. from Settings or In-App Menu)
+### 6. Launch Feedback Mode Manually (e.g. from Settings or In-App Menu)
 
 When the floating button is hidden (via `showTriggerButton: false` or `SnappySnagHideButton`), or if you prefer triggering feedback through your own custom UI (such as a "Report Bug" button in a Settings or Help drawer), call `SnappySnag.startFeedbackMode`:
 
@@ -150,7 +169,7 @@ ListTile(
 
 > 💡 When invoked, it displays a guided prompt modal and temporarily reveals the capture button, allowing the user to navigate anywhere in the app to capture and highlight the issue.
 
-### 6. Build for TestFlight / Internal Testing
+### 7. Build for TestFlight / Internal Testing
 
 To compile your app with SnappySnag enabled, build with the `--dart-define` flag:
 
@@ -159,7 +178,7 @@ flutter build ipa --dart-define=ENABLE_SNAPPY_SNAG=true
 flutter build appbundle --dart-define=ENABLE_SNAPPY_SNAG=true
 ```
 
-### 7. Build for App Store / Google Play Store (Production)
+### 8. Build for App Store / Google Play Store (Production)
 
 To compile your app for production release, build normally. SnappySnag will automatically be disabled, will not render the overlay button, and will not register any shake listeners:
 

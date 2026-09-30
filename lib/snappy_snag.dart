@@ -80,6 +80,8 @@ class SnappySnag {
   bool get enableWidgetTree => _enableWidgetTree;
   bool _enableShakeTrigger = true;
   bool get enableShakeTrigger => _enableShakeTrigger;
+  bool _enableLogging = false;
+  bool get enableLogging => _enableLogging;
 
   /// Current user/reporter information.
   SnappySnagUser? get user => _user;
@@ -206,7 +208,7 @@ class SnappySnag {
       } else {
         debugPrint('⚠️ SnappySnag Warning: Cannot show disabled dialog because BuildContext is null. Please pass context to SnappySnag.startFeedbackMode(context: context) or pass navigatorKey to SnappySnag().initialize().');
       }
-      debugPrint('ℹ️ SnappySnag: Feedback feature is currently disabled (enabled: false).');
+      SnappySnag._log('ℹ️ SnappySnag: Feedback feature is currently disabled (enabled: false).');
       return;
     }
 
@@ -268,7 +270,7 @@ class SnappySnag {
                 Navigator.of(dialogCtx).pop();
                 if (!isAlreadyVisible) {
                   SnappySnag().isFeedbackModeActive.value = true;
-                  debugPrint('📸 SnappySnag: Feedback Mode started.');
+                  SnappySnag._log('📸 SnappySnag: Feedback Mode started.');
                 }
               },
               child: Text(
@@ -282,7 +284,7 @@ class SnappySnag {
     } else {
       if (!isAlreadyVisible) {
         SnappySnag().isFeedbackModeActive.value = true;
-        debugPrint('📸 SnappySnag: Feedback Mode started.');
+        SnappySnag._log('📸 SnappySnag: Feedback Mode started.');
       }
     }
   }
@@ -290,7 +292,7 @@ class SnappySnag {
   /// フィードバックモードをキャンセルして終了する
   static void cancelFeedbackMode() {
     SnappySnag().isFeedbackModeActive.value = false;
-    debugPrint('❌ SnappySnag: Feedback Mode cancelled.');
+    SnappySnag._log('❌ SnappySnag: Feedback Mode cancelled.');
   }
 
   // 有効無効の状態管理フラグを追加
@@ -303,6 +305,10 @@ class SnappySnag {
   GlobalKey<NavigatorState>? get navigatorKey => _customNavigatorKey ?? SnappySnag.defaultNavigatorKey;
 
   /// Initialize the SnappySnag SDK with a Project/API Key, optional Package Name, optional SnappySnagUser, and optional custom NavigatorKey.
+  ///
+  /// [enableLogging]: Set to `true` to enable debug output via `debugPrint` during development.
+  /// Defaults to `false`. **Disable before releasing to production** — logs may contain
+  /// sensitive information such as screen class names, UI element data, and user metadata.
   void initialize({
     required String apiKey,
     String? packageName,
@@ -314,9 +320,11 @@ class SnappySnag {
     bool showTriggerButton = false,
     bool enableWidgetTree = true,
     bool enableShakeTrigger = true,
+    bool enableLogging = false,
     String? supabaseUrl,
     bool forceDevInRelease = false,
   }) {
+    _enableLogging = enableLogging;
     // 常駐ボタンの表示制御:
     // 安全のため、modeに関わらずデフォルトは非表示 (false)。
     // テスト等で画面にボタンを出したい場合は showTriggerButton: true を指定する。
@@ -329,6 +337,7 @@ class SnappySnag {
     // forceDevInRelease: true が明示されていない限り自動的に user モードへフォールバック
     if (kReleaseMode && mode == SnappySnagMode.dev && !forceDevInRelease) {
       _mode = SnappySnagMode.user;
+      // 🔴 常時出力: セキュリティ保護の通知（enableLogging に関わらず出力）
       debugPrint('🛡️ SnappySnag Security Guard: SnappySnagMode.dev was specified in release mode without forceDevInRelease: true. Automatically falling back to SnappySnagMode.user to protect internal tickets & developer chats.');
     } else {
       _mode = mode;
@@ -344,20 +353,30 @@ class SnappySnag {
     }
 
     if (!_isEnabled) {
-      debugPrint('🚀 SnappySnag: SDK is disabled by configuration (enabled: false).');
+      _log('🚀 SnappySnag: SDK is disabled by configuration (enabled: false).');
       return;
     }
 
     if (_apiKey == null || _apiKey!.trim().isEmpty) {
+      // 🔴 常時出力: 必須設定ミスの警告（enableLogging に関わらず出力）
       debugPrint('⚠️ SnappySnag Warning: apiKey is empty or not configured.');
     }
-    debugPrint('🚀 SnappySnag initialized.');
+    _log('🚀 SnappySnag initialized.');
+  }
+
+  /// [enableLogging] が true のときのみ debugPrint でログ出力する内部ユーティリティ。
+  /// pub.dev パッケージとして組み込まれたアプリのコンソールを汚染しないよう、
+  /// デフォルトは false（無音）。開発時のデバッグ用途で true に設定する。
+  static void _log(String message) {
+    if (SnappySnag()._enableLogging) {
+      debugPrint(message);
+    }
   }
 
   /// ユーザー情報を設定・動的更新するためのメソッド
   void setUser(SnappySnagUser? user) {
     _user = user;
-    debugPrint(
+    SnappySnag._log(
       '👤 SnappySnag: User info updated (ID: ${user?.id}, Email: ${user?.email}, Name: ${user?.name})',
     );
   }
@@ -365,7 +384,7 @@ class SnappySnag {
   /// ユーザー情報をクリアする（ログアウト時など）
   void clearUser() {
     _user = null;
-    debugPrint('👤 SnappySnag: User info cleared.');
+    SnappySnag._log('👤 SnappySnag: User info cleared.');
   }
 
   /// 端末固有のランダムUUIDを取得（存在しない場合は初回生成してローカルに永続化）
@@ -383,7 +402,7 @@ class SnappySnag {
       _deviceId = savedId;
       return _deviceId!;
     } catch (e) {
-      debugPrint('⚠️ SnappySnag: Failed to access SharedPreferences for deviceId: $e');
+      SnappySnag._log('⚠️ SnappySnag: Failed to access SharedPreferences for deviceId: $e');
       _deviceId ??= _generateUuidV4();
       return _deviceId!;
     }
@@ -478,6 +497,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   bool _isPrivacyConfirmOpen = false;
   bool _isCancelDraftConfirmOpen = false;
   bool _isFailedSendDraftConfirmOpen = false;
+  bool _isClearConfirmOpen = false;
   bool _includeAccountAndDiagnostics = true;
   final TextEditingController _feedbackMemoController = TextEditingController();
   final ScreenshotController _canvasScreenshotController = ScreenshotController();
@@ -547,7 +567,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                 // チャタリング防止（前回の撮影トリガーから2秒以上経過している場合のみ実行）
                 if (_lastShakeTime == null || now.difference(_lastShakeTime!) > const Duration(seconds: 2)) {
                   _lastShakeTime = now;
-                  debugPrint('📱 SnappySnag: Genuine device shake detected (gForce: ${gForce.toStringAsFixed(1)}). Triggering capture.');
+                  SnappySnag._log('📱 SnappySnag: Genuine device shake detected (gForce: ${gForce.toStringAsFixed(1)}). Triggering capture.');
                   _triggerCapture();
                 }
               }
@@ -556,7 +576,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         }
       },
       onError: (error) {
-        debugPrint('⚠️ SnappySnag Accelerometer Error: $error');
+        SnappySnag._log('⚠️ SnappySnag Accelerometer Error: $error');
       },
       cancelOnError: false,
     );
@@ -575,7 +595,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     // ユーザーモード（一般ユーザー）の場合は技術的・内部的なダイアログを出さず、
     // 親切な案内トースト/SnackBarのみを表示して不安を与えない
     if (isUserMode) {
-      debugPrint('⚠️ SnappySnag [UserMode] Suppressed error dialog: $message');
+      SnappySnag._log('⚠️ SnappySnag [UserMode] Suppressed error dialog: $message');
       ScaffoldMessenger.of(targetContext).showSnackBar(
         SnackBar(
           content: Text(_SdkLocale.userModeUnavailable),
@@ -784,7 +804,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       // ignore: use_build_context_synchronously
       targetContext,
     );
-    debugPrint('🎬 SnappySnag: Captured Screen ID: $screenClassName, Signature: $screenSignature, Sensitive Areas: ${sensitiveBounds.length}');
+    SnappySnag._log('🎬 SnappySnag: Captured Screen ID: $screenClassName, Signature: $screenSignature, Sensitive Areas: ${sensitiveBounds.length}');
 
     // 即座にスクリーンショットを撮影 (ディレイなしで押した瞬間をキャプチャ)
     final Uint8List? imageBytes = await _screenshotController.capture();
@@ -905,7 +925,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     } on SnappySnagException {
       rethrow;
     } catch (e) {
-      debugPrint('❌ SnappySnag Fetch Duplicates Error: $e');
+      SnappySnag._log('❌ SnappySnag Fetch Duplicates Error: $e');
     }
     return [];
   }
@@ -951,7 +971,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         return (data['comments'] as List<dynamic>?) ?? [];
       }
     } catch (e) {
-      debugPrint('❌ SnappySnag Fetch Comments Error: $e');
+      SnappySnag._log('❌ SnappySnag Fetch Comments Error: $e');
     }
     return [];
   }
@@ -994,7 +1014,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         return _CommentPostResult(false, _SdkLocale.statusNetworkError);
       }
     } catch (e) {
-      debugPrint('❌ SnappySnag Post Comment Error: $e');
+      SnappySnag._log('❌ SnappySnag Post Comment Error: $e');
       return _CommentPostResult(false, _SdkLocale.statusNetworkError);
     }
   }
@@ -1086,7 +1106,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   }) async {
     final apiKey = SnappySnag()._apiKey;
     if (apiKey == null) {
-      debugPrint('❌ SnappySnag Error: API Key is not configured.');
+      SnappySnag._log('❌ SnappySnag Error: API Key is not configured.');
       return _FeedbackResponse(401, 'API Key is not configured.');
     }
 
@@ -1141,7 +1161,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         }),
       );
 
-      debugPrint('🌐 SnappySnag HTTP Response: ${response.statusCode}');
+      SnappySnag._log('🌐 SnappySnag HTTP Response: ${response.statusCode}');
       String? errorMessage;
       if (response.statusCode != 200) {
         try {
@@ -1151,7 +1171,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       }
       return _FeedbackResponse(response.statusCode, errorMessage);
     } catch (e) {
-      debugPrint('❌ SnappySnag Network Error: $e');
+      SnappySnag._log('❌ SnappySnag Network Error: $e');
       if (!kIsWeb && Platform.isMacOS && e.toString().contains('Operation not permitted')) {
         debugPrint('⚠️ [SnappySnag WARNING] macOS Sandbox Network client restriction detected!');
         debugPrint('======================================================================');
@@ -1231,7 +1251,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
           resolvedScreenshotUrl = '${SnappySnag().supabaseUrl}/storage/v1/object/public/feedback-assets/$cleanPath';
         }
       }
-      debugPrint('📸 SnappySnag: Feedback [$feedbackId] rawScreenshot: "$rawScreenshot", resolved: "$resolvedScreenshotUrl"');
+      SnappySnag._log('📸 SnappySnag: Feedback [$feedbackId] rawScreenshot: "$rawScreenshot", resolved: "$resolvedScreenshotUrl"');
 
       final rawPins = fb['pins'];
       if (rawPins is List) {
@@ -1256,7 +1276,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                   );
                 }
               } catch (e) {
-                debugPrint('⚠️ SnappySnag: Failed to resolve target position: $e');
+                SnappySnag._log('⚠️ SnappySnag: Failed to resolve target position: $e');
               }
             }
             parsedExistingPins.add(
@@ -1299,7 +1319,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
             sectionNames[groupKey] = label;
           }
         } catch (e) {
-          debugPrint('⚠️ SnappySnag: Error resolving target section rect: $e');
+          SnappySnag._log('⚠️ SnappySnag: Error resolving target section rect: $e');
         }
       }
     }
@@ -1413,6 +1433,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       _isPrivacyConfirmOpen = false;
       _isCancelDraftConfirmOpen = false;
       _isFailedSendDraftConfirmOpen = false;
+      _isClearConfirmOpen = false;
       _feedbackMemoController.text = initialMemo ?? '';
       _drawingAspectRatio = capturedAspect;
       _overlayMode = _SnappyOverlayMode.drawing;
@@ -1560,7 +1581,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         if (isUserMode) {
           // 一般ユーザー向け: 不安を与えない親切な共通案内
           message = _SdkLocale.statusGenericError;
-          debugPrint('⚠️ SnappySnag [UserMode] Submit failed (code: ${feedbackRes.statusCode}, msg: ${feedbackRes.errorMessage})');
+          SnappySnag._log('⚠️ SnappySnag [UserMode] Submit failed (code: ${feedbackRes.statusCode}, msg: ${feedbackRes.errorMessage})');
         } else {
           // 開発者モード向け: 原因特定のための詳細メッセージ
           if (feedbackRes.errorMessage != null && feedbackRes.errorMessage!.isNotEmpty) {
@@ -1633,7 +1654,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       );
       return byteData?.buffer.asUint8List() ?? rawPng;
     } catch (e) {
-      debugPrint('⚠️ Failed to compress screenshot: $e');
+      SnappySnag._log('⚠️ Failed to compress screenshot: $e');
       return rawPng;
     }
   }
@@ -2290,9 +2311,9 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                       screenGlobalPos,
                                                     );
                                                     if (detectedTarget != null) {
-                                                      debugPrint('🎯 SnappySnag: Pin placed on element -> [${detectedTarget.widgetType}] (Text: "${detectedTarget.widgetText ?? ''}", Key: "${detectedTarget.widgetKey ?? ''}") at screen pos: $screenGlobalPos');
+                                                      SnappySnag._log('🎯 SnappySnag: Pin placed on element -> [${detectedTarget.widgetType}] (Text: "${detectedTarget.widgetText ?? ''}", Key: "${detectedTarget.widgetKey ?? ''}") at screen pos: $screenGlobalPos');
                                                     } else {
-                                                      debugPrint('⚠️ SnappySnag: No specific UI element detected at screen pos: $screenGlobalPos. Falling back to relative coordinate.');
+                                                      SnappySnag._log('⚠️ SnappySnag: No specific UI element detected at screen pos: $screenGlobalPos. Falling back to relative coordinate.');
                                                     }
                                                     final newPin = SnappyPin(
                                                       id: 'pin_${DateTime.now().millisecondsSinceEpoch}',
@@ -2304,8 +2325,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                     );
                                                     setState(() {
                                                       _pins.add(newPin);
-                                                      _undoStack.add(newPin);
-                                                      _redoStack.clear();
                                                       _editingPin = newPin;
                                                       _pinCommentController.text = '';
                                                     });
@@ -2511,9 +2530,9 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                         screenGlobalPos,
                                                       );
                                                       if (newTarget != null) {
-                                                        debugPrint('🎯 SnappySnag: Pin moved to element -> [${newTarget.widgetType}] (Text: "${newTarget.widgetText ?? ''}", Key: "${newTarget.widgetKey ?? ''}") at screen pos: $screenGlobalPos');
+                                                        SnappySnag._log('🎯 SnappySnag: Pin moved to element -> [${newTarget.widgetType}] (Text: "${newTarget.widgetText ?? ''}", Key: "${newTarget.widgetKey ?? ''}") at screen pos: $screenGlobalPos');
                                                       } else {
-                                                        debugPrint('⚠️ SnappySnag: Pin moved to relative coordinate (no specific element detected at $screenGlobalPos)');
+                                                        SnappySnag._log('⚠️ SnappySnag: Pin moved to relative coordinate (no specific element detected at $screenGlobalPos)');
                                                       }
                                                       setState(() {
                                                         final idx = _pins.indexWhere((p) => p.id == pin.id);
@@ -2651,9 +2670,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                             const SizedBox(width: 8),
                             // 3. 元に戻す (Undo: 操作の時系列順)
                             IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.undo,
-                                color: Colors.white70,
+                                color: (!_isSendingFeedback && _undoStack.isNotEmpty)
+                                    ? Colors.white70
+                                    : Colors.grey.shade700,
                               ),
                               tooltip: 'Undo',
                               onPressed: _isSendingFeedback || _undoStack.isEmpty
@@ -2670,9 +2691,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                             ),
                             // 4. やり直す (Redo: undo した操作を復元)
                             IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.redo,
-                                color: Colors.white70,
+                                color: (!_isSendingFeedback && _redoStack.isNotEmpty)
+                                    ? Colors.white70
+                                    : Colors.grey.shade700,
                               ),
                               tooltip: 'Redo',
                               onPressed: _isSendingFeedback || _redoStack.isEmpty
@@ -2687,21 +2710,18 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         }
                                       }),
                             ),
-                            // 5. 全消去 (Clear)
+                            // 5. 全消去 (Clear) - 確認モーダルを経由
                             IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.delete_outline,
-                                color: Colors.redAccent,
+                                color: (!_isSendingFeedback && (_drawingPoints.isNotEmpty || _pins.isNotEmpty))
+                                    ? Colors.redAccent
+                                    : Colors.grey.shade700,
                               ),
                               tooltip: 'Clear',
                               onPressed: _isSendingFeedback || (_drawingPoints.isEmpty && _pins.isEmpty)
                                   ? null
-                                  : () => setState(() {
-                                        _drawingPoints.clear();
-                                        _pins.clear();
-                                        _undoStack.clear();
-                                        _redoStack.clear();
-                                      }),
+                                  : () => setState(() => _isClearConfirmOpen = true),
                             ),
                           ],
                         ),
@@ -2812,15 +2832,25 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                               ),
                                               onPressed: () {
                                                 final updatedComment = _pinCommentController.text.trim();
+                                                final editingId = _editingPin!.id;
+                                                // 新規ピン判定: undoStack にまだ登録されていない場合のみ新規
+                                                final isNewPin = !_undoStack.any((e) => e is SnappyPin && e.id == editingId);
                                                 setState(() {
                                                   if (updatedComment.isEmpty) {
-                                                    // コメントが空の場合はピンを削除して番号を振り直す
-                                                    _pins.removeWhere((p) => p.id == _editingPin!.id);
+                                                    // コメントが空の場合はピンを削除（undoStackには積まない）
+                                                    _pins.removeWhere((p) => p.id == editingId);
                                                     _renumberPins();
                                                   } else {
-                                                    final idx = _pins.indexWhere((p) => p.id == _editingPin!.id);
+                                                    final idx = _pins.indexWhere((p) => p.id == editingId);
                                                     if (idx != -1) {
-                                                      _pins[idx] = _editingPin!.copyWith(comment: updatedComment);
+                                                      final finalPin = _editingPin!.copyWith(comment: updatedComment);
+                                                      _pins[idx] = finalPin;
+                                                      if (isNewPin) {
+                                                        // 新規ピン: コメント確定時点で正しい内容を undoStack に記録
+                                                        _undoStack.add(finalPin);
+                                                        _redoStack.clear();
+                                                      }
+                                                      // 既存ピンの編集は undoStack 対象外（移動と同様）
                                                     }
                                                   }
                                                   _editingPin = null;
@@ -3344,7 +3374,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                                               );
                                                                             },
                                                                             errorBuilder: (context, error, stackTrace) {
-                                                                              debugPrint('⚠️ SnappySnag: Failed to load screenshot image from $url: $error');
+                                                                              SnappySnag._log('⚠️ SnappySnag: Failed to load screenshot image from $url: $error');
                                                                               return Center(
                                                                                 child: Column(
                                                                                   mainAxisSize: MainAxisSize.min,
@@ -3547,7 +3577,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                                         );
                                                                       },
                                                                       errorBuilder: (context, error, stackTrace) {
-                                                                        debugPrint('⚠️ SnappySnag: Failed to load screenshot image from $url: $error');
+                                                                        SnappySnag._log('⚠️ SnappySnag: Failed to load screenshot image from $url: $error');
                                                                         return Center(
                                                                           child: Column(
                                                                             mainAxisSize: MainAxisSize.min,
@@ -3844,7 +3874,97 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                           ),
                         ),
                       ),
-                    // 5. キャンセル時の下書き保存確認オーバーレイ
+                    // 5. 全消去確認オーバーレイ
+                    if (_isClearConfirmOpen)
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.75),
+                          padding: const EdgeInsets.all(24),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 420),
+                              child: Card(
+                                color: const Color(0xFF1E1E24),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: const BorderSide(color: Color(0xFF2E2E38)),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            _SdkLocale.clearConfirmTitle,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        _SdkLocale.clearConfirmBody,
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 13,
+                                          height: 1.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          TextButton(
+                                            onPressed: () {
+                                              setState(() => _isClearConfirmOpen = false);
+                                            },
+                                            child: Text(
+                                              _SdkLocale.cancel,
+                                              style: const TextStyle(color: Colors.white54),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.redAccent,
+                                              foregroundColor: Colors.white,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                            onPressed: () {
+                                              setState(() {
+                                                _drawingPoints.clear();
+                                                _pins.clear();
+                                                _undoStack.clear();
+                                                _redoStack.clear();
+                                                _isClearConfirmOpen = false;
+                                              });
+                                            },
+                                            child: Text(
+                                              _SdkLocale.clearConfirmButton,
+                                              style: const TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    // 6. キャンセル時の下書き保存確認オーバーレイ
                     if (_isCancelDraftConfirmOpen)
                       Positioned.fill(
                         child: Container(
@@ -4096,7 +4216,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                 // フローティング撮影ボタン（フィードバックモードまたは常駐設定時）
                 if (shouldShowButton)
                   Positioned(
-                    bottom: 80,
+                    bottom: 16 + MediaQuery.of(context).padding.bottom,
                     right: 16,
                     child: GestureDetector(
                       onTap: () {
@@ -5197,10 +5317,10 @@ class WidgetTreeDumper {
     search(searchRoot, []);
     final match = bestMatch;
     if (match != null) {
-      debugPrint('📍 SnappySnag: Target resolved successfully -> [${match.matchedType}] (Text: "${match.matchedText ?? ''}", Key: "${match.matchedKey ?? ''}") at center pos: ${match.offset} (score: ${match.score})');
+      SnappySnag._log('📍 SnappySnag: Target resolved successfully -> [${match.matchedType}] (Text: "${match.matchedText ?? ''}", Key: "${match.matchedKey ?? ''}") at center pos: ${match.offset} (score: ${match.score})');
       return match.offset;
     } else {
-      debugPrint('⚠️ SnappySnag: Target resolution failed for [${target.widgetType}] (Text: "${target.widgetText ?? ''}", Key: "${target.widgetKey ?? ''}"). Falling back to relative ratio.');
+      SnappySnag._log('⚠️ SnappySnag: Target resolution failed for [${target.widgetType}] (Text: "${target.widgetText ?? ''}", Key: "${target.widgetKey ?? ''}"). Falling back to relative ratio.');
       return null;
     }
   }
@@ -5380,10 +5500,10 @@ class WidgetTreeDumper {
     search(searchRoot, []);
     final match = bestMatch;
     if (match != null && match.rect != null) {
-      debugPrint('📍 SnappySnag: Target section Rect resolved successfully -> [${match.matchedType}] ${match.rect} (score: ${match.score})');
+      SnappySnag._log('📍 SnappySnag: Target section Rect resolved successfully -> [${match.matchedType}] ${match.rect} (score: ${match.score})');
       return match.rect;
     } else {
-      debugPrint('⚠️ SnappySnag: Target section Rect resolution failed for [${target.widgetType}]');
+      SnappySnag._log('⚠️ SnappySnag: Target section Rect resolution failed for [${target.widgetType}]');
       return null;
     }
   }
@@ -5755,7 +5875,7 @@ class _SnappyDraftData {
       final json = jsonDecode(rawStr) as Map<String, dynamic>;
       return _SnappyDraftData.fromJson(json);
     } catch (e) {
-      debugPrint('⚠️ SnappySnag: Failed to load draft: $e');
+      SnappySnag._log('⚠️ SnappySnag: Failed to load draft: $e');
       return null;
     }
   }
@@ -5788,9 +5908,9 @@ class _SnappyDraftData {
       );
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_draftKey, jsonEncode(draft.toJson()));
-      debugPrint('💾 SnappySnag: Draft saved successfully (1 item max).');
+      SnappySnag._log('💾 SnappySnag: Draft saved successfully (1 item max).');
     } catch (e) {
-      debugPrint('⚠️ SnappySnag: Failed to save draft: $e');
+      SnappySnag._log('⚠️ SnappySnag: Failed to save draft: $e');
     }
   }
 
@@ -5798,9 +5918,9 @@ class _SnappyDraftData {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_draftKey);
-      debugPrint('🗑️ SnappySnag: Draft cleared.');
+      SnappySnag._log('🗑️ SnappySnag: Draft cleared.');
     } catch (e) {
-      debugPrint('⚠️ SnappySnag: Failed to clear draft: $e');
+      SnappySnag._log('⚠️ SnappySnag: Failed to clear draft: $e');
     }
   }
 }
@@ -6084,6 +6204,13 @@ class _SdkLocale {
 
   static String get analyzingScreen =>
       _isJa ? '画面を解析中...' : 'Analyzing screen...';
+
+  // 全消去確認モーダル
+  static String get clearConfirmTitle => _isJa ? '全て消去しますか？' : 'Clear All?';
+  static String get clearConfirmBody => _isJa
+      ? 'ピンとモザイクを全て削除します。この操作は元に戻せません。'
+      : 'All pins and mosaic strokes will be deleted. This action cannot be undone.';
+  static String get clearConfirmButton => _isJa ? '全て消去' : 'Clear All';
 
   // 下書き関連
   static String get draftFoundTitle =>
