@@ -510,6 +510,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   bool _isCancelDraftConfirmOpen = false;
   bool _isFailedSendDraftConfirmOpen = false;
   bool _isClearConfirmOpen = false;
+  bool _isDevPasscodeDialogOpen = false;
+  bool _isVerifyingDevPasscode = false;
+  final TextEditingController _devPasscodeInputController = TextEditingController();
+  String? _devPasscodeErrorMessage;
   bool _includeAccountAndDiagnostics = true;
   final TextEditingController _feedbackMemoController = TextEditingController();
   final ScreenshotController _canvasScreenshotController = ScreenshotController();
@@ -597,6 +601,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   @override
   void dispose() {
     _accelerometerSubscription?.cancel();
+    _devPasscodeInputController.dispose();
     super.dispose();
   }
 
@@ -675,158 +680,77 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     );
   }
 
-  /// 4桁の開発者機能保護パスコード入力ダイアログ
-  /// 「全員に表示」設定時に内部指摘一覧を安全にアンロックするために使用
-  Future<String?> _showDevPasscodeDialog(BuildContext context) async {
-    final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
-    final controller = TextEditingController();
-    String? errorMessage;
+  /// パスコードを検証し、正しければピン一覧を更新して true を返す。不正なら false を返す。
+  Future<bool> _verifyDevPasscodeAndFetch(String code) async {
+    final apiKey = SnappySnag()._apiKey;
+    if (apiKey == null) return false;
 
-    return showDialog<String>(
-      context: targetContext,
-      barrierDismissible: true,
-      builder: (dialogCtx) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: const Color(0xFF1c1c1e),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: const BorderSide(color: Colors.white24, width: 1),
-              ),
-              title: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.lock_outline,
-                      color: Color(0xFFA78BFA),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      _SdkLocale.devPasscodeDialogTitle,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    _SdkLocale.devPasscodeDialogDesc,
-                    style: const TextStyle(
-                      color: Color(0xFFa1a1aa),
-                      fontSize: 13,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: controller,
-                    autofocus: true,
-                    keyboardType: TextInputType.number,
-                    maxLength: 4,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      letterSpacing: 8,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(4),
-                    ],
-                    decoration: InputDecoration(
-                      hintText: _SdkLocale.devPasscodeHint,
-                      hintStyle: TextStyle(
-                        color: Colors.white24,
-                        letterSpacing: 8,
-                      ),
-                      counterText: '',
-                      filled: true,
-                      fillColor: Colors.black26,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Colors.white24),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2),
-                      ),
-                    ),
-                    onSubmitted: (val) {
-                      if (val.trim().length == 4) {
-                        Navigator.of(dialogCtx).pop(val.trim());
-                      } else {
-                        setDialogState(() {
-                          errorMessage = _SdkLocale.devPasscodeInvalid;
-                        });
-                      }
-                    },
-                  ),
-                  if (errorMessage != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.redAccent,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogCtx).pop(null),
-                  child: Text(
-                    _SdkLocale.devPasscodeCancel,
-                    style: const TextStyle(color: Colors.white60),
-                  ),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF8B5CF6),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  onPressed: () {
-                    final code = controller.text.trim();
-                    if (code.length == 4) {
-                      Navigator.of(dialogCtx).pop(code);
-                    } else {
-                      setDialogState(() {
-                        errorMessage = _SdkLocale.devPasscodeInvalid;
-                      });
-                    }
-                  },
-                  child: Text(_SdkLocale.devPasscodeSubmit),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
+    final String url =
+        '${SnappySnag().supabaseUrl}/functions/v1/get-existing-feedbacks'
+        '?screen_class_name=${Uri.encodeComponent(_drawingScreenClassName ?? '')}'
+        '&screen_signature=${Uri.encodeComponent(_drawingScreenSignature)}';
+
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'x-snappy-api-key': apiKey,
+          'x-snappy-package-name': SnappySnag()._packageName ?? '',
+          if (SnappySnag().reporterEmail != null && SnappySnag().reporterEmail!.isNotEmpty)
+            'x-snappy-reporter-email': SnappySnag().reporterEmail!,
+          'x-snappy-dev-passcode': code,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final isVerified = data['is_passcode_verified'] == true;
+        if (isVerified) {
+          SnappySnag().setDevPasscode(code);
+          if (data['is_dev_chat_enabled'] != null) {
+            SnappySnag()._isDevChatEnabled = data['is_dev_chat_enabled'] == true;
+          }
+          final duplicates = (data['duplicates'] as List<dynamic>?) ?? [];
+          _updateExistingFeedbacksState(duplicates);
+          return true;
+        }
+      }
+    } catch (e) {
+      SnappySnag._log('❌ SnappySnag Dev Passcode Verify Error: $e');
+    }
+    return false;
+  }
+
+  Future<void> _submitDevPasscode() async {
+    final code = _devPasscodeInputController.text.trim();
+    if (code.length != 4) {
+      setState(() {
+        _devPasscodeErrorMessage = _SdkLocale.devPasscodeInvalid;
+      });
+      return;
+    }
+
+    setState(() {
+      _isVerifyingDevPasscode = true;
+      _devPasscodeErrorMessage = null;
+    });
+
+    final success = await _verifyDevPasscodeAndFetch(code);
+
+    if (!mounted) return;
+
+    if (success) {
+      setState(() {
+        _isVerifyingDevPasscode = false;
+        _isDevPasscodeDialogOpen = false;
+        _showAllScreenPinsModal = true;
+      });
+    } else {
+      setState(() {
+        _isVerifyingDevPasscode = false;
+        _devPasscodeErrorMessage = _SdkLocale.devPasscodeInvalid;
+      });
+    }
   }
 
   Future<void> _triggerCapture() async {
@@ -1417,6 +1341,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       _isCancelDraftConfirmOpen = false;
       _isFailedSendDraftConfirmOpen = false;
       _isClearConfirmOpen = false;
+      _isDevPasscodeDialogOpen = false;
       _feedbackMemoController.text = initialMemo ?? '';
       _drawingAspectRatio = capturedAspect;
       _overlayMode = _SnappyOverlayMode.drawing;
@@ -1665,6 +1590,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     setState(() {
       _isCancelDraftConfirmOpen = false;
       _isFailedSendDraftConfirmOpen = false;
+      _isDevPasscodeDialogOpen = false;
+      _isVerifyingDevPasscode = false;
       _selectedExistingPin = null;
       _nearbyExistingPins = null;
       _overlayMode = _SnappyOverlayMode.none;
@@ -2280,41 +2207,19 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                           ),
                           centerTitle: true,
                           actions: [
-                            if (SnappySnag().mode == SnappySnagMode.dev && (_existingPins.isNotEmpty || _requiresPasscode)) ...[
+                            if (SnappySnag().mode == SnappySnagMode.dev && (_existingPins.isNotEmpty || _requiresPasscode))
                               Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(16),
-                                  onTap: () async {
+                                  onTap: () {
                                     if (_requiresPasscode && SnappySnag().devPasscode == null) {
-                                      final entered = await _showDevPasscodeDialog(context);
-                                      if (entered != null && entered.isNotEmpty) {
-                                        SnappySnag().setDevPasscode(entered);
-                                        _showLoadingOverlay();
-                                        try {
-                                          final fetched = await _fetchExistingFeedbacks(
-                                            _drawingScreenClassName ?? '',
-                                            _drawingScreenSignature,
-                                          );
-                                          _updateExistingFeedbacksState(fetched);
-                                        } finally {
-                                          _hideLoadingOverlay();
-                                        }
-                                        if (SnappySnag().devPasscode != null && _existingPins.isNotEmpty) {
-                                          setState(() {
-                                            _showAllScreenPinsModal = true;
-                                          });
-                                        } else {
-                                          if (mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text(_SdkLocale.devPasscodeInvalid),
-                                                backgroundColor: Colors.redAccent,
-                                              ),
-                                            );
-                                          }
-                                        }
-                                      }
+                                      setState(() {
+                                        _devPasscodeErrorMessage = null;
+                                        _isVerifyingDevPasscode = false;
+                                        _devPasscodeInputController.clear();
+                                        _isDevPasscodeDialogOpen = true;
+                                      });
                                     } else {
                                       setState(() {
                                         _showAllScreenPinsModal = true;
@@ -2356,8 +2261,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                     ),
                                   ),
                                 ),
-                              ),
-                            ] else if (SnappySnag().mode != SnappySnagMode.dev && _existingPins.isNotEmpty) ...[
+                              )
+                            else if (SnappySnag().mode != SnappySnagMode.dev && _existingPins.isNotEmpty)
                               Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
                                 child: InkWell(
@@ -2399,57 +2304,56 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                   ),
                                 ),
                               ),
-                            ],  if (_enableSectionHighlights && _existingSections.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(16),
-                                    onTap: () {
-                                      setState(() {
-                                        _showExistingPins = !_showExistingPins;
-                                      });
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
+                            if (_enableSectionHighlights && _existingSections.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(16),
+                                  onTap: () {
+                                    setState(() {
+                                      _showExistingPins = !_showExistingPins;
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: _showExistingPins
+                                          ? const Color(0xFF8B5CF6).withValues(alpha: 0.25)
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
                                         color: _showExistingPins
-                                            ? const Color(0xFF8B5CF6).withValues(alpha: 0.25)
-                                            : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: _showExistingPins
-                                              ? const Color(0xFF8B5CF6)
-                                              : Colors.white38,
-                                          width: 1,
-                                        ),
+                                            ? const Color(0xFF8B5CF6)
+                                            : Colors.white38,
+                                        width: 1,
                                       ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            _showExistingPins ? Icons.layers : Icons.layers_outlined,
-                                            size: 14,
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          _showExistingPins ? Icons.layers : Icons.layers_outlined,
+                                          size: 14,
+                                          color: _showExistingPins
+                                              ? const Color(0xFFA78BFA)
+                                              : Colors.white60,
+                                        ),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          '${_SdkLocale.existingPinsToggle} (${_existingSections.length})',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
                                             color: _showExistingPins
                                                 ? const Color(0xFFA78BFA)
                                                 : Colors.white60,
                                           ),
-                                          const SizedBox(width: 3),
-                                          Text(
-                                            '${_SdkLocale.existingPinsToggle} (${_existingSections.length})',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.bold,
-                                              color: _showExistingPins
-                                                  ? const Color(0xFFA78BFA)
-                                                  : Colors.white60,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),
-                            ],
+                              ),
                             TextButton(
                               onPressed: _isSendingFeedback
                                   ? null
@@ -4421,6 +4325,166 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                               _SdkLocale.saveDraft,
                                               style: const TextStyle(fontWeight: FontWeight.bold),
                                             ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    // 7. 開発者パスコード入力オーバーレイ（最前面・コンパクトサイズ）
+                    if (_isDevPasscodeDialogOpen)
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.75),
+                          padding: const EdgeInsets.all(24),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 420),
+                              child: Card(
+                                color: const Color(0xFF1E1E24),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: const BorderSide(color: Color(0xFF2E2E38)),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.lock_outline,
+                                              color: Color(0xFFA78BFA),
+                                              size: 18,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              _SdkLocale.devPasscodeDialogTitle,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        _SdkLocale.devPasscodeDialogDesc,
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 13,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      TextField(
+                                        controller: _devPasscodeInputController,
+                                        autofocus: true,
+                                        keyboardType: TextInputType.number,
+                                        maxLength: 4,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 22,
+                                          letterSpacing: 8,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter.digitsOnly,
+                                          LengthLimitingTextInputFormatter(4),
+                                        ],
+                                        decoration: InputDecoration(
+                                          hintText: _SdkLocale.devPasscodeHint,
+                                          hintStyle: const TextStyle(
+                                            color: Colors.white24,
+                                            letterSpacing: 8,
+                                          ),
+                                          counterText: '',
+                                          filled: true,
+                                          fillColor: Colors.black26,
+                                          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(10),
+                                            borderSide: const BorderSide(color: Colors.white24),
+                                          ),
+                                          focusedBorder: const OutlineInputBorder(
+                                            borderRadius: BorderRadius.all(Radius.circular(10)),
+                                            borderSide: BorderSide(color: Color(0xFF8B5CF6), width: 2),
+                                          ),
+                                        ),
+                                        onSubmitted: (_) {
+                                          if (!_isVerifyingDevPasscode) {
+                                            _submitDevPasscode();
+                                          }
+                                        },
+                                      ),
+                                      if (_devPasscodeErrorMessage != null) ...[
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          _devPasscodeErrorMessage!,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            color: Colors.redAccent,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          TextButton(
+                                            onPressed: _isVerifyingDevPasscode
+                                                ? null
+                                                : () {
+                                                    setState(() => _isDevPasscodeDialogOpen = false);
+                                                  },
+                                            child: Text(
+                                              _SdkLocale.devPasscodeCancel,
+                                              style: const TextStyle(color: Colors.white54),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(0xFF8B5CF6),
+                                              foregroundColor: Colors.white,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                            onPressed: _isVerifyingDevPasscode ? null : () => _submitDevPasscode(),
+                                            child: _isVerifyingDevPasscode
+                                                ? const SizedBox(
+                                                    width: 16,
+                                                    height: 16,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Colors.white,
+                                                    ),
+                                                  )
+                                                : Text(
+                                                    _SdkLocale.devPasscodeSubmit,
+                                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                                  ),
                                           ),
                                         ],
                                       ),
