@@ -202,7 +202,11 @@ Control access effortlessly from your **Web Dashboard** > **Project Settings** >
   * **Team Members**: Owners and developers registered in your dashboard's "Team & Members" automatically get full access to internal tickets when their `reporterEmail` matches.
   * **Additional Allowed Emails**: Seamlessly whitelist client leads or external QA testers by email address without touching your code or re-deploying.
   * **Unauthenticated / Unknown Testers**: Automatically skip internal tickets and transition directly to the feedback submission screen.
-* 🌐 **Everyone**: Displays developer tickets to anyone running the dev-mode app.
+* 🌐 **Everyone (Passcode Protected)**: 
+  * In projects set to "Everyone", internal tickets and duplicate warnings are protected by a **4-digit Dev Features Passcode** auto-generated on your Web Dashboard.
+  * When opening the internal tickets modal ("全指摘一覧"), users are prompted to enter this 4-digit passcode.
+  * **Zero Storage Leakage**: The entered passcode is kept **strictly in volatile memory only during the current app session** and is never saved to persistent local storage (e.g. SharedPreferences). If the app process terminates or is killed, the passcode is forgotten.
+  * If your dashboard administrator regenerates the passcode or toggles access back to "Allowed Only", any existing session immediately loses access on the next refresh.
 
 ### 2. Automatic Release Guard (`kReleaseMode`)
 When you build your application in **Release Mode** (`flutter build ipa` / `flutter build appbundle`), SnappySnag automatically checks Flutter's `kReleaseMode`. Even if `mode: SnappySnagMode.dev` was inadvertently left configured in your source code, SnappySnag automatically falls back to `SnappySnagMode.user`, completely hiding developer tickets.
@@ -228,4 +232,12 @@ Applies to both `user` and `dev` modes out of the box:
   - If a feedback submission fails due to an unstable internet connection or if the user cancels with unsaved edits, SnappySnag offers to save the current progress as a draft.
   - **Privacy & Storage Safe**: Drafts are stored strictly on the device's local sandbox (`SharedPreferences`). No draft data is sent to external servers until explicitly submitted. Only 1 active draft is retained, ensuring zero unnecessary storage overhead.
   - On the next capture attempt, users are prompted to either **Resume Draft** or **Discard & Start New Capture**.
+
+### 5. Local Storage (SharedPreferences) Transparency
+SnappySnag values user privacy and transparency. The SDK uses on-device local storage (`SharedPreferences`) exclusively for the following two purposes:
+1. **`snappy_snag_device_id`**: A randomly generated anonymous UUID used exclusively for backend spam and rate-limit enforcement (`429 Too Many Requests`). Contains no personal identity or hardware fingerprints.
+2. **`snappy_snag_draft_v1`**: Temporary offline draft data (at most 1 active draft) saved strictly when the user chooses to retain unsaved edits after a failed submission or cancellation. Cleared immediately upon submission or explicit discard.
+
+> 🛡️ **Note on Passcodes & Auth**: Dev Features Passcodes and authentication tokens are **never** written to local persistent storage. They are retained strictly in volatile app memory for the current running session only.
+
 

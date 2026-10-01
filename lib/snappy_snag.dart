@@ -83,6 +83,17 @@ class SnappySnag {
   bool _enableLogging = false;
   bool get enableLogging => _enableLogging;
 
+  /// アプリ起動中のみメモリ保持される開発者機能保護パスコード（4桁）
+  /// ローカルストレージには一切書き込まず、アプリ終了で自動クリアされる
+  String? _devPasscode;
+  String? get devPasscode => _devPasscode;
+  void setDevPasscode(String? code) {
+    _devPasscode = code;
+  }
+  void clearDevPasscode() {
+    _devPasscode = null;
+  }
+
   /// Current user/reporter information.
   SnappySnagUser? get user => _user;
   String? get reporterUserId => _user?.id;
@@ -481,6 +492,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   List<dynamic> _existingFeedbacks = [];
   List<ExistingPinItem> _existingPins = [];
   List<ExistingSectionItem> _existingSections = [];
+  bool _requiresPasscode = false;
   bool _showExistingPins = _enableSectionHighlights;
   ExistingPinItem? _selectedExistingPin;
   List<ExistingPinItem>? _nearbyExistingPins;
@@ -660,6 +672,160 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
           ),
         ],
       ),
+    );
+  }
+
+  /// 4桁の開発者機能保護パスコード入力ダイアログ
+  /// 「全員に表示」設定時に内部指摘一覧を安全にアンロックするために使用
+  Future<String?> _showDevPasscodeDialog(BuildContext context) async {
+    final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
+    final controller = TextEditingController();
+    String? errorMessage;
+
+    return showDialog<String>(
+      context: targetContext,
+      barrierDismissible: true,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF1c1c1e),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: const BorderSide(color: Colors.white24, width: 1),
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.lock_outline,
+                      color: Color(0xFFA78BFA),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _SdkLocale.devPasscodeDialogTitle,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    _SdkLocale.devPasscodeDialogDesc,
+                    style: const TextStyle(
+                      color: Color(0xFFa1a1aa),
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: controller,
+                    autofocus: true,
+                    keyboardType: TextInputType.number,
+                    maxLength: 4,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      letterSpacing: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(4),
+                    ],
+                    decoration: InputDecoration(
+                      hintText: _SdkLocale.devPasscodeHint,
+                      hintStyle: TextStyle(
+                        color: Colors.white24,
+                        letterSpacing: 8,
+                      ),
+                      counterText: '',
+                      filled: true,
+                      fillColor: Colors.black26,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.white24),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2),
+                      ),
+                    ),
+                    onSubmitted: (val) {
+                      if (val.trim().length == 4) {
+                        Navigator.of(dialogCtx).pop(val.trim());
+                      } else {
+                        setDialogState(() {
+                          errorMessage = _SdkLocale.devPasscodeInvalid;
+                        });
+                      }
+                    },
+                  ),
+                  if (errorMessage != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogCtx).pop(null),
+                  child: Text(
+                    _SdkLocale.devPasscodeCancel,
+                    style: const TextStyle(color: Colors.white60),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF8B5CF6),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: () {
+                    final code = controller.text.trim();
+                    if (code.length == 4) {
+                      Navigator.of(dialogCtx).pop(code);
+                    } else {
+                      setDialogState(() {
+                        errorMessage = _SdkLocale.devPasscodeInvalid;
+                      });
+                    }
+                  },
+                  child: Text(_SdkLocale.devPasscodeSubmit),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -889,6 +1055,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         '&screen_signature=${Uri.encodeComponent(screenSignature)}';
 
     try {
+      final devPasscode = SnappySnag().devPasscode;
       final response = await http.get(
         Uri.parse(url),
         headers: {
@@ -896,6 +1063,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
           'x-snappy-package-name': SnappySnag()._packageName ?? '',
           if (SnappySnag().reporterEmail != null && SnappySnag().reporterEmail!.isNotEmpty)
             'x-snappy-reporter-email': SnappySnag().reporterEmail!,
+          if (devPasscode != null && devPasscode.isNotEmpty)
+            'x-snappy-dev-passcode': devPasscode,
         },
       );
 
@@ -903,6 +1072,12 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         final data = jsonDecode(response.body);
         if (data['is_dev_chat_enabled'] != null) {
           SnappySnag()._isDevChatEnabled = data['is_dev_chat_enabled'] == true;
+        }
+        if (data['requires_passcode'] != null) {
+          _requiresPasscode = data['requires_passcode'] == true;
+        }
+        if (data['is_passcode_verified'] == false) {
+          SnappySnag().clearDevPasscode();
         }
         return (data['duplicates'] as List<dynamic>?) ?? [];
       } else {
@@ -1222,12 +1397,43 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     }
 
     final parsedExistingFeedbacks = existingFeedbacks ?? <dynamic>[];
+
+    setState(() {
+      _drawingImageBytes = imageBytes;
+      _drawingWidgetTree = widgetTree;
+      _drawingScreenClassName = screenClassName;
+      _drawingScreenSignature = screenSignature;
+      _drawingPoints = initialPoints;
+      _pins = initialPins != null ? List<SnappyPin>.from(initialPins) : [];
+      _undoStack.clear();
+      _redoStack.clear();
+      _editingPin = null;
+      _updateExistingFeedbacksState(parsedExistingFeedbacks);
+      _showAllScreenPinsModal = false;
+      _activeTool = SnappyDrawingTool.pin;
+      _isSendingFeedback = false;
+      _isMemoOpen = false;
+      _isPrivacyConfirmOpen = false;
+      _isCancelDraftConfirmOpen = false;
+      _isFailedSendDraftConfirmOpen = false;
+      _isClearConfirmOpen = false;
+      _feedbackMemoController.text = initialMemo ?? '';
+      _drawingAspectRatio = capturedAspect;
+      _overlayMode = _SnappyOverlayMode.drawing;
+    });
+    return _drawingCompleter!.future;
+  }
+
+  /// サーバーから取得した指摘一覧データをパースしてStateを更新する
+  void _updateExistingFeedbacksState(List<dynamic> feedbacks) {
+    final parsedExistingFeedbacks = feedbacks;
     final List<ExistingPinItem> parsedExistingPins = [];
     final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
     final targetRenderBox = targetContext.findRenderObject() as RenderBox?;
     final targetOrigin = (targetRenderBox != null && targetRenderBox.attached)
         ? targetRenderBox.localToGlobal(Offset.zero)
         : Offset.zero;
+    final mediaSize = MediaQuery.maybeOf(context)?.size ?? Size.zero;
     final targetSize = (targetRenderBox != null && targetRenderBox.attached && targetRenderBox.hasSize)
         ? targetRenderBox.size
         : (MediaQuery.maybeOf(targetContext)?.size ?? mediaSize);
@@ -1238,27 +1444,22 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       final severity = fb['severity']?.toString() ?? 'unassessed';
       final rawScreenshot = fb['screenshot_url']?.toString();
 
-      // ★ スクショURLの解決: 既に完全なURL（http/https）ならそのまま使用。
-      // もし内部パス（例: "projectId/feedbackId.png"）の場合は、Supabase Storage のパブリック/認証URL形式へフォールバック
       String? resolvedScreenshotUrl;
       if (rawScreenshot != null && rawScreenshot.trim().isNotEmpty) {
         final trimmed = rawScreenshot.trim();
         if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
           resolvedScreenshotUrl = trimmed;
         } else {
-          // ストレージ内部パスの場合の補完
           final cleanPath = trimmed.startsWith('/') ? trimmed.substring(1) : trimmed;
           resolvedScreenshotUrl = '${SnappySnag().supabaseUrl}/storage/v1/object/public/feedback-assets/$cleanPath';
         }
       }
-      SnappySnag._log('📸 SnappySnag: Feedback [$feedbackId] rawScreenshot: "$rawScreenshot", resolved: "$resolvedScreenshotUrl"');
 
       final rawPins = fb['pins'];
       if (rawPins is List) {
         for (final p in rawPins) {
           if (p is Map<String, dynamic>) {
             final pin = SnappyPin.fromJson(p);
-            // feedback_logs の pins 内で "is_active": false となっているものは除外
             if (!pin.isActive) continue;
 
             Offset? resolvedRatio;
@@ -1294,7 +1495,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       }
     }
 
-    // ★ セクション（ブロック要素）の検出・ハイライトグループ化
     final List<ExistingSectionItem> parsedExistingSections = [];
     final Map<String, List<ExistingPinItem>> sectionPinGroups = {};
     final Map<String, Rect> sectionRects = {};
@@ -1338,12 +1538,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       );
     });
 
-    // 画面全体の面積を取得（50%以上の巨大親コンテナ判定用）
     final double screenTotalArea = (targetSize.width > 0 && targetSize.height > 0)
         ? (targetSize.width * targetSize.height)
         : (mediaSize.width * mediaSize.height);
 
-    // 面積の大きい順（外枠コンテナ・親Card・AppBar）にソートして包含マージを実行
     rawSections.sort((a, b) {
       final areaA = a.screenRect.width * a.screenRect.height;
       final areaB = b.screenRect.width * b.screenRect.height;
@@ -1361,14 +1559,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         final childRect = sec.screenRect;
         final parentArea = parentRect.width * parentRect.height;
 
-        // ★ 画面全体の50%以上を占めるような巨大要素（背景・Scaffold等）は、
-        // カレンダーやヘッダー等の独立した子セクションを飲み込まないようマージ親から除外
         final isParentTooHuge = screenTotalArea > 0 && (parentArea / screenTotalArea) >= 0.5;
         if (isParentTooHuge) {
           continue;
         }
 
-        // 中心点が親に含まれているか、または包含率が高い場合
         final centerInParent = parentRect.contains(childRect.center);
         final overlapLeft = max(parentRect.left, childRect.left);
         final overlapTop = max(parentRect.top, childRect.top);
@@ -1380,7 +1575,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         final overlapRatio = childArea > 0 ? (overlapArea / childArea) : 0.0;
 
         if (centerInParent || overlapRatio >= 0.7) {
-          // 親セクションにピンを統合し、子要素の個別枠線は親枠線に一本化
           final updatedPins = List<ExistingPinItem>.from(parent.pins)..addAll(sec.pins);
           mergedSections[i] = ExistingSectionItem(
             id: parent.id,
@@ -1398,8 +1592,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       }
     }
 
-    // 描画順: 面積の大きい背景/親コンテナを先に描き、小さいセクション（ボタン、ヘッダー、カード等）を前面に描画する
-    // これにより重なり合っても内側のセクションを確実にタップできるようにする
     mergedSections.sort((a, b) {
       final areaA = a.screenRect.width * a.screenRect.height;
       final areaB = b.screenRect.width * b.screenRect.height;
@@ -1408,37 +1600,14 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
     parsedExistingSections.addAll(mergedSections);
 
-    setState(() {
-      _drawingImageBytes = imageBytes;
-      _drawingWidgetTree = widgetTree;
-      _drawingScreenClassName = screenClassName;
-      _drawingScreenSignature = screenSignature;
-      _drawingPoints = initialPoints;
-      _pins = initialPins != null ? List<SnappyPin>.from(initialPins) : [];
-      _undoStack.clear();
-      _redoStack.clear();
-      _editingPin = null;
-      _existingFeedbacks = parsedExistingFeedbacks;
-      _existingPins = parsedExistingPins;
-      _existingSections = parsedExistingSections;
-      _showExistingPins = _enableSectionHighlights;
-      _selectedExistingPin = null;
-      _nearbyExistingPins = null;
-      _selectedSection = null;
-      _previewingPin = null;
-      _showAllScreenPinsModal = false;
-      _activeTool = SnappyDrawingTool.pin;
-      _isSendingFeedback = false;
-      _isMemoOpen = false;
-      _isPrivacyConfirmOpen = false;
-      _isCancelDraftConfirmOpen = false;
-      _isFailedSendDraftConfirmOpen = false;
-      _isClearConfirmOpen = false;
-      _feedbackMemoController.text = initialMemo ?? '';
-      _drawingAspectRatio = capturedAspect;
-      _overlayMode = _SnappyOverlayMode.drawing;
-    });
-    return _drawingCompleter!.future;
+    _existingFeedbacks = parsedExistingFeedbacks;
+    _existingPins = parsedExistingPins;
+    _existingSections = parsedExistingSections;
+    _showExistingPins = _enableSectionHighlights;
+    _selectedExistingPin = null;
+    _nearbyExistingPins = null;
+    _selectedSection = null;
+    _previewingPin = null;
   }
 
   /// ネットワーク画像の実際のピクセルサイズを取得する（キャッシュ対応）
@@ -2111,7 +2280,84 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                           ),
                           centerTitle: true,
                           actions: [
-                            if (_existingPins.isNotEmpty) ...[
+                            if (SnappySnag().mode == SnappySnagMode.dev && (_existingPins.isNotEmpty || _requiresPasscode)) ...[
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(16),
+                                  onTap: () async {
+                                    if (_requiresPasscode && SnappySnag().devPasscode == null) {
+                                      final entered = await _showDevPasscodeDialog(context);
+                                      if (entered != null && entered.isNotEmpty) {
+                                        SnappySnag().setDevPasscode(entered);
+                                        _showLoadingOverlay();
+                                        try {
+                                          final fetched = await _fetchExistingFeedbacks(
+                                            _drawingScreenClassName ?? '',
+                                            _drawingScreenSignature,
+                                          );
+                                          _updateExistingFeedbacksState(fetched);
+                                        } finally {
+                                          _hideLoadingOverlay();
+                                        }
+                                        if (SnappySnag().devPasscode != null && _existingPins.isNotEmpty) {
+                                          setState(() {
+                                            _showAllScreenPinsModal = true;
+                                          });
+                                        } else {
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(_SdkLocale.devPasscodeInvalid),
+                                                backgroundColor: Colors.redAccent,
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      }
+                                    } else {
+                                      setState(() {
+                                        _showAllScreenPinsModal = true;
+                                      });
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: Colors.white24,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          _requiresPasscode && SnappySnag().devPasscode == null
+                                              ? Icons.lock_outline
+                                              : Icons.list_alt,
+                                          size: 14,
+                                          color: Colors.white70,
+                                        ),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          _requiresPasscode && SnappySnag().devPasscode == null
+                                              ? _SdkLocale.allScreenPinsBtn
+                                              : '${_SdkLocale.allScreenPinsBtn} (${_existingPins.length})',
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white70,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ] else if (SnappySnag().mode != SnappySnagMode.dev && _existingPins.isNotEmpty) ...[
                               Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
                                 child: InkWell(
@@ -2153,7 +2399,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                   ),
                                 ),
                               ),
-                              if (_enableSectionHighlights && _existingSections.isNotEmpty)
+                            ],  if (_enableSectionHighlights && _existingSections.isNotEmpty)
                                 Padding(
                                   padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
                                   child: InkWell(
@@ -6238,6 +6484,26 @@ class _SdkLocale {
       _isJa ? '画面に留まる' : 'Stay Here';
   static String get draftSavedToast =>
       _isJa ? '下書きに保存しました' : 'Draft saved successfully.';
+
+  // 開発者機能パスコード認証
+  static String get devPasscodeDialogTitle =>
+      _isJa ? '開発者パスコード認証' : 'Dev Passcode Required';
+  static String get devPasscodeDialogDesc =>
+      _isJa ? '内部指摘一覧を表示するには、ダッシュボードのプロジェクト設定に表示されている4桁のパスコードを入力してください。' : 'Please enter the 4-digit passcode configured in your dashboard project settings to view internal tickets.';
+  static String get devPasscodeFieldLabel =>
+      _isJa ? '4桁のパスコード' : '4-digit Passcode';
+  static String get devPasscodeHint =>
+      '0000';
+  static String get devPasscodeInvalid =>
+      _isJa ? 'パスコードが正しくありません' : 'Invalid passcode';
+  static String get devPasscodeSubmit =>
+      _isJa ? '認証' : 'Unlock';
+  static String get devPasscodeCancel =>
+      _isJa ? 'キャンセル' : 'Cancel';
+  static String get devPasscodeSuccess =>
+      _isJa ? '開発者モードが認証されました' : 'Dev mode unlocked';
+  static String get devPasscodeHeaderRequired =>
+      _isJa ? 'パスコードが必要です' : 'Passcode required to view tickets';
 }
 
 /// Custom Widget that draws the SnappySnag lightning logo with circular border gap mask.
