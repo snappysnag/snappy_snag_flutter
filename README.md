@@ -205,8 +205,8 @@ Control access effortlessly from your **Web Dashboard** > **Project Settings** >
 * 🌐 **Everyone (Passcode Protected)**: 
   * In projects set to "Everyone", internal tickets and duplicate warnings are protected by a **4-digit Dev Features Passcode** auto-generated on your Web Dashboard.
   * When opening the internal tickets modal ("全指摘一覧"), users are prompted to enter this 4-digit passcode.
-  * **Zero Storage Leakage**: The entered passcode is kept **strictly in volatile memory only during the current app session** and is never saved to persistent local storage (e.g. SharedPreferences). If the app process terminates or is killed, the passcode is forgotten.
-  * If your dashboard administrator regenerates the passcode or toggles access back to "Allowed Only", any existing session immediately loses access on the next refresh.
+  * **Zero Storage Leakage**: The entered passcode is kept **strictly in volatile memory only during the current app session** and is never saved to persistent local storage (e.g. SharedPreferences). If the app process terminates or is killed, the passcode is completely forgotten.
+  * **Real-Time Revocation & Re-Authentication**: If your dashboard administrator regenerates the passcode or updates project settings, the active app session automatically verifies the passcode on the next ticket view attempt. The invalid passcode is instantly purged from memory, and the user is immediately prompted with the passcode modal to enter the updated passcode.
 
 ### 2. Automatic Release Guard (`kReleaseMode`)
 When you build your application in **Release Mode** (`flutter build ipa` / `flutter build appbundle`), SnappySnag automatically checks Flutter's `kReleaseMode`. Even if `mode: SnappySnagMode.dev` was inadvertently left configured in your source code, SnappySnag automatically falls back to `SnappySnagMode.user`, completely hiding developer tickets.
