@@ -512,6 +512,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   bool _isClearConfirmOpen = false;
   bool _isDevPasscodeDialogOpen = false;
   bool _isVerifyingDevPasscode = false;
+  bool _isLoadingAllScreenPins = false;
   final TextEditingController _devPasscodeInputController = TextEditingController();
   String? _devPasscodeErrorMessage;
   bool _includeAccountAndDiagnostics = true;
@@ -743,6 +744,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       setState(() {
         _isVerifyingDevPasscode = false;
         _isDevPasscodeDialogOpen = false;
+        _devPasscodeErrorMessage = null;
+        _devPasscodeInputController.clear();
         _showAllScreenPinsModal = true;
       });
     } else {
@@ -1000,7 +1003,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         if (data['requires_passcode'] != null) {
           _requiresPasscode = data['requires_passcode'] == true;
         }
-        if (data['is_passcode_verified'] == false) {
+        final bool isPasscodeRejected = devPasscode != null &&
+            (data['is_passcode_verified'] == false ||
+             (data['requires_passcode'] == true && data['is_dev_chat_enabled'] == false) ||
+             (data['requires_passcode'] == true && data['is_passcode_verified'] != true));
+        if (isPasscodeRejected) {
           SnappySnag().clearDevPasscode();
         }
         return (data['duplicates'] as List<dynamic>?) ?? [];
@@ -2212,19 +2219,49 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                 padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(16),
-                                  onTap: () {
-                                    if (_requiresPasscode && SnappySnag().devPasscode == null) {
+                                  onTap: _isLoadingAllScreenPins ? null : () async {
+                                    if (_requiresPasscode) {
+                                      if (SnappySnag().devPasscode == null) {
+                                        setState(() {
+                                          _devPasscodeErrorMessage = null;
+                                          _isVerifyingDevPasscode = false;
+                                          _devPasscodeInputController.clear();
+                                          _isDevPasscodeDialogOpen = true;
+                                        });
+                                        return;
+                                      }
+
+                                      // すでにパスコードが保持されている場合、最新の有効性を検証
+                                      // ダッシュボードでパスコードが変更された場合、古いパスコードをクリアして再入力を促す
                                       setState(() {
-                                        _devPasscodeErrorMessage = null;
-                                        _isVerifyingDevPasscode = false;
-                                        _devPasscodeInputController.clear();
-                                        _isDevPasscodeDialogOpen = true;
+                                        _isLoadingAllScreenPins = true;
                                       });
-                                    } else {
-                                      setState(() {
-                                        _showAllScreenPinsModal = true;
-                                      });
+                                      try {
+                                        final isValid = await _verifyDevPasscodeAndFetch(SnappySnag().devPasscode!);
+                                        if (!isValid) {
+                                          SnappySnag().clearDevPasscode();
+                                          if (mounted) {
+                                            setState(() {
+                                              _devPasscodeErrorMessage = _SdkLocale.devPasscodeInvalid;
+                                              _isVerifyingDevPasscode = false;
+                                              _devPasscodeInputController.clear();
+                                              _isDevPasscodeDialogOpen = true;
+                                            });
+                                          }
+                                          return;
+                                        }
+                                      } finally {
+                                        if (mounted) {
+                                          setState(() {
+                                            _isLoadingAllScreenPins = false;
+                                          });
+                                        }
+                                      }
                                     }
+
+                                    setState(() {
+                                      _showAllScreenPinsModal = true;
+                                    });
                                   },
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -2239,18 +2276,30 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(
-                                          _requiresPasscode && SnappySnag().devPasscode == null
-                                              ? Icons.lock_outline
-                                              : Icons.list_alt,
-                                          size: 14,
-                                          color: Colors.white70,
-                                        ),
-                                        const SizedBox(width: 3),
+                                        if (_isLoadingAllScreenPins)
+                                          const SizedBox(
+                                            width: 12,
+                                            height: 12,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white70,
+                                            ),
+                                          )
+                                        else
+                                          Icon(
+                                            _requiresPasscode && SnappySnag().devPasscode == null
+                                                ? Icons.lock_outline
+                                                : Icons.list_alt,
+                                            size: 14,
+                                            color: Colors.white70,
+                                          ),
+                                        const SizedBox(width: 4),
                                         Text(
-                                          _requiresPasscode && SnappySnag().devPasscode == null
-                                              ? _SdkLocale.allScreenPinsBtn
-                                              : '${_SdkLocale.allScreenPinsBtn} (${_existingPins.length})',
+                                          _isLoadingAllScreenPins
+                                              ? _SdkLocale.devPasscodeChecking
+                                              : (_requiresPasscode && SnappySnag().devPasscode == null
+                                                  ? _SdkLocale.allScreenPinsBtn
+                                                  : '${_SdkLocale.allScreenPinsBtn} (${_existingPins.length})'),
                                           style: const TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,
@@ -4429,6 +4478,13 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                             borderSide: BorderSide(color: Color(0xFF8B5CF6), width: 2),
                                           ),
                                         ),
+                                        onChanged: (_) {
+                                          if (_devPasscodeErrorMessage != null) {
+                                            setState(() {
+                                              _devPasscodeErrorMessage = null;
+                                            });
+                                          }
+                                        },
                                         onSubmitted: (_) {
                                           if (!_isVerifyingDevPasscode) {
                                             _submitDevPasscode();
@@ -4455,7 +4511,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                             onPressed: _isVerifyingDevPasscode
                                                 ? null
                                                 : () {
-                                                    setState(() => _isDevPasscodeDialogOpen = false);
+                                                    setState(() {
+                                                      _isDevPasscodeDialogOpen = false;
+                                                      _devPasscodeErrorMessage = null;
+                                                      _devPasscodeInputController.clear();
+                                                    });
                                                   },
                                             child: Text(
                                               _SdkLocale.devPasscodeCancel,
@@ -6558,6 +6618,8 @@ class _SdkLocale {
       _isJa ? '4桁のパスコード' : '4-digit Passcode';
   static String get devPasscodeHint =>
       '0000';
+  static String get devPasscodeChecking =>
+      _isJa ? '確認中...' : 'Checking...';
   static String get devPasscodeInvalid =>
       _isJa ? 'パスコードが正しくありません' : 'Invalid passcode';
   static String get devPasscodeSubmit =>
