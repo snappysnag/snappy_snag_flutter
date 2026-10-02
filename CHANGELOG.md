@@ -1,8 +1,11 @@
 ## 0.0.1
 
-* Initial release of SnappySnag Flutter SDK.
-* Supported Shake gesture and floating overlay trigger button to capture screenshots.
-* Integrated Widget Tree layout dumper (up to a depth of 10 levels) for debugging.
-* Supported package name locking for authorized API requests.
-* Added option to completely disable the SDK in App Store / Google Play production builds.
-* Added `enableLogging` parameter to `SnappySnag.initialize()`. Console logging is now muted by default (`enableLogging: false`) to avoid polluting the host application's console. Critical configuration errors and security alerts continue to be printed unconditionally.
+* **Initial release of SnappySnag Flutter SDK**:
+  * **Instant Screen Capture**: High-speed screenshot capture via Shake gesture or floating trigger button.
+  * **Multi-Point Pin Annotations**: Tap anywhere on the captured screen to drop numbered pins (1–5) with targeted repro notes.
+  * **Non-Destructive Vectors**: Clean vector coordinates preservation without destructive watermark stamping.
+  * **Widget Tree Hierarchy Dumper**: Traverses up to 10 levels of widget tree layout with automatic PII redaction (opt-out available via `enableWidgetTree`).
+  * **Zero-Loss Offline Drafts**: Automatically saves unsaved annotations and notes locally on connectivity drops or dismissal.
+  * **Smart Role-Based Sharing & Release Safety**: Seamlessly switch between user and developer feedback flows in a single build with `kReleaseMode` protection and 4-digit Dev Features Passcode.
+  * **Client & Server Rate Limiting**: Cooldown and anti-spam protection against accidental multi-taps and flood submissions.
+  * **Clean Console Output**: Console logging muted by default (`enableLogging: false`) to avoid cluttering host app logs during development.

@@ -1,4 +1,6 @@
+// ignore_for_file: unused_element, use_build_context_synchronously
 import 'dart:async';
+
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -494,8 +496,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   List<ExistingSectionItem> _existingSections = [];
   bool _requiresPasscode = false;
   bool _showExistingPins = _enableSectionHighlights;
-  ExistingPinItem? _selectedExistingPin;
-  List<ExistingPinItem>? _nearbyExistingPins;
   ExistingSectionItem? _selectedSection;
   ExistingPinItem? _previewingPin;
   bool _showAllScreenPinsModal = false;
@@ -688,7 +688,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
     final String url =
         '${SnappySnag().supabaseUrl}/functions/v1/get-existing-feedbacks'
-        '?screen_class_name=${Uri.encodeComponent(_drawingScreenClassName ?? '')}'
+        '?screen_class_name=${Uri.encodeComponent(_drawingScreenClassName)}'
         '&screen_signature=${Uri.encodeComponent(_drawingScreenSignature)}';
 
     try {
@@ -770,7 +770,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
     // ★ 下書きチェック: 保存された下書きが存在するかローカル（通信なし）で確認
     final hasDraft = await _SnappyDraftData.hasDraft();
-    if (hasDraft && mounted) {
+    if (hasDraft && mounted && targetContext.mounted) {
       final resume = await showDialog<bool>(
         context: targetContext,
         barrierDismissible: false,
@@ -879,22 +879,18 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     // === 【超高速先行キャプチャ】画面遷移に備え、ボタンタップしたその瞬間のデータを即座にフリーズ ===
     final Map<String, dynamic> widgetTree = SnappySnag().enableWidgetTree
         ? WidgetTreeDumper.dump(
-            // ignore: use_build_context_synchronously
             targetContext,
           )
         : <String, dynamic>{};
     final String screenClassName = WidgetTreeDumper.findScreenName(
-      // ignore: use_build_context_synchronously
       targetContext,
     );
     final String screenSignature = WidgetTreeDumper.findScreenSignature(
-      // ignore: use_build_context_synchronously
       targetContext,
       screenClassName,
     );
     // パスワード等の機密フィールドの絶対座標を自動抽出
     final List<Rect> sensitiveBounds = WidgetTreeDumper.findSensitiveFieldBounds(
-      // ignore: use_build_context_synchronously
       targetContext,
     );
     SnappySnag._log('🎬 SnappySnag: Captured Screen ID: $screenClassName, Signature: $screenSignature, Sensitive Areas: ${sensitiveBounds.length}');
@@ -1124,7 +1120,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       return _CommentPostResult(false, _SdkLocale.statusNetworkError);
     }
   }
-
   void _showCommentsThreadSheet(String feedbackId, String bugTitle) async {
     _commentTextController.clear();
     if (mounted) {
@@ -1153,7 +1148,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     }
   }
 
-    Future<void> _sendCommentInline() async {
+  Future<void> _sendCommentInline() async {
     final text = _commentTextController.text.trim();
     if (text.isEmpty || _isSendingComment || _isCommentCooldownActive) return;
 
@@ -1536,8 +1531,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     _existingPins = parsedExistingPins;
     _existingSections = parsedExistingSections;
     _showExistingPins = _enableSectionHighlights;
-    _selectedExistingPin = null;
-    _nearbyExistingPins = null;
     _selectedSection = null;
     _previewingPin = null;
   }
@@ -1599,8 +1592,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       _isFailedSendDraftConfirmOpen = false;
       _isDevPasscodeDialogOpen = false;
       _isVerifyingDevPasscode = false;
-      _selectedExistingPin = null;
-      _nearbyExistingPins = null;
       _overlayMode = _SnappyOverlayMode.none;
       _isCapturing = false;
     });
@@ -1707,7 +1698,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         }
       }
 
-      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(messengerContext).showSnackBar(
         SnackBar(
           content: Text(message),
@@ -5259,7 +5249,7 @@ class WidgetTreeDumper {
             }
 
             // TextFieldなどの入力欄の場合でテキストがまだ取れていない時は子孫からEditableTextを探す
-            if ((text == null || text!.trim().isEmpty) &&
+            if ((text == null || text.trim().isEmpty) &&
                 (clean.contains('TextField') || clean.contains('TextFormField') || clean.contains('EditableText'))) {
               void findInputText(Element el) {
                 if (text != null && text!.trim().isNotEmpty) return;
@@ -5282,7 +5272,7 @@ class WidgetTreeDumper {
             // テキストの有効性チェック（空文字、空白のみ、または私用領域アイコンはテキスト除外）
             final rawText = text;
             final bool hasValidText = !isIconGlyph && rawText != null && rawText.trim().isNotEmpty;
-            final String? trimmedText = hasValidText ? rawText!.trim() : null;
+            final String? trimmedText = hasValidText ? rawText.trim() : null;
 
             // 祖先（ancestors）を遡って、ボタンや操作可能コンテナがないかを探索
             Element? clickableAncestor;
@@ -5387,10 +5377,10 @@ class WidgetTreeDumper {
                           closestText = candidate;
                         }
                       } catch (_) {
-                        if (closestText == null) closestText = candidate;
+                        closestText ??= candidate;
                       }
-                    } else if (closestText == null) {
-                      closestText = candidate;
+                    } else {
+                      closestText ??= candidate;
                     }
                   }
 
