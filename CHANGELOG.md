@@ -1,3 +1,7 @@
+## 0.0.2
+
+* Supported `sensors_plus` v7.x while maintaining backward compatibility with v6.x (`>=6.0.0 <8.0.0`).
+
 ## 0.0.1
 
 * **Initial release of SnappySnag Flutter SDK**:
