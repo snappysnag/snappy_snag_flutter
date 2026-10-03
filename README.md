@@ -2,6 +2,10 @@
 
 SnappySnag is a visual bug reporting and AI auto-fix suggestion tool for Flutter applications. With a single shake or a tap of a button, developers and QA teams can capture screenshots, dump widget tree layouts, and get instant, detailed AI-powered code fix suggestions on their dashboard.
 
+[🌐 Website](https://snappysnag.com) | [📖 Official Docs](https://snappysnag.com/docs) | [🤖 llms.txt (AI Agents)](https://snappysnag.com/llms.txt) | [📦 pub.dev](https://pub.dev/packages/snappy_snag)
+
+---
+
 ## Features
 
 * 📸 **Prioritized Instant Screenshots**: Captured immediately on-press to freeze the screen state, even during fast page transitions.
@@ -240,4 +244,11 @@ SnappySnag values user privacy and transparency. The SDK uses on-device local st
 
 > 🛡️ **Note on Passcodes & Auth**: Dev Features Passcodes and authentication tokens are **never** written to local persistent storage. They are retained strictly in volatile app memory for the current running session only.
 
+---
 
+## Documentation & AI Agents
+
+* **Official Docs**: [https://snappysnag.com/docs](https://snappysnag.com/docs)
+* **LLM / AI Agent Documentation**: [https://snappysnag.com/llms.txt](https://snappysnag.com/llms.txt) (or full context at [llms-full.txt](https://snappysnag.com/llms-full.txt))
+* **GitHub Repository**: [https://github.com/snappysnag/snappy_snag_flutter](https://github.com/snappysnag/snappy_snag_flutter)
+* **Website**: [https://snappysnag.com](https://snappysnag.com)
