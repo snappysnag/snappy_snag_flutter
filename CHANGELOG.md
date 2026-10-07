@@ -1,3 +1,12 @@
+## 0.0.3
+
+* **Zero-Friction Sandbox / Demo Mode**:
+  * Developers can now test SnappySnag instantly using `apiKey: 'demo'` without creating an account or registering a project on the web dashboard.
+  * Local screen capture, multi-pin drop annotations, and drawing tools operate seamlessly in offline/demo mode.
+  * Feedback submissions in demo mode dump the full widget tree and pin payload directly into the debug console, complete with an onboarding guide to connect to GitHub Issues.
+* **Interactive Showroom Example**:
+  * Overhauled `example/lib/main.dart` with interactive controls (sliders, forms, counters) to easily test pin annotations and bug reporting out of the box (`cd example && flutter run`).
+
 ## 0.0.2
 
 * Supported `sensors_plus` v7.x while maintaining backward compatibility with v6.x (`>=6.0.0 <8.0.0`).

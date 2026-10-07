@@ -308,10 +308,20 @@ class SnappySnag {
     SnappySnag._log('❌ SnappySnag: Feedback Mode cancelled.');
   }
 
-  // 有効無効の状態管理フラグを追加
   bool _isEnabled = true;
   bool get isEnabled => _isEnabled;
   String get supabaseUrl => _supabaseUrl;
+
+  /// Returns `true` if the SDK is operating in Demo / Sandbox mode.
+  /// Demo mode is active when [apiKey] is empty, `'demo'`, `'sandbox'`, or `'snag_live_sample_api_key'`.
+  /// In this mode, developers can test UI capturing and pin annotations locally without a dashboard account.
+  bool get isDemoMode {
+    final key = _apiKey?.trim() ?? '';
+    return key.isEmpty ||
+        key.toLowerCase() == 'demo' ||
+        key.toLowerCase() == 'sandbox' ||
+        key == 'snag_live_sample_api_key';
+  }
 
   /// GlobalKey for accessing top-level Navigator context.
   /// Returns custom navigatorKey if provided to `initialize()`, otherwise returns the default `SnappySnag.navigatorKey`.
@@ -370,7 +380,10 @@ class SnappySnag {
       return;
     }
 
-    if (_apiKey == null || _apiKey!.trim().isEmpty) {
+    if (isDemoMode) {
+      // 🎯 デモ・サンドボックスモードの通知
+      debugPrint('🎯 [SnappySnag] Demo/Sandbox Mode Active! Local capturing & pin testing enabled without server account.');
+    } else if (_apiKey == null || _apiKey!.trim().isEmpty) {
       // 🔴 常時出力: 必須設定ミスの警告（enableLogging に関わらず出力）
       debugPrint('⚠️ SnappySnag Warning: apiKey is empty or not configured.');
     }
@@ -757,9 +770,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   }
 
   Future<void> _triggerCapture() async {
+    final isDemo = SnappySnag().isDemoMode;
     final apiKey = SnappySnag()._apiKey;
 
-    if (apiKey == null || apiKey.trim().isEmpty) {
+    if (!isDemo && (apiKey == null || apiKey.trim().isEmpty)) {
       _showErrorDialog(
         'SnappySnag is not properly configured. Please check that apiKey is set during initialization.',
       );
@@ -969,6 +983,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   }
 
   Future<List<dynamic>> _fetchExistingFeedbacks(String screenClassName, String screenSignature) async {
+    if (SnappySnag().isDemoMode) {
+      SnappySnag._log('🎯 [SnappySnag Demo] Skipping server validation for existing feedbacks.');
+      return [];
+    }
+
     final apiKey = SnappySnag()._apiKey;
     if (apiKey == null) throw SnappySnagException('API Key is not configured.');
 
@@ -1639,15 +1658,37 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     final Uint8List? editedBytes = await _canvasScreenshotController.capture();
     final finalBytes = editedBytes ?? _drawingImageBytes!;
 
-    // 2. 送信処理（ピン情報も一緒に送信）
-    final feedbackRes = await _sendFeedback(
-      imageBytes: finalBytes,
-      widgetTree: _drawingWidgetTree,
-      memo: memo,
-      pins: _pins,
-      screenClassName: _drawingScreenClassName,
-      screenSignature: _drawingScreenSignature,
-    );
+    // 2. 送信処理（デモモード時はローカルシミュレーション）
+    final _FeedbackResponse feedbackRes;
+    if (SnappySnag().isDemoMode) {
+      debugPrint('\n======================================================================');
+      debugPrint('🎯 [SnappySnag Demo Mode] Feedback Captured Successfully!');
+      debugPrint('======================================================================');
+      debugPrint('📍 Screen: $_drawingScreenClassName');
+      debugPrint('💬 Memo:\n$memo');
+      debugPrint('📌 Pins count: ${_pins.length}');
+      for (final p in _pins) {
+        debugPrint('  - Pin #${p.number}: "${p.comment}" (x: ${p.xRatio.toStringAsFixed(2)}, y: ${p.yRatio.toStringAsFixed(2)}, widget: ${p.target?.widgetType ?? "Unknown"})');
+      }
+      debugPrint('🌳 Widget Tree: ${_drawingWidgetTree.keys.join(", ")} (${_drawingWidgetTree.length} nodes)');
+      debugPrint('----------------------------------------------------------------------');
+      debugPrint('👉 To sync feedback to GitHub Issues and enable AI auto-fix,');
+      debugPrint('   get your free API key at: https://snappysnag.com');
+      debugPrint('======================================================================\n');
+
+      // 擬似的に通信時間を設けてUXを滑らかにする
+      await Future.delayed(const Duration(milliseconds: 350));
+      feedbackRes = _FeedbackResponse(200, null);
+    } else {
+      feedbackRes = await _sendFeedback(
+        imageBytes: finalBytes,
+        widgetTree: _drawingWidgetTree,
+        memo: memo,
+        pins: _pins,
+        screenClassName: _drawingScreenClassName,
+        screenSignature: _drawingScreenSignature,
+      );
+    }
 
     final success = feedbackRes.statusCode == 200;
 
@@ -1670,7 +1711,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     if (mounted) {
       final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
       final isUserMode = SnappySnag().mode == SnappySnagMode.user;
-      String message = _SdkLocale.statusSuccess;
+      final isDemo = SnappySnag().isDemoMode;
+      String message = isDemo ? _SdkLocale.statusDemoSuccess : _SdkLocale.statusSuccess;
       if (!success) {
         if (isUserMode) {
           // 一般ユーザー向け: 不安を与えない親切な共通案内
@@ -6486,6 +6528,8 @@ class _SdkLocale {
 
   static String get statusSuccess =>
       _isJa ? 'フィードバックの送信が成功しました！' : 'Feedback sent successfully!';
+  static String get statusDemoSuccess =>
+      _isJa ? '🎯 [デモモード] 送信完了！コンソールログを確認してください。' : '🎯 [Demo Mode] Captured! Check debug console for details.';
   static String get statusRateLimit => _isJa
       ? '送信頻度の上限を超えました。1分ほど待って再度お試しください。'
       : 'Rate limit exceeded. Please wait a minute before retrying.';

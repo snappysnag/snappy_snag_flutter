@@ -2,7 +2,7 @@
 
 SnappySnag is a visual bug reporting and AI auto-fix suggestion tool for Flutter applications. With a single shake or a tap of a button, developers and QA teams can capture screenshots, dump widget tree layouts, and get instant, detailed AI-powered code fix suggestions on their dashboard.
 
-[🌐 Website](https://snappysnag.com) | [📖 Official Docs](https://snappysnag.com/docs) | [🤖 llms.txt (AI Agents)](https://snappysnag.com/llms.txt) | [📦 pub.dev](https://pub.dev/packages/snappy_snag)
+[🌐 Website](https://snappysnag.com?utm_source=pub_dev&utm_medium=readme&utm_campaign=package_readme) | [📖 Official Docs](https://snappysnag.com/docs?utm_source=pub_dev&utm_medium=readme&utm_campaign=package_readme) | [🤖 llms.txt (AI Agents)](https://snappysnag.com/llms.txt) | [📦 pub.dev](https://pub.dev/packages/snappy_snag)
 
 ---
 
@@ -29,6 +29,16 @@ flutter pub add snappy_snag
 ```
 
 ## Usage
+
+### 0. Quick Try (Instant Sandbox / Demo Mode)
+Want to test without registering or getting an API key? You can immediately run in local Sandbox mode:
+```dart
+SnappySnag().initialize(
+  apiKey: 'demo', // Instant local sandbox without account or server setup
+  showTriggerButton: true,
+);
+```
+Capture screens, annotate with pins, and watch the widget tree + pin payload output directly in your debug console!
 
 ### 1. Initialize and Wrap MaterialApp
 
@@ -248,7 +258,7 @@ SnappySnag values user privacy and transparency. The SDK uses on-device local st
 
 ## Documentation & AI Agents
 
-* **Official Docs**: [https://snappysnag.com/docs](https://snappysnag.com/docs)
+* **Official Docs**: [https://snappysnag.com/docs?utm_source=pub_dev&utm_medium=readme&utm_campaign=package_readme](https://snappysnag.com/docs?utm_source=pub_dev&utm_medium=readme&utm_campaign=package_readme)
 * **LLM / AI Agent Documentation**: [https://snappysnag.com/llms.txt](https://snappysnag.com/llms.txt) (or full context at [llms-full.txt](https://snappysnag.com/llms-full.txt))
 * **GitHub Repository**: [https://github.com/snappysnag/snappy_snag_flutter](https://github.com/snappysnag/snappy_snag_flutter)
-* **Website**: [https://snappysnag.com](https://snappysnag.com)
+* **Website**: [https://snappysnag.com?utm_source=pub_dev&utm_medium=readme&utm_campaign=package_readme](https://snappysnag.com?utm_source=pub_dev&utm_medium=readme&utm_campaign=package_readme)
