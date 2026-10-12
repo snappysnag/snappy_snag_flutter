@@ -1,0 +1,31 @@
+name: Feature request
+description: Suggest an idea or enhancement for SnappySnag Flutter SDK
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a feature or improvement!
+  - type: textarea
+    id: problem
+    attributes:
+      label: Is your feature request related to a problem?
+      description: A clear and concise description of what the problem or limitation is.
+      placeholder: "I'm always frustrated when..."
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution / Feature
+      description: A clear and concise description of what you want to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions or workarounds you have considered.
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context, UI sketches, or references here.

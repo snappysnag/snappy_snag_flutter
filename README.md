@@ -1,8 +1,12 @@
 # SnappySnag SDK
 
+[![CI](https://github.com/snappysnag/snappy_snag_flutter/actions/workflows/ci.yml/badge.svg)](https://github.com/snappysnag/snappy_snag_flutter/actions/workflows/ci.yml)
+[![pub package](https://img.shields.io/pub/v/snappy_snag.svg)](https://pub.dev/packages/snappy_snag)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 SnappySnag is a visual bug reporting and AI auto-fix suggestion tool for Flutter applications. With a single shake or a tap of a button, developers and QA teams can capture screenshots, dump widget tree layouts, and get instant, detailed AI-powered code fix suggestions on their dashboard.
 
-[🌐 Website](https://snappysnag.com?utm_source=pub_dev&utm_medium=readme&utm_campaign=package_readme) | [📖 Official Docs](https://snappysnag.com/docs?utm_source=pub_dev&utm_medium=readme&utm_campaign=package_readme) | [🤖 llms.txt (AI Agents)](https://snappysnag.com/llms.txt) | [📦 pub.dev](https://pub.dev/packages/snappy_snag)
+[🌐 Website](https://snappysnag.com?utm_source=pub_dev&utm_medium=readme&utm_campaign=package_readme) | [📖 Official Docs](https://snappysnag.com/docs?utm_source=pub_dev&utm_medium=readme&utm_campaign=package_readme) | [🛡️ Security & Trust](https://snappysnag.com/security) | [🤖 llms.txt (AI Agents)](https://snappysnag.com/llms.txt) | [📦 pub.dev](https://pub.dev/packages/snappy_snag)
 
 ---
 
@@ -254,6 +258,17 @@ SnappySnag values user privacy and transparency. The SDK uses on-device local st
 2. **`snappy_snag_draft_v1`**: Temporary offline draft data (at most 1 active draft) saved strictly when the user chooses to retain unsaved edits after a failed submission or cancellation. Cleared immediately upon submission or explicit discard.
 
 > 🛡️ **Note on Passcodes & Auth**: Dev Features Passcodes and authentication tokens are **never** written to local persistent storage. They are retained strictly in volatile app memory for the current running session only.
+
+### 6. On-Device Privacy & PII (Personally Identifiable Information) Redaction
+When capturing feedback, user privacy is safeguarded at the client device before any payload is dispatched:
+* 🙈 **Automatic Sensitive Input Detection (`findSensitiveFieldBounds`)**:
+  Active `TextField` and `EditableText` elements, profile avatars (`CircleAvatar`), and text matching patterns for **emails, phone numbers, credit card numbers, or postal codes** are automatically localized on-device.
+* 🛡️ **No Plaintext Password Dumps**:
+  Flutter widget tree traversal strictly ignores password fields and internal framework states, preventing credentials, tokens, or app states from being exposed to the AI model or dashboard.
+* 🔒 **Zero AI Model Training Guarantee**:
+  Customer screenshots and widget trees are processed strictly for code synthesis inference and are **never** used to train public or proprietary AI models.
+* 📜 **Full Security Policy**:
+  Review our comprehensive technical safeguards at [https://snappysnag.com/security](https://snappysnag.com/security) or review [SECURITY.md](SECURITY.md).
 
 ---
 

@@ -72,7 +72,7 @@ class SnappySnag {
   String? _packageName;
   Map<String, dynamic>? _customMetadata;
   String _supabaseUrl =
-      'https://apwesndoqpdlgwcylkzj.supabase.co'; // デフォルトは本番環境
+      'https://apwesndoqpdlgwcylkzj.supabase.co'; // Default is production
 
   SnappySnagMode _mode = SnappySnagMode.user;
   SnappySnagMode get mode => _mode;
@@ -85,8 +85,8 @@ class SnappySnag {
   bool _enableLogging = false;
   bool get enableLogging => _enableLogging;
 
-  /// アプリ起動中のみメモリ保持される開発者機能保護パスコード（4桁）
-  /// ローカルストレージには一切書き込まず、アプリ終了で自動クリアされる
+  /// 4-digit passcode for unlocking developer features held in memory during the app session.
+  /// Never written to local storage, automatically cleared when the app terminates.
   String? _devPasscode;
   String? get devPasscode => _devPasscode;
   void setDevPasscode(String? code) {
@@ -101,31 +101,31 @@ class SnappySnag {
   String? get reporterUserId => _user?.id;
   String? get reporterEmail => _user?.email;
 
-  /// 常駐ボタンの表示状態を保持・通知する ValueNotifier
+  /// ValueNotifier holding and notifying the floating trigger button visibility.
   final ValueNotifier<bool> isTriggerButtonVisible = ValueNotifier<bool>(true);
 
-  /// 基本の表示設定（initializeで設定された値）
+  /// Base trigger button visibility setting (configured during initialize).
   bool _baseTriggerButtonVisibility = true;
 
-  /// SnappySnagHideButton などによる一時的非表示リクエストの参照カウント
+  /// Reference count for temporary hide requests (e.g. from SnappySnagHideButton).
   int _hideRequestsCount = 0;
 
-  /// 常駐ボタンが表示中かどうか
+  /// Whether the floating trigger button is currently visible.
   bool get isTriggerButtonAlwaysVisible => isTriggerButtonVisible.value;
 
-  /// 常駐ボタンを表示する
+  /// Shows the floating trigger button.
   void showTriggerButton() {
     _baseTriggerButtonVisibility = true;
     _updateTriggerButtonVisibility();
   }
 
-  /// 常駐ボタンを非表示にする
+  /// Hides the floating trigger button.
   void hideTriggerButton() {
     _baseTriggerButtonVisibility = false;
     _updateTriggerButtonVisibility();
   }
 
-  /// 常駐ボタンの表示/非表示を切り替える
+  /// Toggles visibility of the floating trigger button.
   void setTriggerButtonVisibility(bool visible) {
     _baseTriggerButtonVisibility = visible;
     _updateTriggerButtonVisibility();
@@ -160,14 +160,14 @@ class SnappySnag {
     }
   }
 
-  /// フィードバックモードのアクティブ状態を通知する ValueNotifier
+  /// ValueNotifier notifying the active state of Feedback Mode.
   final ValueNotifier<bool> isFeedbackModeActive = ValueNotifier<bool>(false);
 
-  /// アプリ内ボタン（設定画面など）からフィードバックモードを開始する
+  /// Starts Feedback Mode from an in-app button (e.g. settings screen).
   static void startFeedbackMode({BuildContext? context}) {
     final ctx = context ?? SnappySnag().navigatorKey?.currentContext;
 
-    // ★ SDKが無効（isEnabled == false）の場合のダイアログ
+    // Show dialog if SDK is disabled (isEnabled == false)
     if (!SnappySnag().isEnabled) {
       if (ctx != null) {
         showDialog(
@@ -302,7 +302,7 @@ class SnappySnag {
     }
   }
 
-  /// フィードバックモードをキャンセルして終了する
+  /// Cancels and terminates Feedback Mode.
   static void cancelFeedbackMode() {
     SnappySnag().isFeedbackModeActive.value = false;
     SnappySnag._log('❌ SnappySnag: Feedback Mode cancelled.');
@@ -348,19 +348,19 @@ class SnappySnag {
     bool forceDevInRelease = false,
   }) {
     _enableLogging = enableLogging;
-    // 常駐ボタンの表示制御:
-    // 安全のため、modeに関わらずデフォルトは非表示 (false)。
-    // テスト等で画面にボタンを出したい場合は showTriggerButton: true を指定する。
+    // Trigger button visibility:
+    // Default is hidden (false) for safety regardless of mode.
+    // Set showTriggerButton: true to display the button for manual testing.
     _baseTriggerButtonVisibility = showTriggerButton;
     _updateTriggerButtonVisibility();
     _enableWidgetTree = enableWidgetTree;
     _enableShakeTrigger = enableShakeTrigger;
-    // ★ 第1の防壁: Releaseモード時の安全ガード
-    // 本番ビルド時に mode: SnappySnagMode.dev が指定されていても、
-    // forceDevInRelease: true が明示されていない限り自動的に user モードへフォールバック
+    // Safety guard in Release mode:
+    // When mode: SnappySnagMode.dev is specified in production builds,
+    // automatically fall back to user mode unless forceDevInRelease: true is explicitly set.
     if (kReleaseMode && mode == SnappySnagMode.dev && !forceDevInRelease) {
       _mode = SnappySnagMode.user;
-      // 🔴 常時出力: セキュリティ保護の通知（enableLogging に関わらず出力）
+      // High-priority notification: Security guard warning
       debugPrint('🛡️ SnappySnag Security Guard: SnappySnagMode.dev was specified in release mode without forceDevInRelease: true. Automatically falling back to SnappySnagMode.user to protect internal tickets & developer chats.');
     } else {
       _mode = mode;
@@ -381,25 +381,24 @@ class SnappySnag {
     }
 
     if (isDemoMode) {
-      // 🎯 デモ・サンドボックスモードの通知
+      // Demo / Sandbox mode notification
       debugPrint('🎯 [SnappySnag] Demo/Sandbox Mode Active! Local capturing & pin testing enabled without server account.');
     } else if (_apiKey == null || _apiKey!.trim().isEmpty) {
-      // 🔴 常時出力: 必須設定ミスの警告（enableLogging に関わらず出力）
+      // Essential config warning
       debugPrint('⚠️ SnappySnag Warning: apiKey is empty or not configured.');
     }
     _log('🚀 SnappySnag initialized.');
   }
 
-  /// [enableLogging] が true のときのみ debugPrint でログ出力する内部ユーティリティ。
-  /// pub.dev パッケージとして組み込まれたアプリのコンソールを汚染しないよう、
-  /// デフォルトは false（無音）。開発時のデバッグ用途で true に設定する。
+  /// Internal utility to output logs via `debugPrint` only when [enableLogging] is true.
+  /// Defaults to false (silent) to avoid cluttering host app console logs.
   static void _log(String message) {
     if (SnappySnag()._enableLogging) {
       debugPrint(message);
     }
   }
 
-  /// ユーザー情報を設定・動的更新するためのメソッド
+  /// Sets or dynamically updates user/reporter information.
   void setUser(SnappySnagUser? user) {
     _user = user;
     SnappySnag._log(
@@ -407,13 +406,13 @@ class SnappySnag {
     );
   }
 
-  /// ユーザー情報をクリアする（ログアウト時など）
+  /// Clears user information (e.g. on user logout).
   void clearUser() {
     _user = null;
     SnappySnag._log('👤 SnappySnag: User info cleared.');
   }
 
-  /// 端末固有のランダムUUIDを取得（存在しない場合は初回生成してローカルに永続化）
+  /// Retrieves device-unique random UUID (generates and persists locally on first run).
   Future<String> getOrGenerateDeviceId() async {
     if (_deviceId != null && _deviceId!.isNotEmpty) {
       return _deviceId!;
@@ -478,7 +477,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   List<dynamic> _currentDuplicates = [];
   Completer<bool>? _duplicateWarningCompleter;
 
-  // コメントスレッド用ステート
+  // State for comments thread
   String _commentsFeedbackId = '';
   String _commentsBugTitle = '';
   List<dynamic> _commentsList = [];
@@ -488,20 +487,19 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   final TextEditingController _commentTextController = TextEditingController();
   bool _isFeedbackDialogOpen = false;
 
-  // お絵描き＆ピン留めキャンバス用ステート
+  // State for canvas drawing & pin annotations
   Uint8List? _drawingImageBytes;
   Map<String, dynamic> _drawingWidgetTree = {};
   String _drawingScreenClassName = '';
   String _drawingScreenSignature = '';
   List<DrawingPoint> _drawingPoints = [];
   List<SnappyPin> _pins = [];
-  // ★ undo/redo 統合履歴スタック
-  // SnappyPin (ピン追加) または DrawingPoint (モザイク1ストローク) を時系列順に記録する
+  // Unified undo/redo history stack:
+  // Records SnappyPin (pin addition) or DrawingPoint (mosaic stroke) in chronological order
   final List<Object> _undoStack = [];
   final List<Object> _redoStack = [];
   SnappyPin? _editingPin;
-  // ★ 社内実験用内部フラグ（初期リリースでは非公開・無効化）
-  // 今後のアップデートでUI/UXの検証・改善が完了した際に公開検討
+  // Internal experimental flag (disabled for initial releases):
   static const bool _enableSectionHighlights = false;
 
   List<dynamic> _existingFeedbacks = [];
@@ -547,23 +545,23 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   }
 
   void _initShakeDetection() {
-    // SDKが無効またはシェイク検知が無効化されている場合はセンサー登録をスキップ
+    // Skip sensor subscription if SDK is disabled or shake trigger is turned off
     if (!SnappySnag().isEnabled || !SnappySnag().enableShakeTrigger) return;
 
-    // Webやデスクトップ（macOS/Windows/Linux）などの非モバイルプラットフォームではシェイク検知を無効化
+    // Disable shake detection on non-mobile platforms (Web, macOS, Windows, Linux)
     final isMobile = !kIsWeb && (Platform.isIOS || Platform.isAndroid);
     if (!isMobile) return;
 
-    // ★ 端末を傾けたり持ち上げただけの誤検知を完全に防止する高精度シェイク検知
-    // 1. しきい値: 傾き操作では届かない 22.0 m/s^2 以上の強い加速度
-    // 2. 往復検知: 加速度の向き（正負）が急激に反転（往復）した回数が短時間（600ms以内）に2回以上発生した場合のみトリガー
+    // High-precision shake detection to prevent false triggers from tilt or pickup:
+    // 1. Threshold: Acceleration >= 22.0 m/s^2 unreachable by casual hand tilting
+    // 2. Flip count: Triggers only when acceleration sign rapidly alternates 2+ times within 600ms
     const double shakeThreshold = 22.0;
 
     _accelerometerSubscription = userAccelerometerEventStream().listen(
       (UserAccelerometerEvent event) {
         if (_isCapturing || _isFeedbackDialogOpen || _overlayMode != _SnappyOverlayMode.none) return;
 
-        // 加速度ベクトル長（G-force）を算出
+        // Calculate G-force vector length
         final double gForce = sqrt(
           event.x * event.x + event.y * event.y + event.z * event.z,
         );
@@ -573,14 +571,14 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
           final currentSignX = event.x.abs() > 8.0 ? (event.x > 0 ? 1.0 : -1.0) : 0.0;
           final currentSignY = event.y.abs() > 8.0 ? (event.y > 0 ? 1.0 : -1.0) : 0.0;
 
-          // 前回のフリップから600ms以上経過していたらカウントをリセット
+          // Reset flip count if more than 600ms elapsed since the previous flip
           if (_firstFlipTime == null || now.difference(_firstFlipTime!) > const Duration(milliseconds: 600)) {
             _shakeFlipCount = 1;
             _firstFlipTime = now;
             _lastSignX = currentSignX;
             _lastSignY = currentSignY;
           } else {
-            // X軸またはY軸で急激な向きの反転（正負の切り替わり＝手首の往復運動）を検知
+            // Detect sharp direction reversal (positive/negative flip from wrist motion)
             final bool isReversedX = (currentSignX != 0.0 && _lastSignX != 0.0 && currentSignX != _lastSignX);
             final bool isReversedY = (currentSignY != 0.0 && _lastSignY != 0.0 && currentSignY != _lastSignY);
 
@@ -589,12 +587,12 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
               _lastSignX = currentSignX != 0.0 ? currentSignX : _lastSignX;
               _lastSignY = currentSignY != 0.0 ? currentSignY : _lastSignY;
 
-              // 2回以上の急峻な往復（フリップ）を確認した時点で本物の「シェイク」と認定
+              // Confirm genuine shake after 2 or more sharp reversals
               if (_shakeFlipCount >= 2) {
                 _shakeFlipCount = 0;
                 _firstFlipTime = null;
 
-                // チャタリング防止（前回の撮影トリガーから2秒以上経過している場合のみ実行）
+                // Anti-chattering (ensure at least 2 seconds between capture triggers)
                 if (_lastShakeTime == null || now.difference(_lastShakeTime!) > const Duration(seconds: 2)) {
                   _lastShakeTime = now;
                   SnappySnag._log('📱 SnappySnag: Genuine device shake detected (gForce: ${gForce.toStringAsFixed(1)}). Triggering capture.');
@@ -623,8 +621,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     final isUserMode = SnappySnag().mode == SnappySnagMode.user;
     final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
 
-    // ユーザーモード（一般ユーザー）の場合は技術的・内部的なダイアログを出さず、
-    // 親切な案内トースト/SnackBarのみを表示して不安を与えない
+    // In user mode, suppress technical dialogs and show a friendly toast/SnackBar instead
     if (isUserMode) {
       SnappySnag._log('⚠️ SnappySnag [UserMode] Suppressed error dialog: $message');
       ScaffoldMessenger.of(targetContext).showSnackBar(
@@ -638,7 +635,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       return;
     }
 
-    // パッケージロック制限（locked / package / archived / free plan）の判定を最優先で行う
+    // Determine package lock restrictions (locked / package / archived / free plan) with top priority
     String instruction = 'Please verify your SDK configuration.';
     final msgLower = message.toLowerCase();
     if (msgLower.contains('locked') ||
@@ -694,7 +691,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     );
   }
 
-  /// パスコードを検証し、正しければピン一覧を更新して true を返す。不正なら false を返す。
+  /// Verifies passcode, updates existing pin items and returns true on success, false otherwise.
   Future<bool> _verifyDevPasscodeAndFetch(String code) async {
     final apiKey = SnappySnag()._apiKey;
     if (apiKey == null) return false;
@@ -782,7 +779,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
     final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
 
-    // ★ 下書きチェック: 保存された下書きが存在するかローカル（通信なし）で確認
+    // Draft check: inspect locally whether a saved draft exists (without network request)
     final hasDraft = await _SnappyDraftData.hasDraft();
     if (hasDraft && mounted && targetContext.mounted) {
       final resume = await showDialog<bool>(
@@ -845,7 +842,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       if (!mounted) return;
 
       if (resume == true) {
-        // 下書きを読み込んで復元
+        // Load and resume draft
         final draft = await _SnappyDraftData.load();
         if (draft != null && mounted) {
           setState(() {
@@ -854,11 +851,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
             _isFeedbackDialogOpen = true;
           });
           try {
-            // ★ 下書き再開時はサーバーリクエストを行わず、保存時点のキャッシュを使用する
-            // これによりオフライン環境でも即座に再開でき、「全指摘一覧」ボタンも正しく表示される
+            // When resuming drafts, reuse cached existing feedbacks without making network calls.
+            // This ensures offline resilience and retains the "All Issues" modal button.
             final isUserMode = SnappySnag().mode == SnappySnagMode.user || draft.isDevChatEnabled == false;
             final existingFeedbacksForDraft = isUserMode ? <dynamic>[] : draft.existingFeedbacks;
-            // キャッシュ済みの isDevChatEnabled を復元する
+            // Restore cached isDevChatEnabled flag
             SnappySnag()._isDevChatEnabled = draft.isDevChatEnabled;
 
             await _startDrawingFlow(
@@ -880,17 +877,16 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
           return;
         }
       } else {
-        // 破棄して新規撮影を選択した場合、下書きを即時消去
+        // Clear saved draft if user opted to discard and take new capture
         await _SnappyDraftData.clear();
-        // ダイアログのポップ（破棄アニメーション）が完全に完了し、
-        // 画面上からダイアログが消去されるのを待機してから新規キャプチャを開始する
+        // Wait for discard dialog pop animation to fully complete before capturing
         if (!mounted) return;
         await WidgetsBinding.instance.endOfFrame;
         await Future.delayed(const Duration(milliseconds: 100));
       }
     }
 
-    // === 【超高速先行キャプチャ】画面遷移に備え、ボタンタップしたその瞬間のデータを即座にフリーズ ===
+    // === High-Speed Instant Pre-Capture: freeze UI state on button press ===
     final Map<String, dynamic> widgetTree = SnappySnag().enableWidgetTree
         ? WidgetTreeDumper.dump(
             targetContext,
@@ -903,16 +899,16 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       targetContext,
       screenClassName,
     );
-    // パスワード等の機密フィールドの絶対座標を自動抽出
+    // Automatically detect global bounds of sensitive fields (password, email, etc.)
     final List<Rect> sensitiveBounds = WidgetTreeDumper.findSensitiveFieldBounds(
       targetContext,
     );
     SnappySnag._log('🎬 SnappySnag: Captured Screen ID: $screenClassName, Signature: $screenSignature, Sensitive Areas: ${sensitiveBounds.length}');
 
-    // 即座にスクリーンショットを撮影 (ディレイなしで押した瞬間をキャプチャ)
+    // Immediately capture screenshot (zero delay to freeze button-press moment)
     final Uint8List? imageBytes = await _screenshotController.capture();
 
-    // 撮影完了後に、ボタンを隠すためのState変更とローディングオーバーレイの表示へ移行
+    // After capture completes, update state to hide trigger button and show loading overlay
     if (mounted) {
       setState(() {
         _isCapturing = true;
@@ -924,10 +920,9 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
     if (imageBytes != null && mounted) {
       try {
-        // ★ 認証＆有効性の事前検証:
-        // モードに関わらずサーバーと通信して API Key と Package Name の整合性を検証する。
-        // 不正なキーやパッケージ不一致（401/403）があればここで SnappySnagException がスローされ、
-        // ユーザーにお絵描きやメモの手間をかけさせる前にエラーを検知・停止できる。
+        // Pre-validation of authentication & active status:
+        // Validates API Key & Package Name with server regardless of mode.
+        // Throws SnappySnagException on 401/403 so errors are caught early before user begins editing.
         final fetched = await _fetchExistingFeedbacks(screenClassName, screenSignature);
         final isUserMode = SnappySnag().mode == SnappySnagMode.user || SnappySnag().isDevChatEnabled == false;
         final duplicates = isUserMode ? <dynamic>[] : fetched;
@@ -1207,7 +1202,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       }
     }
 
-    // 第3の防壁: 送信後3秒間のクールダウンタイマー
+    // 3-second cooldown timer after comment submission
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         setState(() => _isCommentCooldownActive = false);
@@ -1322,7 +1317,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     final mediaSize = MediaQuery.of(context).size;
     final capturedAspect = initialAspectRatio ?? (mediaSize.height > 0 ? (mediaSize.width / mediaSize.height) : (9 / 16));
 
-    // パスワード等の機密フィールドを自動検出して初期マスクポイントに追加
+    // Automatically detect sensitive fields and add initial masking points
     final List<DrawingPoint> initialPoints = [];
     if (initialCustomPoints != null) {
       initialPoints.addAll(initialCustomPoints);
@@ -1370,7 +1365,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     return _drawingCompleter!.future;
   }
 
-  /// サーバーから取得した指摘一覧データをパースしてStateを更新する
+  /// Parses feedback data from server and updates local state
   void _updateExistingFeedbacksState(List<dynamic> feedbacks) {
     final parsedExistingFeedbacks = feedbacks;
     final List<ExistingPinItem> parsedExistingPins = [];
@@ -1554,8 +1549,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     _previewingPin = null;
   }
 
-  /// ネットワーク画像の実際のピクセルサイズを取得する（キャッシュ対応）
-  /// ピン座標計算で _drawingAspectRatio の代わりに使用し、EXIF回転等による誤差を防ぐ
+  /// Resolves actual pixel dimensions of network image (with in-memory caching)
+  /// Used in pin coordinate calculations instead of _drawingAspectRatio to prevent EXIF rotation errors
   final Map<String, Size> _imageSizeCache = {};
   Future<Size> _resolveImageSize(String url) async {
     if (_imageSizeCache.containsKey(url)) return _imageSizeCache[url]!;
@@ -1591,11 +1586,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   }
 
   Future<void> _cancelDrawingFlow() async {
-    // ユーザーがピン留め、モザイクを追加しているか判定
+    // Check if user has added pins or non-rect mosaic drawings
     final hasUserEdits = _pins.isNotEmpty || _drawingPoints.any((p) => p.rect == null);
 
     if (hasUserEdits && mounted) {
-      // 全画面OverlayEntryの内側で確実に最前面に表示するため、インラインモーダルを開く
+      // Display inline dialog to ensure topmost visibility inside fullscreen OverlayEntry
       setState(() {
         _isCancelDraftConfirmOpen = true;
       });
@@ -1618,7 +1613,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   }
 
   Future<void> _sendFeedbackInlineFlow() async {
-    // ピンが1つ以上あり、かつコメントが存在するか確認
+    // Check if at least 1 pin has a non-empty comment
     final validPins = _pins.where((p) => p.comment.trim().isNotEmpty).toList();
     if (validPins.isEmpty) {
       if (mounted) {
@@ -1633,7 +1628,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       return;
     }
 
-    // ★ SnappySnagMode.user（一般ユーザーモード）の場合、最前面オーバーレイのプライバシー確認ダイアログを開く
+    // In user mode, open privacy confirmation dialog in topmost overlay
     if (SnappySnag().mode == SnappySnagMode.user) {
       setState(() {
         _isPrivacyConfirmOpen = true;
@@ -1641,12 +1636,12 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       return;
     }
 
-    // dev モードはそのまま即座に送信実行
+    // In dev mode, immediately proceed with submission
     await _executeFeedbackSubmission();
   }
 
   Future<void> _executeFeedbackSubmission() async {
-    // ピンのコメント一覧から全体の概要テキストを自動合成（下位互換およびIssue概要用）
+    // Automatically synthesize summary text from itemized pin comments
     final validPins = _pins.where((p) => p.comment.trim().isNotEmpty).toList();
     final memo = validPins.map((p) => '【Pin ${p.number}】${p.comment.trim()}').join('\n');
     setState(() {
@@ -1654,11 +1649,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       _isSendingFeedback = true;
     });
 
-    // 1. モザイクマスキングのみが載ったキャンバスを再キャプチャする（ピンや赤ペンは画像に焼き込まない）
+    // 1. Re-capture canvas with mosaic masking only (pins are preserved as vectors)
     final Uint8List? editedBytes = await _canvasScreenshotController.capture();
     final finalBytes = editedBytes ?? _drawingImageBytes!;
 
-    // 2. 送信処理（デモモード時はローカルシミュレーション）
+    // 2. Submission (simulated locally in demo mode)
     final _FeedbackResponse feedbackRes;
     if (SnappySnag().isDemoMode) {
       debugPrint('\n======================================================================');
@@ -1676,7 +1671,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       debugPrint('   get your free API key at: https://snappysnag.com');
       debugPrint('======================================================================\n');
 
-      // 擬似的に通信時間を設けてUXを滑らかにする
+      // Slight simulated network delay for smooth UX
       await Future.delayed(const Duration(milliseconds: 350));
       feedbackRes = _FeedbackResponse(200, null);
     } else {
@@ -1693,7 +1688,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     final success = feedbackRes.statusCode == 200;
 
     if (success) {
-      // 送信成功時は下書きをクリアして閉じる
+      // Clear draft on successful submission and close overlay
       await _SnappyDraftData.clear();
       setState(() {
         _overlayMode = _SnappyOverlayMode.none;
@@ -1701,13 +1696,13 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       });
       _drawingCompleter?.complete();
     } else {
-      // 送信失敗時は入力内容・描画内容を破棄せず、再試行できるようにモーダルを維持する
+      // Retain modal state on submission failure to allow retries
       setState(() {
         _isSendingFeedback = false;
       });
     }
 
-    // トースト等の通知
+    // Feedback notification toast
     if (mounted) {
       final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
       final isUserMode = SnappySnag().mode == SnappySnagMode.user;
@@ -1715,11 +1710,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       String message = isDemo ? _SdkLocale.statusDemoSuccess : _SdkLocale.statusSuccess;
       if (!success) {
         if (isUserMode) {
-          // 一般ユーザー向け: 不安を与えない親切な共通案内
+          // For end users: friendly, calm message
           message = _SdkLocale.statusGenericError;
           SnappySnag._log('⚠️ SnappySnag [UserMode] Submit failed (code: ${feedbackRes.statusCode}, msg: ${feedbackRes.errorMessage})');
         } else {
-          // 開発者モード向け: 原因特定のための詳細メッセージ
+          // For developers: detailed diagnostics message
           if (feedbackRes.errorMessage != null && feedbackRes.errorMessage!.isNotEmpty) {
             message = feedbackRes.errorMessage!;
           } else {
@@ -1747,7 +1742,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         ),
       );
 
-      // 送信失敗時の下書き保存提案（インラインモーダルで確実に最前面表示）
+      // Offer saving draft on send failure via inline modal
       if (!success && mounted) {
         setState(() {
           _isFailedSendDraftConfirmOpen = true;
@@ -1808,7 +1803,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    // SDK自体が無効化されている場合、一切のオーバーレイ装飾を行わずに素の child をそのまま返す
+    // If the SDK itself is disabled, return raw child without overlay decorations
     if (!SnappySnag().isEnabled) {
       return widget.child;
     }
@@ -1816,7 +1811,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       children: [
         // Screenshot wrapper
         Screenshot(controller: _screenshotController, child: widget.child),
-        // ⚡️ キャプチャ（撮影）中かつ静止画データがある場合、ライブ画面の上にフリーズ静止画を固定表示（タッチはIgnorePointerで透過）
+        // During capture: freeze live screen with captured image (touches pass through via IgnorePointer)
         if (_isCapturing && _capturedImageForFreeze != null)
           Positioned.fill(
             child: IgnorePointer(
@@ -1826,11 +1821,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
               ),
             ),
           ),
-        // ⚡️ インライン・オーバーレイダイアログ (Z-Indexの解決策)
+        // Inline overlay dialog (Z-Index solution)
         if (_overlayMode == _SnappyOverlayMode.loading)
           Positioned.fill(
             child: Container(
-              color: Colors.black45, // 半透明のバリア (元のアプリ画面やフリーズ画像を覆ってタッチをブロック)
+              color: Colors.black45, // Semi-transparent modal barrier
               child: Center(
                 child: Container(
                   padding: const EdgeInsets.all(24),
@@ -1861,7 +1856,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         if (_overlayMode == _SnappyOverlayMode.duplicateWarning)
           Positioned.fill(
             child: Container(
-              color: Colors.black54, // 半透明のバリア
+              color: Colors.black54, // Semi-transparent modal barrier
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
               child: Center(
                 child: Material(
@@ -1992,7 +1987,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         if (_overlayMode == _SnappyOverlayMode.commentsThread)
           Positioned.fill(
             child: Container(
-              color: Colors.black54, // 半透明のバリア
+              color: Colors.black54, // Semi-transparent barrier
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
               child: Center(
                 child: Material(
@@ -2153,7 +2148,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                   fontSize: 13,
                                 ),
                                 decoration: InputDecoration(
-                                  counterText: "", // 下部の文字カウンターを消してコンパクトにする
+                                  counterText: "", // Hide bottom character counter for a compact layout
                                   hintText: _SdkLocale.typeMessage,
                                   hintStyle: const TextStyle(
                                     color: Colors.grey,
@@ -2199,7 +2194,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
               ),
             ),
           ),
-        // ⚡️ インラインお絵描き・送信画面
+        // ⚡️ Inline drawing and feedback submission screen
         if (_overlayMode == _SnappyOverlayMode.drawing && _drawingImageBytes != null)
           Positioned.fill(
             child: Overlay(
@@ -2263,8 +2258,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         return;
                                       }
 
-                                      // すでにパスコードが保持されている場合、最新の有効性を検証
-                                      // ダッシュボードでパスコードが変更された場合、古いパスコードをクリアして再入力を促す
+                                      // If passcode is already stored, verify its current validity
+                                      // If passcode was changed in dashboard, clear the obsolete passcode and prompt for re-entry
                                       setState(() {
                                         _isLoadingAllScreenPins = true;
                                       });
@@ -2461,9 +2456,9 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                         body: SafeArea(
                           child: Stack(
                             children: [
-                              // 1. お絵描きエリア（画面一杯に表示）
+                              // 1. Drawing canvas area (expanded fullscreen)
                               Positioned.fill(
-                                bottom: 80, // 下部ツールバーのスペースを空ける
+                                bottom: 80, // Reserve space for the bottom toolbar
                                 child: Center(
                                   child: AspectRatio(
                                     aspectRatio: canvasRatio,
@@ -2472,8 +2467,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         final canvasSize = Size(constraints.maxWidth, constraints.maxHeight);
                                         return Stack(
                                           children: [
-                                            // 1. スクショ保存対象（背景画像 + モザイクのみ）
-                                            // ※ ピンはスクショ画像自体には焼き込まず、メタデータとして座標とコメントを保存・連携する
+                                            // 1. Screenshot capture target (background image + mosaic blur only)
+                                            // Note: Pins are not baked into the screenshot image, but saved and synchronized as coordinate/comment metadata.
                                             Positioned.fill(
                                               child: Screenshot(
                                                 controller: _canvasScreenshotController,
@@ -2496,14 +2491,14 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                               ),
                                             ),
 
-                                            // 2. お絵描き・ピン配置ジェスチャー受付レイヤー
+                                            // 2. Gesture listener layer for drawing and pin placement
                                             Positioned.fill(
                                               child: GestureDetector(
                                                 behavior: HitTestBehavior.translucent,
                                                 onTapUp: (details) {
                                                   if (_isSendingFeedback || _isMemoOpen || _editingPin != null) return;
                                                   if (_activeTool == SnappyDrawingTool.pin) {
-                                                    // ピン配置の上限チェック（最大5個）
+                                                    // Pin count limit check (maximum 5)
                                                     if (_pins.length >= 5) {
                                                       final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
                                                       ScaffoldMessenger.of(messengerContext).showSnackBar(
@@ -2522,9 +2517,9 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                     final int nextNumber = _pins.isEmpty
                                                         ? 1
                                                         : (_pins.map((p) => p.number).reduce((a, b) => a > b ? a : b) + 1);
-                                                    // タップ座標に対応する最前面UI要素のアンカー情報を特定
-                                                    // ※ overlayContext ではなくアプリ画面（targetContext）のツリーを走査し、
-                                                    // キャンバス比率 (xRatio, yRatio) からアプリ画面のグローバル座標に変換して渡す
+                                                    // Identify anchor information for the topmost UI element at tapped coordinates.
+                                                    // Traverses the application screen tree (targetContext) instead of overlayContext,
+                                                    // converting canvas ratios (xRatio, yRatio) into global screen coordinates.
                                                     final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
                                                     final targetRenderBox = targetContext.findRenderObject() as RenderBox?;
                                                     final targetOrigin = (targetRenderBox != null && targetRenderBox.attached)
@@ -2593,7 +2588,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                   setState(() {
                                                     if (_drawingPoints.isNotEmpty) {
                                                       _drawingPoints.last.offsets.add(null);
-                                                      // 1ストローク完了時点で履歴スタックに記録
+                                                      // Record completed stroke to undo stack
                                                       _undoStack.add(_drawingPoints.last);
                                                       _redoStack.clear();
                                                     }
@@ -2602,10 +2597,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                               ),
                                             ),
 
-                                            // 3. 過去指摘のあるセクション・ブロックのハイライト枠線表示（SnappySnagMode.dev かつ _enableSectionHighlights かつ _showExistingPins が有効な場合）
+                                            // 3. Highlight borders for sections with existing feedback (active when in dev mode, _enableSectionHighlights, and _showExistingPins)
                                             if (_enableSectionHighlights && _showExistingPins)
                                               ..._existingSections.map((sec) {
-                                                // アプリ画面座標からキャンバス内相対比率へマッピング
+                                                // Map application screen coordinates to relative ratios within the canvas
                                                 final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
                                                 final targetRenderBox = targetContext.findRenderObject() as RenderBox?;
                                                 final targetOrigin = (targetRenderBox != null && targetRenderBox.attached)
@@ -2699,7 +2694,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                 );
                                               }),
 
-                                            // 4. ピンのオーバーレイ表示（画像には焼き込まれない）
+                                            // 4. Pin overlay display (not baked into the screenshot image)
                                             ..._pins.map((pin) {
                                               final pinPixelX = pin.xRatio * canvasSize.width;
                                               final pinPixelY = pin.yRatio * canvasSize.height;
@@ -2741,7 +2736,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                     });
                                                   },
                                                   onPanEnd: (_) {
-                                                    // ドラッグ移動完了時に移動先のUI要素アンカー情報を再取得・更新
+                                                    // Re-detect and update UI element anchor at drop position upon drag completion
                                                     if (_dragStartGlobal != null) {
                                                       final currentPin = _pins.firstWhere((p) => p.id == pin.id, orElse: () => pin);
                                                       final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
@@ -2818,7 +2813,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                 ),
                               ),
 
-                    // 2. 下部フローティングツールバー
+                    // 2. Bottom floating toolbar
                     Positioned(
                       bottom: 16,
                       left: 16,
@@ -2843,7 +2838,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            // 1. ピン留めツール（デフォルト）
+                            // 1. Pin tool (default)
                             Stack(
                               clipBehavior: Clip.none,
                               children: [
@@ -2883,7 +2878,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                   ),
                               ],
                             ),
-                            // 2. モザイクペン
+                            // 2. Mosaic blur pen
                             IconButton(
                               icon: Icon(
                                 Icons.blur_on,
@@ -2899,7 +2894,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                       ),
                             ),
                             const SizedBox(width: 8),
-                            // 3. 元に戻す (Undo: 操作の時系列順)
+                            // 3. Undo (chronological action history)
                             IconButton(
                               icon: Icon(
                                 Icons.undo,
@@ -2920,7 +2915,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         }
                                       }),
                             ),
-                            // 4. やり直す (Redo: undo した操作を復元)
+                            // 4. Redo (restore undone action)
                             IconButton(
                               icon: Icon(
                                 Icons.redo,
@@ -2941,7 +2936,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         }
                                       }),
                             ),
-                            // 5. 全消去 (Clear) - 確認モーダルを経由
+                            // 5. Clear all - prompts confirmation dialog
                             IconButton(
                               icon: Icon(
                                 Icons.delete_outline,
@@ -2959,7 +2954,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                       ),
                     ),
 
-                    // 3. ピンコメント入力用フローティングオーバーレイ
+                    // 3. Floating overlay for editing pin comments
                     if (_editingPin != null)
                       Positioned.fill(
                         child: LayoutBuilder(
@@ -3064,11 +3059,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                               onPressed: () {
                                                 final updatedComment = _pinCommentController.text.trim();
                                                 final editingId = _editingPin!.id;
-                                                // 新規ピン判定: undoStack にまだ登録されていない場合のみ新規
+                                                // Determine if pin is new: new only if not yet registered in undoStack
                                                 final isNewPin = !_undoStack.any((e) => e is SnappyPin && e.id == editingId);
                                                 setState(() {
                                                   if (updatedComment.isEmpty) {
-                                                    // コメントが空の場合はピンを削除（undoStackには積まない）
+                                                    // Delete pin if comment is empty (do not push to undoStack)
                                                     _pins.removeWhere((p) => p.id == editingId);
                                                     _renumberPins();
                                                   } else {
@@ -3077,11 +3072,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                       final finalPin = _editingPin!.copyWith(comment: updatedComment);
                                                       _pins[idx] = finalPin;
                                                       if (isNewPin) {
-                                                        // 新規ピン: コメント確定時点で正しい内容を undoStack に記録
+                                                        // New pin: record finalized content to undoStack once comment is submitted
                                                         _undoStack.add(finalPin);
                                                         _redoStack.clear();
                                                       }
-                                                      // 既存ピンの編集は undoStack 対象外（移動と同様）
+                                                      // Editing existing pin is excluded from undoStack (same as moving)
                                                     }
                                                   }
                                                   _editingPin = null;
@@ -3106,7 +3101,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
 
 
-                    // 4-A. セクション詳細モーダル（タップしたセクション・ブロック内の指摘一覧）
+                    // 4-A. Section detail modal (feedback list for tapped section/block)
                     if (_selectedSection != null)
                       Positioned.fill(
                         child: LayoutBuilder(
@@ -3299,7 +3294,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                         ),
                       ),
 
-                    // 4-B. この画面の全指摘一覧モーダル（AppBarの「全指摘一覧」ボタンから起動）
+                    // 4-B. All feedback modal for this screen (launched from AppBar "All Feedback" button)
                     if (_showAllScreenPinsModal)
                       Positioned.fill(
                         child: LayoutBuilder(
@@ -3484,7 +3479,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                         ),
                       ),
 
-                    // 4-C. 選択した指摘ピンの元スクショ ＆ ピン位置プレビューモーダル
+                    // 4-C. Preview modal for selected feedback pin: original screenshot and pin coordinates
                     if (_previewingPin != null)
                       Positioned.fill(
                         child: LayoutBuilder(
@@ -3514,7 +3509,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         mainAxisSize: MainAxisSize.min,
                                         crossAxisAlignment: CrossAxisAlignment.stretch,
                                         children: [
-                                          // ヘッダー（縦横共通）
+                                          // Header (common to landscape and portrait)
                                           Row(
                                             children: [
                                               IconButton(
@@ -3548,12 +3543,12 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                           ),
                                           const SizedBox(height: 6),
                                            if (isLandscape)
-                                            // 横画面: 左（画像）＋ 右（コメント＋ボタン）の横並びレイアウト
+                                            // Landscape: side-by-side layout with left (screenshot) + right (comment + actions)
                                             Expanded(
                                               child: Row(
                                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                                 children: [
-                                                  // 左側: スクショ画像エリア（実画像サイズでピン座標計算）
+                                                  // Left: screenshot area (calculates pin coordinates using intrinsic image dimensions)
                                                   Expanded(
                                                     child: ClipRRect(
                                                       borderRadius: BorderRadius.circular(10),
@@ -3571,7 +3566,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                                   return FutureBuilder<Size>(
                                                                     future: _resolveImageSize(url),
                                                                     builder: (context, snapshot) {
-                                                                      // 実画像サイズが取れたらそれを使う。取れなければ _drawingAspectRatio にフォールバック
+                                                                      // Use intrinsic image dimensions if available; fallback to _drawingAspectRatio otherwise
                                                                       final double imgAspect = snapshot.hasData && snapshot.data!.height > 0
                                                                           ? snapshot.data!.width / snapshot.data!.height
                                                                           : (_drawingAspectRatio ?? (9 / 16));
@@ -3668,7 +3663,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                     ),
                                                   ),
                                                   const SizedBox(width: 12),
-                                                  // 右側: コメント＋戻るボタン
+                                                  // Right: comment and back button
                                                   SizedBox(
                                                     width: 200,
                                                     child: Column(
@@ -3685,7 +3680,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                             child: Column(
                                                               crossAxisAlignment: CrossAxisAlignment.start,
                                                               children: [
-                                                                // ① 問題修正: Row→Column で「要素：xxx」が長くてもオーバーフローしない
+                                                                // Fix: use Column instead of Row to prevent overflow when element name is long
                                                                 Text(
                                                                   _SdkLocale.pinCommentTitle,
                                                                   style: const TextStyle(
@@ -3754,7 +3749,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                               ),
                                             )
                                            else ...[
-                                            // 縦画面: 元スクショプレビュー（当時の画像上にピンをオーバーレイ）
+                                            // Portrait: original screenshot preview with pin overlay
                                             Expanded(
                                               child: ClipRRect(
                                                 borderRadius: BorderRadius.circular(10),
@@ -3772,7 +3767,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                             return FutureBuilder<Size>(
                                                               future: _resolveImageSize(url),
                                                               builder: (context, snapshot) {
-                                                                // 実画像サイズが取れたらそれを使う。取れなければ _drawingAspectRatio にフォールバック
+                                                                // Use intrinsic image dimensions if available; fallback to _drawingAspectRatio otherwise
                                                                 final double imgAspect = snapshot.hasData && snapshot.data!.height > 0
                                                                     ? snapshot.data!.width / snapshot.data!.height
                                                                     : (_drawingAspectRatio ?? (9 / 16));
@@ -3783,11 +3778,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                                 double offsetY = 0.0;
 
                                                                 if (containerAspect > imgAspect) {
-                                                                  // 左右に黒帯（レターボックス）
+                                                                  // Horizontal letterboxing on left and right
                                                                   renderW = pHeight * imgAspect;
                                                                   offsetX = (pWidth - renderW) / 2.0;
                                                                 } else {
-                                                                  // 上下に黒帯
+                                                                  // Vertical letterboxing on top and bottom
                                                                   renderH = pWidth / (imgAspect > 0 ? imgAspect : 1.0);
                                                                   offsetY = (pHeight - renderH) / 2.0;
                                                                 }
@@ -3871,7 +3866,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                               ),
                                             ),
                                             const SizedBox(height: 8),
-                                            // 指摘コメント表示
+                                            // Display feedback comment
                                             Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                               decoration: BoxDecoration(
@@ -3956,7 +3951,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                         ),
                       ),
 
-                    // 5. プライバシー確認用フローティングオーバーレイ（最前面に描画）
+                    // 5. Privacy confirmation floating overlay (rendered on topmost layer)
                     if (_isPrivacyConfirmOpen)
                       Positioned.fill(
                         child: Container(
@@ -3992,7 +3987,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         ],
                                       ),
                                       const SizedBox(height: 12),
-                                      // 1. 画像モザイク確認
+                                      // 1. Image mosaic review
                                       Text(
                                         _SdkLocale.privacyConfirmContent,
                                         style: const TextStyle(
@@ -4004,7 +3999,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                       const SizedBox(height: 14),
                                       const Divider(color: Color(0xFF2E2E38)),
                                       const SizedBox(height: 8),
-                                      // 2. 診断・アカウント情報共有チェックボックス
+                                      // 2. Diagnostics and account metadata sharing checkbox
                                       InkWell(
                                         onTap: () {
                                           setState(() {
@@ -4105,7 +4100,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                           ),
                         ),
                       ),
-                    // 5. 全消去確認オーバーレイ
+                    // 5. Clear all confirmation overlay
                     if (_isClearConfirmOpen)
                       Positioned.fill(
                         child: Container(
@@ -4195,7 +4190,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                           ),
                         ),
                       ),
-                    // 6. キャンセル時の下書き保存確認オーバーレイ
+                    // 6. Draft save confirmation overlay on cancel
                     if (_isCancelDraftConfirmOpen)
                       Positioned.fill(
                         child: Container(
@@ -4311,7 +4306,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                         ),
                       ),
 
-                    // 6. 送信失敗時の下書き保存確認オーバーレイ
+                    // 6. Draft save confirmation overlay on send failure
                     if (_isFailedSendDraftConfirmOpen)
                       Positioned.fill(
                         child: Container(
@@ -4417,7 +4412,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                           ),
                         ),
                       ),
-                    // 7. 開発者パスコード入力オーバーレイ（最前面・コンパクトサイズ）
+                    // 7. Developer passcode verification overlay (topmost compact dialog)
                     if (_isDevPasscodeDialogOpen)
                       Positioned.fill(
                         child: Container(
@@ -4615,14 +4610,14 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
             return Stack(
               children: [
-                // フローティング撮影ボタン（フィードバックモードまたは常駐設定時）
+                // Floating trigger button (rendered in feedback mode or persistent setting)
                 if (shouldShowButton)
                   Positioned(
                     bottom: 16 + MediaQuery.of(context).padding.bottom,
                     right: 16,
                     child: GestureDetector(
                       onTap: () {
-                        // 撮影開始時にフィードバックモードを解除
+                        // Exit feedback mode when capture begins
                         SnappySnag().isFeedbackModeActive.value = false;
                         _triggerCapture();
                       },
@@ -4725,13 +4720,13 @@ class WidgetTreeDumper {
     return tree;
   }
 
-  /// 画面上のパスワード欄、Email欄、電話番号欄、機密入力欄のグローバル絶対座標（Rect）を自動収集
-  /// （※ 最前面のアクティブな画面かつ目に見えて表示されている入力欄のみを対象にする）
+  /// Automatically collects global screen bounding boxes (Rect) for password fields, email fields, phone numbers, and sensitive inputs.
+  /// (Targets only visible and active input fields on the topmost screen)
   static List<Rect> findSensitiveFieldBounds(BuildContext context) {
     final List<Rect> bounds = [];
     final Set<int> visitedHashCodes = {};
 
-    // 1. 最前面の Scaffold (最前面に重なっている画面) を特定
+    // 1. Identify the topmost visible Scaffold
     Element? topScaffoldElement;
     void findTopScaffold(Element element) {
       if (element.widget.runtimeType.toString() == 'Scaffold') {
@@ -4741,15 +4736,15 @@ class WidgetTreeDumper {
     }
     context.visitChildElements(findTopScaffold);
 
-    // 探索の起点: 最前面のScaffoldが見つかればそれを起点にし、なければ渡されたcontextを使用
+    // Starting context: use topmost Scaffold if resolved, fallback to provided context
     final Element searchRoot = topScaffoldElement ?? (context as Element);
 
-    // 画面全体のサイズを取得（画面外の座標を除外するため）
+    // Get screen size to filter out off-screen coordinates
     final mediaQuery = MediaQuery.maybeOf(context);
     final screenWidth = mediaQuery?.size.width ?? 5000.0;
     final screenHeight = mediaQuery?.size.height ?? 5000.0;
 
-    // 個人情報検出用の正規表現（メール、電話番号、クレジットカード、郵便番号）
+    // PII detection regex patterns (email, phone number, credit card, postal code)
     final emailRegex = RegExp(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}');
     final phoneRegex = RegExp(r'(?:\+?\d{1,3}[- ]?)?(?:0\d{1,4}[- ]?\d{1,4}[- ]?\d{3,4}|\b\d{3}[- ]?\d{4}[- ]?\d{4}\b)');
     final creditCardRegex = RegExp(r'\b(?:\d{4}[ -]?){3}\d{4}\b');
@@ -4761,14 +4756,14 @@ class WidgetTreeDumper {
 
       final widget = element.widget;
 
-      // 非表示ウィジェット（Offstage / Visibility / TickerMode）の場合はその配下ごとスキップ
+      // Skip hidden widgets and descendants (Offstage, Visibility, TickerMode)
       if (widget is Offstage && widget.offstage) return;
       if (widget is Visibility && !widget.visible) return;
       if (widget is TickerMode && !widget.enabled) return;
 
       bool isSensitive = false;
 
-      // 1. Text / RichText 内の個人情報パターン検知（メール、電話番号、カード番号、郵便番号）
+      // 1. Detect PII patterns within Text / RichText (email, phone, credit card, postal code)
       if (widget is Text && widget.data != null) {
         final text = widget.data!;
         if (text.length >= 6 &&
@@ -4789,18 +4784,18 @@ class WidgetTreeDumper {
         }
       }
 
-      // 2. CircleAvatar（プロフィール顔写真）の検知
+      // 2. Detect CircleAvatar (user profile photo)
       if (widget is CircleAvatar) {
         isSensitive = true;
       }
 
-      // 3. TextField / EditableText の判定（アクティブかつ編集可能な入力フィールドのみ）
+      // 3. Check TextField / EditableText (active and editable input fields only)
       if (widget is TextField) {
         if (!widget.readOnly && (widget.enabled ?? true)) {
           isSensitive = true;
         }
       } else if (widget is EditableText) {
-        // SelectableTextなどの読み取り専用EditableTextは除外
+        // Exclude read-only EditableText such as SelectableText
         if (!widget.readOnly) {
           isSensitive = true;
         }
@@ -4813,9 +4808,9 @@ class WidgetTreeDumper {
             final position = renderBox.localToGlobal(Offset.zero);
             final size = renderBox.size;
 
-            // 最小サイズ条件（幅20px以上、高さ10px以上）
+            // Minimum bounding size requirement (width >= 20px, height >= 10px)
             if (size.width >= 20 && size.height >= 10) {
-              // 画面内（Viewport）に実際に存在しているかをチェック
+              // Verify if element is within the visible screen viewport
               final isInsideScreen = position.dx < screenWidth &&
                   position.dx + size.width > 0 &&
                   position.dy < screenHeight &&
@@ -4839,21 +4834,21 @@ class WidgetTreeDumper {
     return bounds;
   }
 
-  // ★ 根本解決: Scaffoldを起点として先祖を上に遡り、正しい画面カスタムクラスを特定する
+  // Traverse ancestors upwards starting from Scaffold to identify the correct screen custom widget class
   static String findScreenName(BuildContext context) {
     Element? scaffoldElement;
 
-    // ツリー内をくまなく走り、最後に見つかった Scaffold (最前面に重なっている画面) を保持する
+    // Traverse tree to retain the last encountered Scaffold (topmost visible screen overlay)
     void findScaffold(Element element) {
       if (element.widget.runtimeType.toString() == 'Scaffold') {
-        scaffoldElement = element; // 見つかるたびに上書きして最新のエレメントにする
+        scaffoldElement = element; // Update on each match to capture the latest topmost element
       }
       element.visitChildren((child) {
-        findScaffold(child); // 途中で止めずに全ての枝を走査
+        findScaffold(child); // Traverse all subtrees without early return
       });
     }
 
-    // 最上位のコンテキストから Scaffold を探索
+    // Search for Scaffold starting from top-level root context
     context.visitChildElements((element) {
       findScaffold(element);
     });
@@ -4864,22 +4859,22 @@ class WidgetTreeDumper {
 
     String detectedScreenName = 'UnknownScreen';
 
-    // Scaffold から上に親を遡り、最初のカスタムウィジェットを特定
+    // Walk up ancestor chain from Scaffold to find the first custom widget class
     scaffoldElement!.visitAncestorElements((ancestor) {
       final typeStr = ancestor.widget.runtimeType.toString();
       final clean = _cleanType(typeStr);
 
       if (!_isNoiseWidget(clean) && !_isStandardOrFrameworkWidget(clean)) {
         detectedScreenName = typeStr;
-        return false; // 探索終了
+        return false; // Stop traversal
       }
-      return true; // さらに親を遡る
+      return true; // Continue ascending parent chain
     });
 
     return detectedScreenName;
   }
 
-  // ★ 画面構成シグネチャの自動生成 (Scaffold 以下のカスタムウィジェットを収集)
+  // Generate screen structure signature (collects custom widgets below Scaffold)
   static String findScreenSignature(BuildContext context, String screenClassName) {
     Element? scaffoldElement;
 
@@ -4936,11 +4931,11 @@ class WidgetTreeDumper {
     return type.contains('<') ? type.split('<')[0] : type;
   }
 
-  // ★ 改善: キーワードマッチにより、標準ウィジェットのすり抜けを完璧にブロックする
+  // Filter standard framework widgets using keyword matching
   static bool _isStandardOrFrameworkWidget(String type) {
     final clean = _cleanType(type);
 
-    // 1. 完全一致で除外するFlutterの基本UIウィジェット
+    // 1. Core Flutter framework widgets excluded by exact class name match
     const standards = [
       'MaterialApp',
       'Navigator',
@@ -5008,7 +5003,7 @@ class WidgetTreeDumper {
     ];
     if (standards.contains(clean)) return true;
 
-    // 2. Flutterのフレームワーク内部で使われる命名キーワード（部分一致で一括除外）
+    // 2. Framework-internal naming keywords excluded by partial match
     const frameworkKeywords = [
       'Scope',
       'Provider',
@@ -5161,7 +5156,7 @@ class WidgetTreeDumper {
   static bool _isNoiseWidget(String type) {
     final clean = _cleanType(type);
     if (clean.startsWith('_')) return true;
-    // バグ解析に直接関係なく、階層を深くしてトークンを浪費する標準ウィジェット群を除外
+    // Exclude redundant framework widgets that inflate depth and token consumption without aiding bug diagnostics
     const noiseTypes = [
       'Padding',
       'SizedBox',
@@ -5217,12 +5212,12 @@ class WidgetTreeDumper {
     return noiseTypes.contains(clean);
   }
 
-  /// Unicode私用領域（PUA: \uE000-\uF8FF, \uF0000以上）などのアイコンフォント外字であるかを判定
+  /// Determines whether text consists of icon font glyphs in Unicode Private Use Areas (PUA: \uE000-\uF8FF, >= \uF0000).
   static bool _isPrivateUseAreaIconText(String? str) {
     if (str == null) return false;
     final trimmed = str.trim();
     if (trimmed.isEmpty) return false;
-    // 長さが3文字以下で、文字コードがPUA（私用領域）にある場合はアイコンと見なす
+    // Treat as icon glyph if length <= 3 and character code points fall within PUA
     if (trimmed.runes.length <= 2) {
       for (final rune in trimmed.runes) {
         if ((rune >= 0xE000 && rune <= 0xF8FF) ||
@@ -5235,7 +5230,7 @@ class WidgetTreeDumper {
     return false;
   }
 
-  /// 画面上のタップ座標から、最も適合するUIウィジェットのアンカー情報（SnappyPinTarget）を抽出する
+  /// Extracts the best-matching UI widget anchor metadata (SnappyPinTarget) at the tapped screen position.
   static SnappyPinTarget? findTargetAtPosition(BuildContext context, Offset globalPos) {
     Element? topScaffoldElement;
     void findTopScaffold(Element element) {
@@ -5276,7 +5271,7 @@ class WidgetTreeDumper {
           final size = renderBox.size;
           final rect = Rect.fromLTWH(pos.dx, pos.dy, size.width, size.height);
 
-          // タップ座標がウィジェットの境界内に含まれているか
+          // Check whether tap coordinates fall within widget boundaries
           if (rect.contains(globalPos)) {
             final keyStr = widget.key?.toString();
             String? text;
@@ -5290,7 +5285,7 @@ class WidgetTreeDumper {
               text = widget.controller?.text ?? widget.decoration?.hintText;
             }
 
-            // TextFieldなどの入力欄の場合でテキストがまだ取れていない時は子孫からEditableTextを探す
+            // Search descendants for EditableText if input widget has not extracted text yet
             if ((text == null || text.trim().isEmpty) &&
                 (clean.contains('TextField') || clean.contains('TextFormField') || clean.contains('EditableText'))) {
               void findInputText(Element el) {
@@ -5308,15 +5303,15 @@ class WidgetTreeDumper {
               element.visitChildren(findInputText);
             }
 
-            // テキストコードによるアイコン（外字フォント・PUA）の場合はテキストとして扱わない（アイコン扱い）
+            // Exclude icon glyphs in Private Use Areas (PUA) from text anchor extraction
             final bool isIconGlyph = _isPrivateUseAreaIconText(text);
 
-            // テキストの有効性チェック（空文字、空白のみ、または私用領域アイコンはテキスト除外）
+            // Validate text content (exclude empty, whitespace-only, or PUA icon glyphs)
             final rawText = text;
             final bool hasValidText = !isIconGlyph && rawText != null && rawText.trim().isNotEmpty;
             final String? trimmedText = hasValidText ? rawText.trim() : null;
 
-            // 祖先（ancestors）を遡って、ボタンや操作可能コンテナがないかを探索
+            // Traverse ancestors upwards to locate interactive buttons or containers
             Element? clickableAncestor;
             String? ancestorType;
             String? ancestorKey;
@@ -5327,7 +5322,7 @@ class WidgetTreeDumper {
               final aWidget = ancestor.widget;
               final aType = _cleanType(aWidget.runtimeType.toString());
 
-              // 内部・低レベルフレームワークウィジェットは除外（_で始まるもの、RawGestureDetector、Scopeなど）
+              // Exclude low-level internal framework widgets (prefixed with _, RawGestureDetector, Scope, etc.)
               if (aType.startsWith('_') ||
                   aType == 'RawGestureDetector' ||
                   aType.endsWith('Scope') ||
@@ -5340,7 +5335,7 @@ class WidgetTreeDumper {
                 return true;
               }
 
-              // 操作可能コンテナ、ボタン、テキスト入力欄、ヘッダー/バーコンテナ
+              // Interactive containers, buttons, text fields, or header/bar containers
               final isClickable = aType.contains('Button') ||
                   aType.contains('InkWell') ||
                   aType.contains('GestureDetector') ||
@@ -5365,7 +5360,7 @@ class WidgetTreeDumper {
                       ancestorType = aType;
                       ancestorKey = aWidget.key?.toString();
                       ancestorRect = aR;
-                      // アプリ独自のカスタムボタン（例: OneStaStartButton 等）やTextFieldを見つけたら即座に確定
+                      // Immediately prioritize custom app buttons or TextFields when encountered
                       if (!aType.startsWith('GestureDetector') && !aType.startsWith('InkResponse')) {
                         return false;
                       }
@@ -5376,15 +5371,15 @@ class WidgetTreeDumper {
               return true;
             });
 
-            // 祖先にボタン等の操作可能コンテナが存在する場合、そのコンテナを候補として登録
+            // Register interactive ancestor container as candidate if present
             if (clickableAncestor != null && ancestorType != null && ancestorRect != null) {
               final cArea = ancestorRect!.width * ancestorRect!.height;
               final localXRatio = ancestorRect!.width > 0 ? ((globalPos.dx - ancestorRect!.left) / ancestorRect!.width).clamp(0.0, 1.0) : 0.5;
               final localYRatio = ancestorRect!.height > 0 ? ((globalPos.dy - ancestorRect!.top) / ancestorRect!.height).clamp(0.0, 1.0) : 0.5;
 
-              // ボタン内部にテキストがあればそれをアンカーテキストとして拝借する
-              // タップ位置そのものにテキストがない場合（アイコンや矢印をタップした場合）、
-              // ボタン（clickableAncestor）の子孫要素全体から、タップ座標に最も近いテキストを選択する
+              // Borrow inner button text as anchor text.
+              // If tap position itself has no text (e.g. icon or arrow tapped),
+              // select the closest text element from within the clickable container.
               String? buttonText = trimmedText;
               if (buttonText == null || buttonText.isEmpty) {
                 double minDistance = double.infinity;
@@ -5446,7 +5441,7 @@ class WidgetTreeDumper {
                 _CandidateTarget(
                   area: cArea,
                   depth: nextPath.length,
-                  priority: isForeContainer ? 110 : 100, // ヘッダー系コンテナは110点、ボタン/TextFieldは100点
+                  priority: isForeContainer ? 110 : 100, // Header containers: 110, Buttons/TextFields: 100
                   traversalIndex: currentOrder,
                   target: SnappyPinTarget(
                     widgetKey: ancestorKey,
@@ -5460,8 +5455,8 @@ class WidgetTreeDumper {
               );
             }
 
-            // ウィジェット自体の優先度判定
-            // 制御・ラッパー・ノイズウィジェットは単体候補として絶対に採用しない
+            // Determine widget priority score.
+            // Wrapper and noisy control widgets are strictly excluded as standalone candidates.
             final isNoise = clean.startsWith('_') ||
                 clean == 'ScrollSemantics' ||
                 clean.endsWith('Scope') ||
@@ -5480,7 +5475,7 @@ class WidgetTreeDumper {
               final isForeElement = clean.contains('AppBar') || clean.contains('Header') || clean.contains('NavigationBar');
 
               if (isForeElement) {
-                priority = 110; // ヘッダー・AppBar要素は最前面として優先
+                priority = 110; // Header/AppBar elements prioritized as topmost foreground
               } else if (isButtonSelf) {
                 priority = 100;
               } else if (keyStr != null && keyStr.isNotEmpty) {
@@ -5488,7 +5483,7 @@ class WidgetTreeDumper {
               } else if (hasValidText) {
                 priority = 60;
               } else if (clean.contains('Image') || clean.contains('Icon') || isIconGlyph) {
-                priority = 40; // 画像やアイコン（外字フォント含む）
+                priority = 40; // Images and icons (including PUA font glyphs)
               }
 
               if (priority > 0) {
@@ -5525,13 +5520,13 @@ class WidgetTreeDumper {
 
     if (candidates.isEmpty) return null;
 
-    // ソート順:
-    // 1. priority（ヘッダー: 110, ボタン/TextField: 100, Key: 80, テキスト: 60, アイコン/画像: 40）
-    // 2. traversalIndex（重なりがある場合、ツリーで後から描画された前面レイヤーを最優先）
-    // 3. area（より具体的で小さい要素を優先）
-    // 4. depth（より深い特化ウィジェットを優先）
+    // Sorting criteria:
+    // 1. priority (Header: 110, Button/TextField: 100, Key: 80, Text: 60, Icon/Image: 40)
+    // 2. traversalIndex (foreground layers rendered later in the tree take precedence on overlap)
+    // 3. area (smaller, more specific elements prioritized)
+    // 4. depth (deeper specialized widgets prioritized)
     candidates.sort((a, b) {
-      // 画面の重なり（後勝ち）を強く反映させるため、priority が近い場合は traversalIndex を優先考慮
+      // Prioritize traversalIndex when priority scores are close to respect foreground layering
       final prioDiff = b.priority.compareTo(a.priority);
       if (prioDiff != 0) return prioDiff;
       final orderDiff = b.traversalIndex.compareTo(a.traversalIndex);
@@ -5544,7 +5539,7 @@ class WidgetTreeDumper {
     return candidates.first.target;
   }
 
-  /// 現在の画面ウィジェットツリーを走査し、ターゲット情報に最も合致するUI要素のグローバル座標を算出する
+  /// Traverses the current widget tree and resolves global screen coordinates for the best-matching UI element.
   static Offset? resolveTargetPosition(
     BuildContext context,
     SnappyPinTarget target, {
@@ -5560,7 +5555,7 @@ class WidgetTreeDumper {
     context.visitChildElements(findTopScaffold);
     final Element searchRoot = topScaffoldElement ?? (context as Element);
 
-    // 画面全体のルートRenderBoxを取得（同一共通コンポーネントが複数ある場合の近接判定用）
+    // Obtain root RenderBox of the screen (for proximity disambiguation among duplicate components)
     final rootRenderBox = searchRoot.findRenderObject() as RenderBox?;
     final rootOrigin = (rootRenderBox != null && rootRenderBox.attached)
         ? rootRenderBox.localToGlobal(Offset.zero)
@@ -5600,7 +5595,7 @@ class WidgetTreeDumper {
       } else if (widget is TextField) {
         text = widget.controller?.text ?? widget.decoration?.hintText;
       } else if (target.widgetText != null && target.widgetText!.isNotEmpty) {
-        // ボタンやコンテナの場合、子孫のTextウィジェットからテキストを探してマッチングに使用
+        // For buttons or containers, search descendant Text widgets for matching anchor text
         void findDescendantText(Element el) {
           if (text != null && text!.trim().isNotEmpty) return;
           final w = el.widget;
@@ -5626,38 +5621,38 @@ class WidgetTreeDumper {
 
       int score = 0;
 
-      // 1. Key の完全一致 (最優先: 100点)
+      // 1. Exact Key match (highest priority: 100 pts)
       if (target.widgetKey != null && keyStr != null && target.widgetKey == keyStr) {
         score += 100;
       }
 
-      // 2. ウィジェットの型一致 (20点)
+      // 2. Widget runtime type match (20 pts)
       if (target.widgetType == clean) {
         score += 20;
       }
 
-      // 3. テキストの一致判定
+      // 3. Text content match
       final String? currentText = text?.trim();
       final String? targetText = target.widgetText?.trim();
       if (targetText != null && currentText != null && currentText.isNotEmpty) {
         if (currentText == targetText) {
-          // 完全一致: 最も信頼度が高いため高配点 (50点)
+          // Exact match: highest confidence (50 pts)
           score += 50;
         } else {
-          // 数字のみ、または短い文字列（4文字以下、例: "3" と "30"）の場合は誤判定防止のため部分一致を不許可
+          // Disallow partial match for short or numeric strings (<= 4 chars) to prevent false positives
           final isNumericOrShort = currentText.length <= 4 ||
               targetText.length <= 4 ||
               int.tryParse(currentText) != null ||
               int.tryParse(targetText) != null;
           if (!isNumericOrShort) {
             if (currentText.startsWith(targetText) || targetText.startsWith(currentText)) {
-              score += 20; // 長文の部分一致
+              score += 20; // Partial match on longer strings
             }
           }
         }
       }
 
-      // 4. パスの合致 (最大20点)
+      // 4. Widget hierarchy path match (up to 20 pts)
       if (target.widgetPath.isNotEmpty && nextPath.isNotEmpty) {
         int commonAncestors = 0;
         for (final p in target.widgetPath) {
@@ -5672,32 +5667,32 @@ class WidgetTreeDumper {
           final pos = renderBox.localToGlobal(Offset.zero);
           final size = renderBox.size;
           if (size.width > 0 && size.height > 0) {
-            // ★ ユーザー指示: 要素吸着時は要素の中心（50% / 50%）にピタッと吸着させる
+            // Snap pin directly to element center (50% / 50%) when target matches
             final resolvedOffset = Offset(
               pos.dx + (size.width * 0.5),
               pos.dy + (size.height * 0.5),
             );
 
-            // 5. 相対座標の近接度ボーナス (最大30点)
-            // カレンダーの日付や同型セル、共通ボタンが複数ある場合、元ピンの画面位置に近いものを優先
+            // 5. Proximity bonus based on relative coordinates (up to 30 pts)
+            // Prioritizes elements closer to original pin position when duplicate items exist (e.g. calendar cells)
             int positionBonus = 0;
             final refRatioX = fallbackPosition?.dx ?? target.localXRatio;
             final refRatioY = fallbackPosition?.dy ?? target.localYRatio;
             if (rootSize.width > 0 && rootSize.height > 0 && refRatioX != null && refRatioY != null) {
               final elemCenterRatioX = (resolvedOffset.dx - rootOrigin.dx) / rootSize.width;
               final elemCenterRatioY = (resolvedOffset.dy - rootOrigin.dy) / rootSize.height;
-              // 元の画面相対比率と候補要素の中心比率のユークリッド距離
+              // Euclidean distance between original ratio and candidate center ratio
               final dist = sqrt(
                 pow(elemCenterRatioX - refRatioX, 2) +
                 pow(elemCenterRatioY - refRatioY, 2),
               );
-              // 距離が近いほど高得点（最大30点）
+              // Higher score for closer proximity (up to 30 pts)
               positionBonus = ((1.0 - dist.clamp(0.0, 1.0)) * 30).round();
             }
 
             final totalScore = score + positionBonus;
 
-            // 型一致(20点) + 近接ボーナス(最大30点) または テキスト一致(40点) などで25点以上なら吸着候補とする
+            // Qualify as candidate if total score >= 25 (e.g. type match 20 + proximity bonus, or text match)
             if (totalScore >= 25) {
               if (bestMatch == null || totalScore > bestMatch!.score) {
                 bestMatch = _MatchResult(
@@ -5727,8 +5722,8 @@ class WidgetTreeDumper {
     }
   }
 
-  /// ターゲット情報に合致するUI要素の画面内 Rect（大枠の領域）を特定する
-  /// 見つからない場合（画面外・スクロール等）は null を返す
+  /// Resolves bounding Rect of the UI element matching target metadata.
+  /// Returns null if not found (scrolled off-screen or unmounted).
   static Rect? resolveTargetRect(
     BuildContext context,
     SnappyPinTarget target, {
@@ -5849,7 +5844,7 @@ class WidgetTreeDumper {
 
             if (totalScore >= 25) {
               if (bestMatch == null || totalScore > bestMatch!.score) {
-                // セクション領域の特定: 親コンテナ（AppBar / Card / セクションブロック）への昇格判定
+                // Identify section boundary: promote to parent container (AppBar / Card / section block)
                 Rect resolvedRect = Rect.fromLTWH(pos.dx, pos.dy, size.width, size.height);
                 String bestType = clean;
 
@@ -5874,7 +5869,7 @@ class WidgetTreeDumper {
                         resolvedRect = Rect.fromLTWH(aPos.dx, aPos.dy, aSize.width, aSize.height);
                         bestType = aClean;
                         if (isAppBarAncestor) {
-                          return false; // AppBarは最上位ヘッダーとして即座に確定
+                          return false; // AppBar is immediately selected as top header section
                         }
                       }
                     }
@@ -5919,7 +5914,7 @@ enum SnappyDrawingTool {
   redPen,
 }
 
-/// ピンが紐づくUIウィジェットの特定アンカー情報（異なる画面サイズ・解像度での要素吸着用）
+/// Anchor metadata linking a pin to a specific UI widget (for responsive snapping across screen sizes)
 
 class _CandidateTarget {
   final double area;
@@ -6008,15 +6003,15 @@ class SnappyPinTarget {
   }
 }
 
-/// スクリーンショット上の特定箇所を指し示すピンモデル
+/// Pin model pointing to a specific location on a screenshot.
 class SnappyPin {
   final String id;
   final int number;
-  final double xRatio; // 0.0 ~ 1.0 (相対X座標 - フォールバック用)
-  final double yRatio; // 0.0 ~ 1.0 (相対Y座標 - フォールバック用)
+  final double xRatio; // 0.0 ~ 1.0 (Relative X ratio - fallback)
+  final double yRatio; // 0.0 ~ 1.0 (Relative Y ratio - fallback)
   final String comment;
-  final SnappyPinTarget? target; // ★ 要素吸着用メタデータ
-  final bool isActive; // ★ ピンの有効状態 (feedback_logs の pins["is_active"])
+  final SnappyPinTarget? target; // UI element snapping metadata
+  final bool isActive; // Pin active status (maps to feedback_logs pins["is_active"])
 
   SnappyPin({
     required this.id,
@@ -6082,14 +6077,14 @@ class SnappyPin {
     );
   }
 }
-/// 過去に投稿された既存チケットのピン情報
+/// Pin data from previously submitted tickets.
 class ExistingPinItem {
   final String feedbackId;
   final String userMemo;
   final String severity;
   final SnappyPin pin;
-  final Offset? resolvedRatio; // ★ 要素吸着により解決された画面に対する相対比率(0.0~1.0)
-  final String? screenshotUrl; // ★ 投稿当時の元スクリーンショット画像URL/パス
+  final Offset? resolvedRatio; // Screen-relative ratio resolved via element snapping (0.0 - 1.0)
+  final String? screenshotUrl; // URL or path of original screenshot at submission time
 
   ExistingPinItem({
     required this.feedbackId,
@@ -6101,11 +6096,11 @@ class ExistingPinItem {
   });
 }
 
-/// 過去にピンが打たれた要素・セクションのグループ情報（ハイライト表示用）
+/// Grouped element or section info with past pins (for highlight rendering).
 class ExistingSectionItem {
   final String id;
   final String sectionName;
-  final Rect screenRect; // アプリ画面（グローバル）上の座標・サイズ
+  final Rect screenRect; // Coordinates and bounding size on application screen (global)
   final List<ExistingPinItem> pins;
 
   ExistingSectionItem({
@@ -6116,7 +6111,7 @@ class ExistingSectionItem {
   });
 }
 
-/// 描画の一筆を表現するデータクラス
+/// Data class representing a single drawing stroke or point.
 class DrawingPoint {
   final List<Offset?> offsets;
   final Color color;
@@ -6191,7 +6186,7 @@ class DrawingPoint {
   }
 }
 
-/// 下書きデータを SharedPreferences に保存・復元するためのヘルパークラス
+/// Helper class for persisting and restoring feedback drafts via SharedPreferences.
 class _SnappyDraftData {
   static const String _draftKey = 'snappy_snag_draft_v1';
 
@@ -6204,10 +6199,10 @@ class _SnappyDraftData {
   final String memo;
   final double? drawingAspectRatio;
   final int timestamp;
-  // ★ 下書き保存時点の既存ピン一覧（生JSONリスト）。再開時にサーバーリクエストを不要にする。
-  // スクショURLはString(軽量)であり、実際のバイナリは持たない。
+  // Existing pins snapshot at draft save time (raw JSON list) to avoid network fetch on resume.
+  // Screenshot URLs are lightweight strings without binary payload.
   final List<dynamic> existingFeedbacks;
-  // ★ 下書き保存時点の isDevChatEnabled フラグ。「全指摘一覧」ボタン表示に使用。
+  // isDevChatEnabled flag at draft save time (controls "All Feedback" button visibility).
   final bool isDevChatEnabled;
 
   _SnappyDraftData({
@@ -6345,7 +6340,7 @@ class DrawingPainter extends CustomPainter {
       final double scaleX = point.recordedSize.width > 0 ? size.width / point.recordedSize.width : 1.0;
       final double scaleY = point.recordedSize.height > 0 ? size.height / point.recordedSize.height : 1.0;
 
-      // 1. 自動マスキング矩形がある場合
+      // 1. When auto-masking rectangles exist
       if (point.rect != null) {
         final scaledRect = Rect.fromLTRB(
           point.rect!.left * scaleX,
@@ -6355,7 +6350,7 @@ class DrawingPainter extends CustomPainter {
         );
 
         if (point.tool == SnappyDrawingTool.mosaic) {
-          // モザイク風のフロスト角丸矩形を描画
+          // Render frosted rounded rectangle overlay
           final bgPaint = Paint()
             ..color = const Color(0xE62A2A2E)
             ..style = PaintingStyle.fill;
@@ -6364,7 +6359,7 @@ class DrawingPainter extends CustomPainter {
             bgPaint,
           );
 
-          // ピクセルモザイク風グリッドライン
+          // Pixelated mosaic grid lines
           final gridPaint = Paint()
             ..color = Colors.white.withValues(alpha: 0.12)
             ..strokeWidth = 1.0
@@ -6376,7 +6371,7 @@ class DrawingPainter extends CustomPainter {
             canvas.drawLine(Offset(scaledRect.left, y), Offset(scaledRect.right, y), gridPaint);
           }
         } else {
-          // 黒塗り
+          // Solid black masking
           final blackPaint = Paint()
             ..color = Colors.black
             ..style = PaintingStyle.fill;
@@ -6388,9 +6383,9 @@ class DrawingPainter extends CustomPainter {
         continue;
       }
 
-      // 2. なぞり書きパスの描画
+      // 2. Render freehand drawn paths
       if (point.tool == SnappyDrawingTool.mosaic) {
-        // ★ 本物のモザイク（Pixelation）タイル描画
+        // Mosaic pixelation tile rendering
         const double tileSize = 10.0;
         final Set<String> drawnTiles = {};
 
@@ -6452,7 +6447,7 @@ class DrawingPainter extends CustomPainter {
         continue;
       }
 
-      // 赤ペン・黒塗りペンの描画
+      // Render red pen and black pen strokes
       final paint = Paint()
         ..color = point.color
         ..strokeCap = StrokeCap.round
@@ -6609,14 +6604,14 @@ class _SdkLocale {
   static String get analyzingScreen =>
       _isJa ? '画面を解析中...' : 'Analyzing screen...';
 
-  // 全消去確認モーダル
+  // Clear all confirmation dialog strings
   static String get clearConfirmTitle => _isJa ? '全て消去しますか？' : 'Clear All?';
   static String get clearConfirmBody => _isJa
       ? 'ピンとモザイクを全て削除します。この操作は元に戻せません。'
       : 'All pins and mosaic strokes will be deleted. This action cannot be undone.';
   static String get clearConfirmButton => _isJa ? '全て消去' : 'Clear All';
 
-  // 下書き関連
+  // Draft persistence strings
   static String get draftFoundTitle =>
       _isJa ? '保存された下書き' : 'Saved Draft Found';
   static String get draftFoundContent => _isJa
@@ -6643,7 +6638,7 @@ class _SdkLocale {
   static String get draftSavedToast =>
       _isJa ? '下書きに保存しました' : 'Draft saved successfully.';
 
-  // 開発者機能パスコード認証
+  // Developer passcode verification strings
   static String get devPasscodeDialogTitle =>
       _isJa ? '開発者パスコード認証' : 'Dev Passcode Required';
   static String get devPasscodeDialogDesc =>

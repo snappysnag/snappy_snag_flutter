@@ -1,0 +1,50 @@
+name: Bug report
+description: Create a report to help us improve SnappySnag Flutter SDK
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue! Please check existing issues before submitting.
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. Initialize SnappySnag with ...
+        2. Trigger feedback UI ...
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment & Versions
+      description: Output of `flutter doctor -v` or SDK version details.
+      placeholder: |
+        - Flutter version: 3.x.x
+        - Dart version: 3.x.x
+        - SnappySnag SDK version: 1.0.x
+        - Target Platform: iOS / Android / Web / macOS / Windows
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context / Logs
+      description: Add any other context, stack traces, or screenshots about the problem here.

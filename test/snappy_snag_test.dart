@@ -282,7 +282,7 @@ void main() {
 
     final target = WidgetTreeDumper.findTargetAtPosition(context, btnCenter);
     expect(target, isNotNull);
-    expect(target?.widgetType.contains('Button'), isTrue);
+    expect(target?.widgetText, 'はじめる');
 
     final resolved = WidgetTreeDumper.resolveTargetPosition(context, target!);
     expect(resolved, isNotNull);
@@ -319,24 +319,24 @@ void main() {
       ),
     );
 
-    // 1つ目のボタンの矢印アイコンをタップしたと想定
+    // Assume user tapped the arrow icon of the first button
     final icon1Context = tester.element(find.byType(Icon).first);
     final icon1Box = icon1Context.findRenderObject() as RenderBox;
     final icon1Center = icon1Box.localToGlobal(icon1Box.size.center(Offset.zero));
 
     final target1 = WidgetTreeDumper.findTargetAtPosition(icon1Context, icon1Center);
     expect(target1, isNotNull);
-    // アイコン部分をタップしても、親ボタンの子孫テキスト「キャンセル」が自動抽出されていること
+    // Even when tapping the icon, the descendant text of the parent button ('キャンセル') should be resolved
     expect(target1?.widgetText, 'キャンセル');
 
-    // 2つ目のボタンの矢印アイコンをタップしたと想定
+    // Assume user tapped the arrow icon of the second button
     final icon2Context = tester.element(find.byType(Icon).last);
     final icon2Box = icon2Context.findRenderObject() as RenderBox;
     final icon2Center = icon2Box.localToGlobal(icon2Box.size.center(Offset.zero));
 
     final target2 = WidgetTreeDumper.findTargetAtPosition(icon2Context, icon2Center);
     expect(target2, isNotNull);
-    // アイコン部分をタップしても、親ボタンの子孫テキスト「保存」が自動抽出されていること
+    // Even when tapping the icon, the descendant text of the parent button ('保存') should be resolved
     expect(target2?.widgetText, '保存');
   });
 }
