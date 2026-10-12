@@ -78,7 +78,7 @@ class _ShowroomHomePageState extends State<ShowroomHomePage> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFF6366F1).withOpacity(0.2),
+                color: const Color(0xFF6366F1).withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(Icons.bolt, color: Color(0xFF818CF8), size: 20),
@@ -113,7 +113,7 @@ class _ShowroomHomePageState extends State<ShowroomHomePage> {
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.4)),
+                border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.4)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,7 +123,7 @@ class _ShowroomHomePageState extends State<ShowroomHomePage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF22C55E).withOpacity(0.2),
+                          color: const Color(0xFF22C55E).withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: const Color(0xFF22C55E)),
                         ),
@@ -301,7 +301,7 @@ class _ShowroomHomePageState extends State<ShowroomHomePage> {
                 'Visit https://snappysnag.com to sync issues with GitHub',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.white.withOpacity(0.4),
+                  color: Colors.white.withValues(alpha: 0.4),
                 ),
               ),
             ),
