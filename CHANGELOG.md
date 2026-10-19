@@ -1,3 +1,13 @@
+## 1.0.0 - Official Stable Release 🎉
+
+* **Comprehensive Theme Customization (`SnappySnagTheme`)**:
+  * Seamlessly match SnappySnag's feedback UI to your host app's brand aesthetic.
+  * **Brand Accents**: Customize `primaryColor` (Send button, active tools, accent highlights) and `pinColor` (marker badge color).
+  * **Light & Dark Mode**: Support `ThemeMode.dark`, `ThemeMode.light`, and `ThemeMode.system` (auto-adapting to system brightness).
+  * **Border Radius**: Fine-tune `borderRadius` for modal cards and floating toolbars.
+  * **Zero-Breaking Backwards Compatibility**: Defaults to SnappySnag's signature dark aesthetic (`#F59E0B` amber & `#F95738` coral red).
+  * Configurable via `SnappySnag().initialize(theme: SnappySnagTheme(...))`.
+
 ## 0.0.4
 
 * **Tactile Haptic Feedback**:

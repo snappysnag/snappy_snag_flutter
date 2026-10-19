@@ -326,7 +326,7 @@ void main() {
 
     final target1 = WidgetTreeDumper.findTargetAtPosition(icon1Context, icon1Center);
     expect(target1, isNotNull);
-    // Even when tapping the icon, the descendant text of the parent button ('キャンセル') should be resolved
+    // Even when tapping the icon, the descendant text of the parent button ('Cancel' text) should be resolved
     expect(target1?.widgetText, 'キャンセル');
 
     // Assume user tapped the arrow icon of the second button
@@ -336,8 +336,32 @@ void main() {
 
     final target2 = WidgetTreeDumper.findTargetAtPosition(icon2Context, icon2Center);
     expect(target2, isNotNull);
-    // Even when tapping the icon, the descendant text of the parent button ('保存') should be resolved
+    // Even when tapping the icon, the descendant text of the parent button ('Save' text) should be resolved
     expect(target2?.widgetText, '保存');
+  });
+
+  test('SnappySnagTheme initializes with default values and allows custom configuration', () {
+    const defaultTheme = SnappySnagTheme();
+    expect(defaultTheme.primaryColor, const Color(0xFFF59E0B));
+    expect(defaultTheme.pinColor, isNull);
+    expect(defaultTheme.themeMode, ThemeMode.dark);
+    expect(defaultTheme.borderRadius, 16.0);
+
+    final snappy = SnappySnag();
+    snappy.initialize(
+      apiKey: 'test_theme_key',
+      theme: const SnappySnagTheme(
+        primaryColor: Colors.deepPurple,
+        pinColor: Colors.teal,
+        themeMode: ThemeMode.light,
+        borderRadius: 24.0,
+      ),
+    );
+
+    expect(snappy.theme.primaryColor, Colors.deepPurple);
+    expect(snappy.theme.pinColor, Colors.teal);
+    expect(snappy.theme.themeMode, ThemeMode.light);
+    expect(snappy.theme.borderRadius, 24.0);
   });
 }
 

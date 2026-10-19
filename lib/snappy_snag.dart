@@ -18,12 +18,52 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Mode of SnappySnag SDK operation.
 enum SnappySnagMode {
   /// Developer / Internal QA Mode:
-  /// Enables duplicate feedback warning dialogs and internal team comments thread.
+  /// Enables existing feedback pins visualization, inspection, and dev mode tools.
   dev,
 
   /// End-User / Production Mode:
   /// Hides internal tickets and warnings, offering a clean, friendly feedback submission experience.
   user,
+}
+
+enum _SnappyToastType { success, error, warning, info }
+
+/// Visual theme configuration for the SnappySnag SDK.
+///
+/// Allows customizing accent colors, light/dark mode behavior, and dialog corner radii
+/// to blend seamlessly with your application's brand identity.
+class SnappySnagTheme {
+  /// Primary accent color used for pins, action buttons, and active tools.
+  /// Defaults to Amber Gold (`#F59E0B`).
+  final Color primaryColor;
+
+  /// Pin marker background color.
+  /// If null, falls back to Coral Red (`#F95738`) or [primaryColor].
+  final Color? pinColor;
+
+  /// Theme brightness mode.
+  /// - [ThemeMode.system]: Follows the host device or MaterialApp theme brightness.
+  /// - [ThemeMode.dark]: Enforces dark aesthetic (default).
+  /// - [ThemeMode.light]: Enforces clean light aesthetic.
+  final ThemeMode themeMode;
+
+  /// Corner radius for floating toolbars, cards, and modal dialogs.
+  /// Defaults to 16.0.
+  final double borderRadius;
+
+  const SnappySnagTheme({
+    this.primaryColor = const Color(0xFFF59E0B),
+    this.pinColor,
+    this.themeMode = ThemeMode.dark,
+    this.borderRadius = 16.0,
+  });
+
+  /// Resolves whether the current active theme should render in dark mode.
+  bool isDark(BuildContext context) {
+    if (themeMode == ThemeMode.dark) return true;
+    if (themeMode == ThemeMode.light) return false;
+    return MediaQuery.maybePlatformBrightnessOf(context) == Brightness.dark;
+  }
 }
 
 /// Representation of reporter/user information for SnappySnag.
@@ -86,6 +126,8 @@ class SnappySnag {
   bool get enableHaptics => _enableHaptics;
   bool _enableLogging = false;
   bool get enableLogging => _enableLogging;
+  SnappySnagTheme _theme = const SnappySnagTheme();
+  SnappySnagTheme get theme => _theme;
 
   /// 4-digit passcode for unlocking developer features held in memory during the app session.
   /// Never written to local storage, automatically cleared when the app terminates.
@@ -169,16 +211,24 @@ class SnappySnag {
   static void startFeedbackMode({BuildContext? context}) {
     final ctx = context ?? SnappySnag().navigatorKey?.currentContext;
 
+    final theme = SnappySnag().theme;
+
     // Show dialog if SDK is disabled (isEnabled == false)
     if (!SnappySnag().isEnabled) {
       if (ctx != null) {
+        final isDark = theme.isDark(ctx);
+        final dialogBg = isDark ? const Color(0xFF1E1E24) : Colors.white;
+        final dialogBorder = isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
+        final titleColor = isDark ? Colors.white : Colors.black87;
+        final bodyColor = isDark ? Colors.white70 : Colors.black54;
+
         showDialog(
           context: ctx,
           builder: (dialogCtx) => AlertDialog(
-            backgroundColor: const Color(0xFF1E1E24),
+            backgroundColor: dialogBg,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: Color(0xFF2E2E38)),
+              borderRadius: BorderRadius.circular(theme.borderRadius),
+              side: BorderSide(color: dialogBorder),
             ),
             title: Row(
               children: [
@@ -186,8 +236,8 @@ class SnappySnag {
                 const SizedBox(width: 8),
                 Text(
                   _SdkLocale.disabledTitle,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: titleColor,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -196,8 +246,8 @@ class SnappySnag {
             ),
             content: Text(
               _SdkLocale.disabledContent,
-              style: const TextStyle(
-                color: Colors.white70,
+              style: TextStyle(
+                color: bodyColor,
                 fontSize: 13,
                 height: 1.5,
               ),
@@ -205,8 +255,8 @@ class SnappySnag {
             actions: [
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3E3E48),
-                  foregroundColor: Colors.white,
+                  backgroundColor: isDark ? const Color(0xFF3E3E48) : Colors.grey.shade300,
+                  foregroundColor: isDark ? Colors.white : Colors.black87,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -230,24 +280,31 @@ class SnappySnag {
     final isAlreadyVisible = SnappySnag().isTriggerButtonAlwaysVisible;
 
     if (ctx != null) {
+      final isDark = theme.isDark(ctx);
+      final dialogBg = isDark ? const Color(0xFF1E1E24) : Colors.white;
+      final dialogBorder = isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
+      final titleColor = isDark ? Colors.white : Colors.black87;
+      final bodyColor = isDark ? Colors.white70 : Colors.black54;
+      final primaryColor = theme.primaryColor;
+
       showDialog(
         context: ctx,
         builder: (dialogCtx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E1E24),
+          backgroundColor: dialogBg,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF2E2E38)),
+            borderRadius: BorderRadius.circular(theme.borderRadius),
+            side: BorderSide(color: dialogBorder),
           ),
           title: Row(
             children: [
-              const Icon(Icons.camera_alt_outlined, color: Color(0xFFF59E0B)),
+              Icon(Icons.camera_alt_outlined, color: primaryColor),
               const SizedBox(width: 8),
               Text(
                 isAlreadyVisible
                     ? _SdkLocale.feedbackModeAlreadyVisibleTitle
                     : _SdkLocale.feedbackModeDialogTitle,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: titleColor,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -258,8 +315,8 @@ class SnappySnag {
             isAlreadyVisible
                 ? _SdkLocale.feedbackModeAlreadyVisibleContent
                 : _SdkLocale.feedbackModeDialogContent,
-            style: const TextStyle(
-              color: Colors.white70,
+            style: TextStyle(
+              color: bodyColor,
               fontSize: 13,
               height: 1.5,
             ),
@@ -270,13 +327,15 @@ class SnappySnag {
                 onPressed: () => Navigator.of(dialogCtx).pop(),
                 child: Text(
                   _SdkLocale.cancel,
-                  style: const TextStyle(color: Colors.white60),
+                  style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
                 ),
               ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF59E0B),
-                foregroundColor: Colors.black,
+                backgroundColor: primaryColor,
+                foregroundColor: ThemeData.estimateBrightnessForColor(primaryColor) == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -347,9 +406,13 @@ class SnappySnag {
     bool enableShakeTrigger = true,
     bool enableHaptics = true,
     bool enableLogging = false,
+    SnappySnagTheme? theme,
     String? supabaseUrl,
     bool forceDevInRelease = false,
   }) {
+    if (theme != null) {
+      _theme = theme;
+    }
     _enableLogging = enableLogging;
     _enableHaptics = enableHaptics;
     // Trigger button visibility:
@@ -467,8 +530,6 @@ class SnappySnagOverlay extends StatefulWidget {
 enum _SnappyOverlayMode {
   none,
   loading,
-  duplicateWarning,
-  commentsThread,
   drawing,
 }
 
@@ -478,17 +539,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   bool _isCapturing = false;
   Uint8List? _capturedImageForFreeze;
   _SnappyOverlayMode _overlayMode = _SnappyOverlayMode.none;
-  List<dynamic> _currentDuplicates = [];
-  Completer<bool>? _duplicateWarningCompleter;
-
-  // State for comments thread
-  String _commentsFeedbackId = '';
-  String _commentsBugTitle = '';
-  List<dynamic> _commentsList = [];
-  bool _commentsLoading = false;
-  bool _isSendingComment = false;
-  bool _isCommentCooldownActive = false;
-  final TextEditingController _commentTextController = TextEditingController();
   bool _isFeedbackDialogOpen = false;
 
   // State for canvas drawing & pin annotations
@@ -621,6 +671,82 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     super.dispose();
   }
 
+  void _showToast({
+    required BuildContext targetContext,
+    required String message,
+    _SnappyToastType type = _SnappyToastType.info,
+    Duration duration = const Duration(seconds: 4),
+  }) {
+    if (!mounted) return;
+    final theme = SnappySnag().theme;
+    final isDark = theme.isDark(targetContext);
+    final toastBg = isDark ? const Color(0xFF1E1E24) : Colors.white;
+    final toastBorder = isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
+    final textColor = isDark ? Colors.white : Colors.black87;
+
+    final IconData iconData;
+    final Color iconColor;
+    switch (type) {
+      case _SnappyToastType.success:
+        iconData = Icons.check_circle_rounded;
+        iconColor = const Color(0xFF10B981); // Emerald Green
+        break;
+      case _SnappyToastType.error:
+        iconData = Icons.error_outline_rounded;
+        iconColor = const Color(0xFFEF4444); // Rose Red
+        break;
+      case _SnappyToastType.warning:
+        iconData = Icons.warning_amber_rounded;
+        iconColor = const Color(0xFFF59E0B); // Amber
+        break;
+      case _SnappyToastType.info:
+        iconData = Icons.info_outline_rounded;
+        iconColor = theme.primaryColor;
+        break;
+    }
+
+    final messenger = ScaffoldMessenger.maybeOf(targetContext);
+    if (messenger == null) return;
+
+    final isButtonVisible =
+        (SnappySnag().isTriggerButtonVisible.value ||
+         SnappySnag().isFeedbackModeActive.value) &&
+        _overlayMode == _SnappyOverlayMode.none;
+
+    final safeBottom = MediaQuery.maybeOf(targetContext)?.padding.bottom ?? 0.0;
+    final bottomMargin = (isButtonVisible ? 84.0 : 16.0) + safeBottom;
+
+    messenger.showSnackBar(
+      SnackBar(
+        elevation: 6,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.fromLTRB(16, 0, 16, bottomMargin),
+        backgroundColor: toastBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(theme.borderRadius > 16 ? 16 : theme.borderRadius),
+          side: BorderSide(color: toastBorder),
+        ),
+        duration: duration,
+        content: Row(
+          children: [
+            Icon(iconData, color: iconColor, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showErrorDialog(String message) {
     final isUserMode = SnappySnag().mode == SnappySnagMode.user;
     final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
@@ -628,13 +754,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     // In user mode, suppress technical dialogs and show a friendly toast/SnackBar instead
     if (isUserMode) {
       SnappySnag._log('⚠️ SnappySnag [UserMode] Suppressed error dialog: $message');
-      ScaffoldMessenger.of(targetContext).showSnackBar(
-        SnackBar(
-          content: Text(_SdkLocale.userModeUnavailable),
-          backgroundColor: Colors.black87,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 4),
-        ),
+      _showToast(
+        targetContext: targetContext,
+        message: _SdkLocale.userModeUnavailable,
+        type: _SnappyToastType.error,
+        duration: const Duration(seconds: 4),
       );
       return;
     }
@@ -786,23 +910,31 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     // Draft check: inspect locally whether a saved draft exists (without network request)
     final hasDraft = await _SnappyDraftData.hasDraft();
     if (hasDraft && mounted && targetContext.mounted) {
+      final theme = SnappySnag().theme;
+      final isDark = theme.isDark(targetContext);
+      final dialogBg = isDark ? const Color(0xFF1E1E24) : Colors.white;
+      final dialogBorder = isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
+      final titleColor = isDark ? Colors.white : Colors.black87;
+      final bodyColor = isDark ? Colors.white70 : Colors.black54;
+      final primaryColor = theme.primaryColor;
+
       final resume = await showDialog<bool>(
         context: targetContext,
         barrierDismissible: false,
         builder: (dialogCtx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E1E24),
+          backgroundColor: dialogBg,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF2E2E38)),
+            borderRadius: BorderRadius.circular(theme.borderRadius),
+            side: BorderSide(color: dialogBorder),
           ),
           title: Row(
             children: [
-              const Icon(Icons.edit_note, color: Color(0xFFF59E0B)),
+              Icon(Icons.edit_note, color: primaryColor),
               const SizedBox(width: 8),
               Text(
                 _SdkLocale.draftFoundTitle,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: titleColor,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -811,8 +943,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
           ),
           content: Text(
             _SdkLocale.draftFoundContent,
-            style: const TextStyle(
-              color: Colors.white70,
+            style: TextStyle(
+              color: bodyColor,
               fontSize: 13,
               height: 1.5,
             ),
@@ -827,8 +959,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF59E0B),
-                foregroundColor: Colors.black,
+                backgroundColor: primaryColor,
+                foregroundColor: ThemeData.estimateBrightnessForColor(primaryColor) == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1051,170 +1185,6 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
       SnappySnag._log('❌ SnappySnag Fetch Duplicates Error: $e');
     }
     return [];
-  }
-
-  Future<bool> _showDuplicateWarningDialog({
-    required List<dynamic> duplicates,
-    required Uint8List imageBytes,
-    required Map<String, dynamic> widgetTree,
-    required String screenClassName,
-  }) async {
-    _duplicateWarningCompleter = Completer<bool>();
-    if (mounted) {
-      setState(() {
-        _currentDuplicates = duplicates;
-        _overlayMode = _SnappyOverlayMode.duplicateWarning;
-      });
-    }
-    return _duplicateWarningCompleter!.future;
-  }
-
-  Future<List<dynamic>> _fetchComments(String feedbackLogId) async {
-    final apiKey = SnappySnag()._apiKey;
-    if (apiKey == null) return [];
-
-    final String url =
-        '${SnappySnag().supabaseUrl}/functions/v1/comments?feedback_log_id=${Uri.encodeComponent(feedbackLogId)}';
-
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'x-snappy-api-key': apiKey,
-          if (SnappySnag().reporterEmail != null && SnappySnag().reporterEmail!.isNotEmpty)
-            'x-snappy-reporter-email': SnappySnag().reporterEmail!,
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['is_dev_chat_enabled'] != null) {
-          SnappySnag()._isDevChatEnabled = data['is_dev_chat_enabled'] == true;
-        }
-        return (data['comments'] as List<dynamic>?) ?? [];
-      }
-    } catch (e) {
-      SnappySnag._log('❌ SnappySnag Fetch Comments Error: $e');
-    }
-    return [];
-  }
-
-    Future<_CommentPostResult> _postComment({
-    required String feedbackLogId,
-    required String message,
-  }) async {
-    final apiKey = SnappySnag()._apiKey;
-    if (apiKey == null) return _CommentPostResult(false, 'API Key is missing');
-
-    final String url = '${SnappySnag().supabaseUrl}/functions/v1/comments';
-
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'x-snappy-api-key': apiKey,
-          if (SnappySnag().reporterEmail != null && SnappySnag().reporterEmail!.isNotEmpty)
-            'x-snappy-reporter-email': SnappySnag().reporterEmail!,
-        },
-        body: jsonEncode({
-          'feedback_log_id': feedbackLogId,
-          'sender_type': 'reporter',
-          'sender_name': SnappySnag()._user?.name ?? SnappySnag().reporterUserId ?? 'Reporter',
-          'message': message,
-          if (SnappySnag().reporterEmail != null) 'user_email': SnappySnag().reporterEmail!,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        return _CommentPostResult(true);
-      } else if (response.statusCode == 403) {
-        SnappySnag()._isDevChatEnabled = false;
-        return _CommentPostResult(false, _SdkLocale.chatDisabled);
-      } else if (response.statusCode == 429) {
-        return _CommentPostResult(false, _SdkLocale.statusRateLimit);
-      } else {
-        return _CommentPostResult(false, _SdkLocale.statusNetworkError);
-      }
-    } catch (e) {
-      SnappySnag._log('❌ SnappySnag Post Comment Error: $e');
-      return _CommentPostResult(false, _SdkLocale.statusNetworkError);
-    }
-  }
-  void _showCommentsThreadSheet(String feedbackId, String bugTitle) async {
-    _commentTextController.clear();
-    if (mounted) {
-      setState(() {
-        _commentsFeedbackId = feedbackId;
-        _commentsBugTitle = bugTitle;
-        _commentsList = [];
-        _commentsLoading = true;
-        _isSendingComment = false;
-        _overlayMode = _SnappyOverlayMode.commentsThread;
-      });
-    }
-
-    try {
-      final result = await _fetchComments(feedbackId);
-      if (mounted && _commentsFeedbackId == feedbackId) {
-        setState(() {
-          _commentsList = result;
-          _commentsLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _commentsLoading = false);
-      }
-    }
-  }
-
-  Future<void> _sendCommentInline() async {
-    final text = _commentTextController.text.trim();
-    if (text.isEmpty || _isSendingComment || _isCommentCooldownActive) return;
-
-    if (mounted) {
-      setState(() {
-        _isSendingComment = true;
-        _isCommentCooldownActive = true;
-      });
-    }
-
-    final result = await _postComment(
-      feedbackLogId: _commentsFeedbackId,
-      message: text,
-    );
-
-    if (result.success) {
-      _commentTextController.clear();
-      final updatedComments = await _fetchComments(_commentsFeedbackId);
-      if (mounted) {
-        setState(() {
-          _commentsList = updatedComments;
-          _isSendingComment = false;
-        });
-      }
-    } else {
-      if (mounted) {
-        setState(() => _isSendingComment = false);
-        if (result.errorMessage != null && result.errorMessage!.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result.errorMessage!),
-              backgroundColor: Colors.redAccent.shade700,
-              duration: const Duration(seconds: 4),
-            ),
-          );
-        }
-      }
-    }
-
-    // 3-second cooldown timer after comment submission
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() => _isCommentCooldownActive = false);
-      }
-    });
   }
 
 
@@ -1625,11 +1595,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     if (validPins.isEmpty) {
       if (mounted) {
         final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
-        ScaffoldMessenger.of(messengerContext).showSnackBar(
-          SnackBar(
-            content: Text(_SdkLocale.pinRequiredSnackBar),
-            backgroundColor: Colors.orange,
-          ),
+        _showToast(
+          targetContext: messengerContext,
+          message: _SdkLocale.pinRequiredSnackBar,
+          type: _SnappyToastType.warning,
+          duration: const Duration(seconds: 3),
         );
       }
       return;
@@ -1745,11 +1715,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
         }
       }
 
-      ScaffoldMessenger.of(messengerContext).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: success ? Colors.green : Colors.red,
-        ),
+      _showToast(
+        targetContext: messengerContext,
+        message: message,
+        type: success ? _SnappyToastType.success : _SnappyToastType.error,
+        duration: const Duration(seconds: 4),
       );
 
       // Offer saving draft on send failure via inline modal
@@ -1837,369 +1807,46 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
             child: Container(
               color: Colors.black45, // Semi-transparent modal barrier
               child: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade900,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(color: Color(0xFFF59E0B)),
-                      const SizedBox(height: 16),
-                      Text(
-                        _SdkLocale.analyzingScreen,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        if (_overlayMode == _SnappyOverlayMode.duplicateWarning)
-          Positioned.fill(
-            child: Container(
-              color: Colors.black54, // Semi-transparent modal barrier
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-              child: Center(
-                child: Material(
-                  color: Colors.grey.shade900,
-                  borderRadius: BorderRadius.circular(16),
-                  elevation: 24,
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    constraints: const BoxConstraints(maxWidth: 400),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.lightbulb_outline, color: Colors.amber, size: 28),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _SdkLocale.duplicateWarningTitle,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          _SdkLocale.duplicateWarningSub,
-                          style: const TextStyle(color: Colors.white70, fontSize: 13),
-                        ),
-                        const SizedBox(height: 12),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 200),
-                          child: Scrollbar(
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: _currentDuplicates.length,
-                              itemBuilder: (context, index) {
-                                final item = _currentDuplicates[index];
-                                final memo = item['user_memo'] ?? '';
-                                final severity = item['severity'] ?? 'unassessed';
-                                final emoji = severity == 'high'
-                                    ? '🔴'
-                                    : (severity == 'medium'
-                                        ? '🟡'
-                                        : (severity == 'low' ? '🔵' : '⚪'));
+                child: Builder(
+                  builder: (dialogContext) {
+                    final theme = SnappySnag().theme;
+                    final isDark = theme.isDark(dialogContext);
+                    final dialogBg = isDark ? const Color(0xFF1E1E24) : Colors.white;
+                    final dialogBorder = isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
+                    final textColor = isDark ? Colors.white : Colors.black87;
 
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black26,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: Colors.white12),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          '$emoji $memo',
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.white70,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
+                    return Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: dialogBg,
+                        borderRadius: BorderRadius.circular(theme.borderRadius),
+                        border: Border.all(color: dialogBorder),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 16,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(color: theme.primaryColor),
+                          const SizedBox(height: 16),
+                          Text(
+                            _SdkLocale.analyzingScreen,
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.none,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          width: double.infinity,
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            alignment: WrapAlignment.center,
-                            children: [
-                            TextButton(
-                              onPressed: () {
-                                if (mounted) {
-                                  setState(() {
-                                    _overlayMode = _SnappyOverlayMode.none;
-                                  });
-                                }
-                                _duplicateWarningCompleter?.complete(false);
-                              },
-                              child: Text(
-                                _SdkLocale.checkLater,
-                                style: const TextStyle(color: Colors.white60),
-                              ),
-                            ),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.amber,
-                                foregroundColor: Colors.black,
-                              ),
-                              onPressed: () {
-                                if (mounted) {
-                                  setState(() {
-                                    _overlayMode = _SnappyOverlayMode.none;
-                                  });
-                                }
-                                _duplicateWarningCompleter?.complete(true);
-                              },
-                              child: Text(
-                                _SdkLocale.reportNewIssue,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        if (_overlayMode == _SnappyOverlayMode.commentsThread)
-          Positioned.fill(
-            child: Container(
-              color: Colors.black54, // Semi-transparent barrier
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-              child: Center(
-                child: Material(
-                  color: Colors.grey.shade900,
-                  borderRadius: BorderRadius.circular(16),
-                  elevation: 24,
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    constraints: const BoxConstraints(maxWidth: 400, maxHeight: 480),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.arrow_back, color: Colors.white70),
-                              onPressed: () {
-                                if (mounted) {
-                                  setState(() {
-                                    _overlayMode = _SnappyOverlayMode.duplicateWarning;
-                                  });
-                                }
-                              },
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                            ),
-                            const SizedBox(width: 8),
-                            const Icon(Icons.chat, color: Colors.amber, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _commentsBugTitle,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.close, color: Colors.white70),
-                              onPressed: () {
-                                if (mounted) {
-                                  setState(() {
-                                    _overlayMode = _SnappyOverlayMode.none;
-                                  });
-                                }
-                                _duplicateWarningCompleter?.complete(false);
-                              },
-                            ),
-                          ],
-                        ),
-                        const Divider(color: Colors.white10),
-                        Expanded(
-                          child: _commentsLoading
-                              ? const Center(
-                                  child: CircularProgressIndicator(
-                                    color: Colors.amber,
-                                  ),
-                                )
-                              : _commentsList.isEmpty
-                                  ? Center(
-                                      child: Text(
-                                        _SdkLocale.noCommentsYet,
-                                        style: const TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    )
-                                  : ListView.builder(
-                                      itemCount: _commentsList.length,
-                                      itemBuilder: (context, index) {
-                                        final comment = _commentsList[index];
-                                        final isReporter =
-                                            comment['sender_type'] == 'reporter';
-                                        final senderName = comment['sender_name'] ??
-                                            (isReporter ? 'Reporter' : 'Developer');
-                                        final msg = comment['message'] ?? '';
-
-                                        return Align(
-                                          alignment: isReporter
-                                              ? Alignment.centerRight
-                                              : Alignment.centerLeft,
-                                          child: Container(
-                                            margin: const EdgeInsets.symmetric(
-                                              vertical: 4,
-                                            ),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 8,
-                                            ),
-                                            constraints: BoxConstraints(
-                                              maxWidth: MediaQuery.of(context)
-                                                      .size
-                                                      .width *
-                                                  0.65,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: isReporter
-                                                  ? Colors.amber.shade700
-                                                  : Colors.grey.shade800,
-                                              borderRadius: BorderRadius.only(
-                                                topLeft: const Radius.circular(12),
-                                                topRight: const Radius.circular(12),
-                                                bottomLeft: Radius.circular(
-                                                  isReporter ? 12 : 2,
-                                                ),
-                                                bottomRight: Radius.circular(
-                                                  isReporter ? 2 : 12,
-                                                ),
-                                              ),
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment: isReporter
-                                                  ? CrossAxisAlignment.end
-                                                  : CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  senderName,
-                                                  style: TextStyle(
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: isReporter
-                                                        ? Colors.black87
-                                                        : Colors.amber.shade300,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  msg,
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    color: isReporter
-                                                        ? Colors.black
-                                                        : Colors.white,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _commentTextController,
-                                maxLength: 500,
-                                maxLengthEnforcement: MaxLengthEnforcement.enforced,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                ),
-                                decoration: InputDecoration(
-                                  counterText: "", // Hide bottom character counter for a compact layout
-                                  hintText: _SdkLocale.typeMessage,
-                                  hintStyle: const TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 13,
-                                  ),
-                                  fillColor: Colors.black26,
-                                  filled: true,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 10,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                    borderSide: BorderSide(
-                                      color: Colors.grey.shade800,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: (_isSendingComment || _isCommentCooldownActive)
-                                  ? SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: _isCommentCooldownActive && !_isSendingComment ? Colors.grey : Colors.amber,
-                                      ),
-                                    )
-                                  : const Icon(Icons.send, color: Colors.amber),
-                              onPressed: (_isSendingComment || _isCommentCooldownActive)
-                                  ? null
-                                  : () => _sendCommentInline(),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -2212,19 +1859,30 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                 OverlayEntry(
                   builder: (overlayContext) {
                     final canvasRatio = _drawingAspectRatio ?? (9 / 16);
+                    final theme = SnappySnag().theme;
+                    final isDark = theme.isDark(overlayContext);
+                    final primaryColor = theme.primaryColor;
+                    final pinColor = theme.pinColor ?? const Color(0xFFF95738);
+                    final barBgColor = isDark ? Colors.grey.shade900 : Colors.white;
+                    final barTextColor = isDark ? Colors.white : Colors.black87;
+                    final barSubtextColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
+                    final dialogBg = isDark ? const Color(0xFF1E1E24) : Colors.white;
+                    final dialogBorder = isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
+                    final dialogRadius = BorderRadius.circular(theme.borderRadius);
+
                     return Material(
                       type: MaterialType.transparency,
                       child: Scaffold(
-                        backgroundColor: Colors.black,
+                        backgroundColor: isDark ? Colors.black : const Color(0xFFF0F0F2),
                         appBar: AppBar(
-                          backgroundColor: Colors.grey.shade900,
+                          backgroundColor: barBgColor,
                           leading: TextButton(
                             onPressed: _isSendingFeedback
                                 ? null
                                 : () => _cancelDrawingFlow(),
                             child: Text(
                               _SdkLocale.cancel,
-                              style: const TextStyle(color: Colors.white70),
+                              style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
                             ),
                           ),
                           title: Column(
@@ -2232,9 +1890,9 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                             children: [
                               Text(
                                 _SdkLocale.titleFeedback,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 15,
-                                  color: Colors.white,
+                                  color: barTextColor,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -2243,7 +1901,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                 'Screen: $_drawingScreenSignature',
                                 style: TextStyle(
                                   fontSize: 10,
-                                  color: Colors.grey.shade400,
+                                  color: barSubtextColor,
                                   fontWeight: FontWeight.normal,
                                 ),
                               ),
@@ -2445,18 +2103,18 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                   ? null
                                   : () => _sendFeedbackInlineFlow(),
                               child: _isSendingFeedback
-                                  ? const SizedBox(
+                                  ? SizedBox(
                                       width: 20,
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: Colors.amber,
+                                        color: primaryColor,
                                       ),
                                     )
                                   : Text(
                                       _SdkLocale.send,
-                                      style: const TextStyle(
-                                        color: Colors.amber,
+                                      style: TextStyle(
+                                        color: primaryColor,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -2511,13 +2169,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                     // Pin count limit check (maximum 5)
                                                     if (_pins.length >= 5) {
                                                       final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
-                                                      ScaffoldMessenger.of(messengerContext).showSnackBar(
-                                                        SnackBar(
-                                                          content: Text(_SdkLocale.pinLimitReached),
-                                                          duration: const Duration(seconds: 2),
-                                                          behavior: SnackBarBehavior.floating,
-                                                          backgroundColor: Colors.black87,
-                                                        ),
+                                                      _showToast(
+                                                        targetContext: messengerContext,
+                                                        message: _SdkLocale.pinLimitReached,
+                                                        type: _SnappyToastType.warning,
+                                                        duration: const Duration(seconds: 2),
                                                       );
                                                       return;
                                                     }
@@ -2794,7 +2450,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                         width: pinSize,
                                                         height: pinSize,
                                                         decoration: BoxDecoration(
-                                                          color: const Color(0xFFF95738),
+                                                          color: pinColor,
                                                           shape: BoxShape.circle,
                                                           border: Border.all(color: Colors.white, width: 2),
                                                           boxShadow: const [
@@ -2840,14 +2496,14 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade900.withValues(alpha: 0.9),
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: Colors.grey.shade800),
-                          boxShadow: const [
+                          color: barBgColor.withValues(alpha: isDark ? 0.9 : 0.95),
+                          borderRadius: BorderRadius.circular(theme.borderRadius > 20 ? theme.borderRadius : 30),
+                          border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+                          boxShadow: [
                             BoxShadow(
-                              color: Colors.black54,
+                              color: isDark ? Colors.black54 : Colors.black12,
                               blurRadius: 10,
-                              offset: Offset(0, 4),
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
@@ -2862,8 +2518,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                   icon: Icon(
                                     Icons.place,
                                     color: _activeTool == SnappyDrawingTool.pin
-                                        ? const Color(0xFFF95738)
-                                        : Colors.grey,
+                                        ? pinColor
+                                        : (isDark ? Colors.grey : Colors.grey.shade500),
                                   ),
                                   tooltip: 'Pin Marker (Max 5)',
                                   onPressed: _isSendingFeedback
@@ -2884,7 +2540,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFF95738),
+                                        color: pinColor,
                                         borderRadius: BorderRadius.circular(10),
                                       ),
                                       child: Text(
@@ -2904,8 +2560,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                               icon: Icon(
                                 Icons.blur_on,
                                 color: _activeTool == SnappyDrawingTool.mosaic
-                                    ? const Color(0xFFF59E0B)
-                                    : Colors.grey,
+                                    ? primaryColor
+                                    : (isDark ? Colors.grey : Colors.grey.shade500),
                               ),
                               tooltip: 'Mosaic Blur',
                               onPressed: _isSendingFeedback
@@ -2925,8 +2581,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                               icon: Icon(
                                 Icons.undo,
                                 color: (!_isSendingFeedback && _undoStack.isNotEmpty)
-                                    ? Colors.white70
-                                    : Colors.grey.shade700,
+                                    ? (isDark ? Colors.white70 : Colors.black87)
+                                    : (isDark ? Colors.grey.shade700 : Colors.grey.shade400),
                               ),
                               tooltip: 'Undo',
                               onPressed: _isSendingFeedback || _undoStack.isEmpty
@@ -2951,8 +2607,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                               icon: Icon(
                                 Icons.redo,
                                 color: (!_isSendingFeedback && _redoStack.isNotEmpty)
-                                    ? Colors.white70
-                                    : Colors.grey.shade700,
+                                    ? (isDark ? Colors.white70 : Colors.black87)
+                                    : (isDark ? Colors.grey.shade700 : Colors.grey.shade400),
                               ),
                               tooltip: 'Redo',
                               onPressed: _isSendingFeedback || _redoStack.isEmpty
@@ -3009,10 +2665,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                     maxHeight: isLandscape ? modalConstraints.maxHeight * 0.95 : 540,
                                   ),
                                   child: Card(
-                                    color: Colors.grey.shade900,
+                                    color: barBgColor,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      side: BorderSide(color: Colors.grey.shade800),
+                                      borderRadius: BorderRadius.circular(theme.borderRadius),
+                                      side: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
                                     ),
                                     child: Padding(
                                       padding: const EdgeInsets.all(16),
@@ -3026,8 +2682,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                 Container(
                                                   width: 28,
                                                   height: 28,
-                                                  decoration: const BoxDecoration(
-                                                    color: Color(0xFFF95738),
+                                                  decoration: BoxDecoration(
+                                                    color: pinColor,
                                                     shape: BoxShape.circle,
                                                   ),
                                                   child: Center(
@@ -3044,8 +2700,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                 const SizedBox(width: 8),
                                                 Text(
                                                   _SdkLocale.pinCommentTitle,
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
+                                                  style: TextStyle(
+                                                    color: barTextColor,
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 16,
                                                   ),
@@ -3074,23 +2730,29 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                               maxLengthEnforcement: MaxLengthEnforcement.enforced,
                                               maxLines: isLandscape ? 2 : 4,
                                               autofocus: true,
-                                              style: const TextStyle(color: Colors.white),
+                                              style: TextStyle(color: barTextColor),
                                               decoration: InputDecoration(
                                                 hintText: _SdkLocale.pinCommentHint,
-                                                hintStyle: const TextStyle(color: Colors.grey),
-                                                fillColor: Colors.black26,
+                                                hintStyle: TextStyle(color: barSubtextColor),
+                                                fillColor: isDark ? Colors.black26 : Colors.grey.shade100,
                                                 filled: true,
                                                 border: OutlineInputBorder(
                                                   borderRadius: BorderRadius.circular(8),
-                                                  borderSide: BorderSide(color: Colors.grey.shade800),
+                                                  borderSide: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+                                                ),
+                                                enabledBorder: OutlineInputBorder(
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  borderSide: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
                                                 ),
                                               ),
                                             ),
                                             const SizedBox(height: 16),
                                             ElevatedButton(
                                               style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.amber,
-                                                foregroundColor: Colors.black,
+                                                backgroundColor: primaryColor,
+                                                foregroundColor: ThemeData.estimateBrightnessForColor(primaryColor) == Brightness.dark
+                                                    ? Colors.white
+                                                    : Colors.black,
                                                 shape: RoundedRectangleBorder(
                                                   borderRadius: BorderRadius.circular(8),
                                                 ),
@@ -4000,10 +3662,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 440),
                               child: Card(
-                                color: const Color(0xFF1E1E24),
+                                color: dialogBg,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  side: const BorderSide(color: Color(0xFF2E2E38)),
+                                  borderRadius: dialogRadius,
+                                  side: BorderSide(color: dialogBorder),
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(20),
@@ -4013,12 +3675,12 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                     children: [
                                       Row(
                                         children: [
-                                          const Icon(Icons.shield_outlined, color: Color(0xFFF59E0B)),
+                                          Icon(Icons.shield_outlined, color: primaryColor),
                                           const SizedBox(width: 8),
                                           Text(
                                             _SdkLocale.privacyConfirmTitle,
-                                            style: const TextStyle(
-                                              color: Colors.white,
+                                            style: TextStyle(
+                                              color: barTextColor,
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -4029,14 +3691,14 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                       // 1. Image mosaic review
                                       Text(
                                         _SdkLocale.privacyConfirmContent,
-                                        style: const TextStyle(
-                                          color: Colors.white70,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white70 : Colors.black87,
                                           fontSize: 13,
                                           height: 1.4,
                                         ),
                                       ),
                                       const SizedBox(height: 14),
-                                      const Divider(color: Color(0xFF2E2E38)),
+                                      Divider(color: dialogBorder),
                                       const SizedBox(height: 8),
                                       // 2. Diagnostics and account metadata sharing checkbox
                                       InkWell(
@@ -4056,9 +3718,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                 height: 24,
                                                 child: Checkbox(
                                                   value: _includeAccountAndDiagnostics,
-                                                  activeColor: const Color(0xFFF59E0B),
-                                                  checkColor: Colors.black,
-                                                  side: const BorderSide(color: Colors.white38),
+                                                  activeColor: primaryColor,
+                                                  checkColor: ThemeData.estimateBrightnessForColor(primaryColor) == Brightness.dark
+                                                      ? Colors.white
+                                                      : Colors.black,
+                                                  side: BorderSide(color: isDark ? Colors.white38 : Colors.black38),
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius: BorderRadius.circular(4),
                                                   ),
@@ -4078,8 +3742,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                       SnappySnag().reporterEmail != null && SnappySnag().reporterEmail!.isNotEmpty
                                                           ? _SdkLocale.privacyShareAccountWithEmail(SnappySnag().reporterEmail!)
                                                           : _SdkLocale.privacyShareAccount,
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
+                                                      style: TextStyle(
+                                                        color: barTextColor,
                                                         fontSize: 12,
                                                         fontWeight: FontWeight.w500,
                                                       ),
@@ -4088,7 +3752,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                     Text(
                                                       _SdkLocale.privacyAnonymousHint,
                                                       style: TextStyle(
-                                                        color: Colors.grey.shade400,
+                                                        color: barSubtextColor,
                                                         fontSize: 11,
                                                       ),
                                                     ),
@@ -4109,14 +3773,16 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                             },
                                             child: Text(
                                               _SdkLocale.backToEdit,
-                                              style: const TextStyle(color: Colors.white60),
+                                              style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
                                             ),
                                           ),
                                           const SizedBox(width: 8),
                                           ElevatedButton(
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: const Color(0xFFF59E0B),
-                                              foregroundColor: Colors.black,
+                                              backgroundColor: primaryColor,
+                                              foregroundColor: ThemeData.estimateBrightnessForColor(primaryColor) == Brightness.dark
+                                                  ? Colors.white
+                                                  : Colors.black,
                                               shape: RoundedRectangleBorder(
                                                 borderRadius: BorderRadius.circular(8),
                                               ),
@@ -4149,10 +3815,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 420),
                               child: Card(
-                                color: const Color(0xFF1E1E24),
+                                color: dialogBg,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  side: const BorderSide(color: Color(0xFF2E2E38)),
+                                  borderRadius: dialogRadius,
+                                  side: BorderSide(color: dialogBorder),
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(20),
@@ -4166,8 +3832,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                           const SizedBox(width: 8),
                                           Text(
                                             _SdkLocale.clearConfirmTitle,
-                                            style: const TextStyle(
-                                              color: Colors.white,
+                                            style: TextStyle(
+                                              color: barTextColor,
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -4177,8 +3843,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                       const SizedBox(height: 12),
                                       Text(
                                         _SdkLocale.clearConfirmBody,
-                                        style: const TextStyle(
-                                          color: Colors.white70,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white70 : Colors.black87,
                                           fontSize: 13,
                                           height: 1.5,
                                         ),
@@ -4193,7 +3859,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                             },
                                             child: Text(
                                               _SdkLocale.cancel,
-                                              style: const TextStyle(color: Colors.white54),
+                                              style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
                                             ),
                                           ),
                                           const SizedBox(width: 8),
@@ -4239,10 +3905,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 420),
                               child: Card(
-                                color: const Color(0xFF1E1E24),
+                                color: dialogBg,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  side: const BorderSide(color: Color(0xFF2E2E38)),
+                                  borderRadius: dialogRadius,
+                                  side: BorderSide(color: dialogBorder),
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(20),
@@ -4252,12 +3918,12 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                     children: [
                                       Row(
                                         children: [
-                                          const Icon(Icons.bookmark_border, color: Color(0xFFF59E0B)),
+                                          Icon(Icons.bookmark_border, color: primaryColor),
                                           const SizedBox(width: 8),
                                           Text(
                                             _SdkLocale.saveDraftPromptTitle,
-                                            style: const TextStyle(
-                                              color: Colors.white,
+                                            style: TextStyle(
+                                              color: barTextColor,
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -4267,8 +3933,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                       const SizedBox(height: 12),
                                       Text(
                                         _SdkLocale.saveDraftPromptOnCancel,
-                                        style: const TextStyle(
-                                          color: Colors.white70,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white70 : Colors.black87,
                                           fontSize: 13,
                                           height: 1.5,
                                         ),
@@ -4283,7 +3949,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                             },
                                             child: Text(
                                               _SdkLocale.cancel,
-                                              style: const TextStyle(color: Colors.white54),
+                                              style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
                                             ),
                                           ),
                                           TextButton(
@@ -4298,8 +3964,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                           ),
                                           ElevatedButton(
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: const Color(0xFFF59E0B),
-                                              foregroundColor: Colors.black,
+                                              backgroundColor: primaryColor,
+                                              foregroundColor: ThemeData.estimateBrightnessForColor(primaryColor) == Brightness.dark
+                                                  ? Colors.white
+                                                  : Colors.black,
                                               shape: RoundedRectangleBorder(
                                                 borderRadius: BorderRadius.circular(8),
                                               ),
@@ -4321,12 +3989,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                               }
                                               final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
                                               _closeDrawingOverlay();
-                                              ScaffoldMessenger.of(messengerContext).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(_SdkLocale.draftSavedToast),
-                                                  backgroundColor: Colors.black87,
-                                                  behavior: SnackBarBehavior.floating,
-                                                ),
+                                              _showToast(
+                                                targetContext: messengerContext,
+                                                message: _SdkLocale.draftSavedToast,
+                                                type: _SnappyToastType.success,
+                                                duration: const Duration(seconds: 3),
                                               );
                                             },
                                             child: Text(
@@ -4355,10 +4022,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 420),
                               child: Card(
-                                color: const Color(0xFF1E1E24),
+                                color: dialogBg,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  side: const BorderSide(color: Color(0xFF2E2E38)),
+                                  borderRadius: dialogRadius,
+                                  side: BorderSide(color: dialogBorder),
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(20),
@@ -4368,12 +4035,12 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                     children: [
                                       Row(
                                         children: [
-                                          const Icon(Icons.bookmark_border, color: Color(0xFFF59E0B)),
+                                          Icon(Icons.bookmark_border, color: primaryColor),
                                           const SizedBox(width: 8),
                                           Text(
                                             _SdkLocale.saveDraftPromptTitle,
-                                            style: const TextStyle(
-                                              color: Colors.white,
+                                            style: TextStyle(
+                                              color: barTextColor,
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -4383,8 +4050,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                       const SizedBox(height: 12),
                                       Text(
                                         _SdkLocale.saveDraftPromptOnFailedSend,
-                                        style: const TextStyle(
-                                          color: Colors.white70,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white70 : Colors.black87,
                                           fontSize: 13,
                                           height: 1.5,
                                         ),
@@ -4399,14 +4066,16 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                             },
                                             child: Text(
                                               _SdkLocale.stayOnScreen,
-                                              style: const TextStyle(color: Colors.white70),
+                                              style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
                                             ),
                                           ),
                                           const SizedBox(width: 8),
                                           ElevatedButton(
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: const Color(0xFFF59E0B),
-                                              foregroundColor: Colors.black,
+                                              backgroundColor: primaryColor,
+                                              foregroundColor: ThemeData.estimateBrightnessForColor(primaryColor) == Brightness.dark
+                                                  ? Colors.white
+                                                  : Colors.black,
                                               shape: RoundedRectangleBorder(
                                                 borderRadius: BorderRadius.circular(8),
                                               ),
@@ -4428,12 +4097,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                               }
                                               final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
                                               _closeDrawingOverlay();
-                                              ScaffoldMessenger.of(messengerContext).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(_SdkLocale.draftSavedToast),
-                                                  backgroundColor: Colors.black87,
-                                                  behavior: SnackBarBehavior.floating,
-                                                ),
+                                              _showToast(
+                                                targetContext: messengerContext,
+                                                message: _SdkLocale.draftSavedToast,
+                                                type: _SnappyToastType.success,
+                                                duration: const Duration(seconds: 3),
                                               );
                                             },
                                             child: Text(
@@ -4461,10 +4129,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 420),
                               child: Card(
-                                color: const Color(0xFF1E1E24),
+                                color: dialogBg,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  side: const BorderSide(color: Color(0xFF2E2E38)),
+                                  borderRadius: dialogRadius,
+                                  side: BorderSide(color: dialogBorder),
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(20),
@@ -4490,8 +4158,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                           Expanded(
                                             child: Text(
                                               _SdkLocale.devPasscodeDialogTitle,
-                                              style: const TextStyle(
-                                                color: Colors.white,
+                                              style: TextStyle(
+                                                color: barTextColor,
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.bold,
                                               ),
@@ -4502,8 +4170,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                       const SizedBox(height: 12),
                                       Text(
                                         _SdkLocale.devPasscodeDialogDesc,
-                                        style: const TextStyle(
-                                          color: Colors.white70,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white70 : Colors.black87,
                                           fontSize: 13,
                                           height: 1.4,
                                         ),
@@ -4515,8 +4183,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         keyboardType: TextInputType.number,
                                         maxLength: 4,
                                         textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: barTextColor,
                                           fontSize: 22,
                                           letterSpacing: 8,
                                           fontWeight: FontWeight.bold,
@@ -4527,17 +4195,17 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         ],
                                         decoration: InputDecoration(
                                           hintText: _SdkLocale.devPasscodeHint,
-                                          hintStyle: const TextStyle(
-                                            color: Colors.white24,
+                                          hintStyle: TextStyle(
+                                            color: isDark ? Colors.white24 : Colors.black26,
                                             letterSpacing: 8,
                                           ),
                                           counterText: '',
                                           filled: true,
-                                          fillColor: Colors.black26,
+                                          fillColor: isDark ? Colors.black26 : Colors.grey.shade100,
                                           contentPadding: const EdgeInsets.symmetric(vertical: 10),
                                           border: OutlineInputBorder(
                                             borderRadius: BorderRadius.circular(10),
-                                            borderSide: const BorderSide(color: Colors.white24),
+                                            borderSide: BorderSide(color: dialogBorder),
                                           ),
                                           focusedBorder: const OutlineInputBorder(
                                             borderRadius: BorderRadius.all(Radius.circular(10)),
@@ -4585,7 +4253,7 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                   },
                                             child: Text(
                                               _SdkLocale.devPasscodeCancel,
-                                              style: const TextStyle(color: Colors.white54),
+                                              style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
                                             ),
                                           ),
                                           const SizedBox(width: 8),
@@ -4663,10 +4331,10 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                       child: Container(
                         width: 56,
                         height: 56,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF59E0B),
+                        decoration: BoxDecoration(
+                          color: SnappySnag().theme.primaryColor,
                           shape: BoxShape.circle,
-                          boxShadow: [
+                          boxShadow: const [
                             BoxShadow(
                               color: Colors.black38,
                               blurRadius: 8,
@@ -4674,8 +4342,13 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                             ),
                           ],
                         ),
-                        child: const Center(
-                          child: SnappySnagIcon(size: 42, color: Colors.black),
+                        child: Center(
+                          child: SnappySnagIcon(
+                            size: 42,
+                            color: ThemeData.estimateBrightnessForColor(SnappySnag().theme.primaryColor) == Brightness.dark
+                                ? Colors.white
+                                : Colors.black,
+                          ),
                         ),
                       ),
                     ),
@@ -4737,11 +4410,6 @@ class _SimpleDiagnosticsSerializationDelegate implements DiagnosticsSerializatio
 }
 
 
-class _CommentPostResult {
-  final bool success;
-  final String? errorMessage;
-  _CommentPostResult(this.success, [this.errorMessage]);
-}
 
 class _FeedbackResponse {
   final int statusCode;
@@ -6582,23 +6250,6 @@ class _SdkLocale {
   static String get statusNetworkError => _isJa
       ? 'フィードバックの送信に失敗しました（ネットワークまたはサーバーエラー）。'
       : 'Failed to send feedback (Network or Server Error).';
-
-  static String get duplicateWarningTitle =>
-      _isJa ? 'この画面で報告されているフィードバック' : 'Feedbacks reported on this screen';
-  static String get duplicateWarningSub => _isJa
-      ? '送信する前に、同様の内容が既に報告されていないか確認してください。'
-      : 'Before submitting, check if your issue is already reported:';
-  static String get checkLater => _isJa ? '後で確認する' : 'I will check later';
-  static String get reportNewIssue =>
-      _isJa ? '新規にフィードバックを送信' : 'Report New Feedback';
-
-  static String get noCommentsYet => _isJa
-      ? 'コメントはまだありません。会話を始めましょう！'
-      : 'No comments yet. Start the conversation!';
-  static String get typeMessage => _isJa ? 'メッセージを入力...' : 'Type a message...';
-  static String get chatDisabled => _isJa
-      ? '管理者により現在チャット機能は無効に設定されています。'
-      : 'Chat is currently disabled by the project administrator.';
 
   static String get describeIssue =>
       _isJa ? 'フィードバックの詳細を説明してください' : 'Describe your feedback';

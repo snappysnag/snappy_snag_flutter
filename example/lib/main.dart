@@ -10,6 +10,13 @@ void main() {
     apiKey: 'demo', // Use 'demo' for instant local testing without an account
     showTriggerButton: true, // Show the floating SnappySnag trigger button
     enableLogging: true,
+    enableHaptics: true, // ⚡️ Tactile haptic feedback for pin drops and actions
+    theme: const SnappySnagTheme(
+      primaryColor: Color(0xFF6366F1), // Custom brand indigo accent
+      pinColor: Color(0xFFF95738), // Distinct pin marker color
+      borderRadius: 16.0, // Modern rounded corners
+      themeMode: ThemeMode.system, // Adapts to app theme (light/dark)
+    ),
     user: const SnappySnagUser(
       id: 'demo_user_1',
       name: 'Flutter Explorer',
@@ -61,10 +68,14 @@ class _ShowroomHomePageState extends State<ShowroomHomePage> {
   final TextEditingController _feedbackInput = TextEditingController(
     text: 'Example issue: The checkout button has incorrect padding.',
   );
+  final TextEditingController _passwordInput = TextEditingController(
+    text: 'secret_password_123',
+  );
 
   @override
   void dispose() {
     _feedbackInput.dispose();
+    _passwordInput.dispose();
     super.dispose();
   }
 
@@ -152,7 +163,7 @@ class _ShowroomHomePageState extends State<ShowroomHomePage> {
                   const SizedBox(height: 6),
                   const Text(
                     '1. Tap the floating lightning icon on the bottom right (or the button below).\n'
-                    '2. Tap anywhere on this screen to drop a Pin with a note.\n'
+                    '2. Tap anywhere on this screen to drop a Pin with tactile haptic feedback.\n'
                     '3. Tap "Send" — you will see the full widget tree and pin payload in your debug console.',
                     style: TextStyle(
                       fontSize: 13,
@@ -286,6 +297,51 @@ class _ShowroomHomePageState extends State<ShowroomHomePage> {
                           borderSide: BorderSide.none,
                         ),
                         hintText: 'Enter some text to test...',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Card 4: Sensitive Field (Auto-Masking Demonstration)
+            Card(
+              color: const Color(0xFF1E293B),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.security, color: Color(0xFFF59E0B), size: 18),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Sensitive Field (Auto-Masked)',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'SnappySnag automatically mosaics obscured/password inputs when captured.',
+                      style: TextStyle(color: Colors.white60, fontSize: 12),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _passwordInput,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFF0F172A),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none,
+                        ),
+                        hintText: 'Password / Sensitive data...',
                       ),
                     ),
                   ],
