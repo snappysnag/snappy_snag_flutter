@@ -82,6 +82,8 @@ class SnappySnag {
   bool get enableWidgetTree => _enableWidgetTree;
   bool _enableShakeTrigger = true;
   bool get enableShakeTrigger => _enableShakeTrigger;
+  bool _enableHaptics = true;
+  bool get enableHaptics => _enableHaptics;
   bool _enableLogging = false;
   bool get enableLogging => _enableLogging;
 
@@ -343,11 +345,13 @@ class SnappySnag {
     bool showTriggerButton = false,
     bool enableWidgetTree = true,
     bool enableShakeTrigger = true,
+    bool enableHaptics = true,
     bool enableLogging = false,
     String? supabaseUrl,
     bool forceDevInRelease = false,
   }) {
     _enableLogging = enableLogging;
+    _enableHaptics = enableHaptics;
     // Trigger button visibility:
     // Default is hidden (false) for safety regardless of mode.
     // Set showTriggerButton: true to display the button for manual testing.
@@ -907,6 +911,9 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
     // Immediately capture screenshot (zero delay to freeze button-press moment)
     final Uint8List? imageBytes = await _screenshotController.capture();
+    if (SnappySnag().enableHaptics) {
+      HapticFeedback.mediumImpact();
+    }
 
     // After capture completes, update state to hide trigger button and show loading overlay
     if (mounted) {
@@ -1688,6 +1695,9 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     final success = feedbackRes.statusCode == 200;
 
     if (success) {
+      if (SnappySnag().enableHaptics) {
+        HapticFeedback.lightImpact();
+      }
       // Clear draft on successful submission and close overlay
       await _SnappyDraftData.clear();
       setState(() {
@@ -2549,6 +2559,9 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                       comment: '',
                                                       target: detectedTarget,
                                                     );
+                                                    if (SnappySnag().enableHaptics) {
+                                                      HapticFeedback.mediumImpact();
+                                                    }
                                                     setState(() {
                                                       _pins.add(newPin);
                                                       _editingPin = newPin;
@@ -2714,6 +2727,9 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                   },
                                                   onPanStart: (details) {
                                                     if (_isSendingFeedback || _isMemoOpen || _editingPin != null) return;
+                                                    if (SnappySnag().enableHaptics) {
+                                                      HapticFeedback.selectionClick();
+                                                    }
                                                     _dragStartGlobal = details.globalPosition;
                                                     _dragStartPinX = pin.xRatio * canvasSize.width;
                                                     _dragStartPinY = pin.yRatio * canvasSize.height;
@@ -2852,9 +2868,14 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                   tooltip: 'Pin Marker (Max 5)',
                                   onPressed: _isSendingFeedback
                                       ? null
-                                      : () => setState(
+                                      : () {
+                                          if (SnappySnag().enableHaptics) {
+                                            HapticFeedback.selectionClick();
+                                          }
+                                          setState(
                                             () => _activeTool = SnappyDrawingTool.pin,
-                                          ),
+                                          );
+                                        },
                                 ),
                                 if (_pins.isNotEmpty)
                                   Positioned(
@@ -2889,9 +2910,14 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                               tooltip: 'Mosaic Blur',
                               onPressed: _isSendingFeedback
                                   ? null
-                                  : () => setState(
+                                  : () {
+                                      if (SnappySnag().enableHaptics) {
+                                        HapticFeedback.selectionClick();
+                                      }
+                                      setState(
                                         () => _activeTool = SnappyDrawingTool.mosaic,
-                                      ),
+                                      );
+                                    },
                             ),
                             const SizedBox(width: 8),
                             // 3. Undo (chronological action history)
@@ -2905,7 +2931,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                               tooltip: 'Undo',
                               onPressed: _isSendingFeedback || _undoStack.isEmpty
                                   ? null
-                                  : () => setState(() {
+                                  : () {
+                                      if (SnappySnag().enableHaptics) {
+                                        HapticFeedback.selectionClick();
+                                      }
+                                      setState(() {
                                         final last = _undoStack.removeLast();
                                         _redoStack.add(last);
                                         if (last is SnappyPin) {
@@ -2913,7 +2943,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         } else if (last is DrawingPoint) {
                                           _drawingPoints.remove(last);
                                         }
-                                      }),
+                                      });
+                                    },
                             ),
                             // 4. Redo (restore undone action)
                             IconButton(
@@ -2926,7 +2957,11 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                               tooltip: 'Redo',
                               onPressed: _isSendingFeedback || _redoStack.isEmpty
                                   ? null
-                                  : () => setState(() {
+                                  : () {
+                                      if (SnappySnag().enableHaptics) {
+                                        HapticFeedback.selectionClick();
+                                      }
+                                      setState(() {
                                         final next = _redoStack.removeLast();
                                         _undoStack.add(next);
                                         if (next is SnappyPin) {
@@ -2934,7 +2969,8 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                         } else if (next is DrawingPoint) {
                                           _drawingPoints.add(next);
                                         }
-                                      }),
+                                      });
+                                    },
                             ),
                             // 5. Clear all - prompts confirmation dialog
                             IconButton(
@@ -3019,6 +3055,9 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                   icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
                                                   tooltip: _SdkLocale.delete,
                                                   onPressed: () {
+                                                    if (SnappySnag().enableHaptics) {
+                                                      HapticFeedback.lightImpact();
+                                                    }
                                                     setState(() {
                                                       _pins.removeWhere((p) => p.id == _editingPin!.id);
                                                       _renumberPins();

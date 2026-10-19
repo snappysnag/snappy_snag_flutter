@@ -1,3 +1,13 @@
+## 0.0.4
+
+* **Tactile Haptic Feedback**:
+  * Added crisp tactile haptic feedback for key user interactions:
+    * Dropping new pins (`HapticFeedback.mediumImpact()`)
+    * Dragging pins & switching tools (`HapticFeedback.selectionClick()`)
+    * Deleting pins & submitting feedback (`HapticFeedback.lightImpact()`)
+    * Capturing screenshot freeze (`HapticFeedback.mediumImpact()`)
+  * Configurable via `SnappySnag().initialize(enableHaptics: true/false)` (defaults to `true`).
+
 ## 0.0.3
 
 * **Zero-Friction Sandbox / Demo Mode**:
