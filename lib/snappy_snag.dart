@@ -66,6 +66,467 @@ class SnappySnagTheme {
   }
 }
 
+/// Localization dictionary defining all user-facing texts and dialog messages in SnappySnag SDK.
+///
+/// Use [SnappySnagLocalization.en()] for English, [SnappySnagLocalization.ja()] for Japanese,
+/// or instantiate with custom strings to support other languages (e.g. French, Chinese)
+/// or customize specific phrasing using [copyWith].
+class SnappySnagLocalization {
+  final String disabledTitle;
+  final String disabledContent;
+  final String start;
+  final String ok;
+  final String feedbackModeDialogTitle;
+  final String feedbackModeDialogContent;
+  final String feedbackModeAlreadyVisibleTitle;
+  final String feedbackModeAlreadyVisibleContent;
+  final String privacyConfirmTitle;
+  final String privacyConfirmContent;
+  final String Function(String email)? privacyShareAccountWithEmailBuilder;
+  final String privacyShareAccount;
+  final String privacyAnonymousHint;
+  final String backToEdit;
+  final String sendConfirm;
+  final String cancel;
+  final String send;
+  final String sending;
+  final String titleFeedback;
+  final String statusSuccess;
+  final String statusDemoSuccess;
+  final String statusRateLimit;
+  final String statusGenericError;
+  final String userModeUnavailable;
+  final String statusInvalidKey;
+  final String statusUnauthorizedPackage;
+  final String statusNetworkError;
+  final String done;
+  final String delete;
+  final String pinCommentTitle;
+  final String pinCommentHint;
+  final String pinLimitReached;
+  final String pinRequiredSnackBar;
+  final String existingPinsToggle;
+  final String sectionPinsTitle;
+  final String allScreenPinsTitle;
+  final String allScreenPinsSub;
+  final String allScreenPinsBtn;
+  final String previewOriginalScreenshot;
+  final String originalScreenshotNotFound;
+  final String issueBadgePrefix;
+  final String issueBadgeSuffix;
+  final String noCommentForPin;
+  final String close;
+  final String back;
+  final String elementAttachedBadge;
+  final String analyzingScreen;
+  final String clearConfirmTitle;
+  final String clearConfirmBody;
+  final String clearConfirmButton;
+  final String draftFoundTitle;
+  final String draftFoundContent;
+  final String resumeDraft;
+  final String discardAndNewCapture;
+  final String saveDraftPromptTitle;
+  final String saveDraftPromptOnCancel;
+  final String saveDraftPromptOnFailedSend;
+  final String saveDraft;
+  final String discardDraft;
+  final String stayOnScreen;
+  final String draftSavedToast;
+  final String devPasscodeDialogTitle;
+  final String devPasscodeDialogDesc;
+  final String devPasscodeHint;
+  final String devPasscodeChecking;
+  final String devPasscodeInvalid;
+  final String devPasscodeSubmit;
+  final String devPasscodeCancel;
+
+  const SnappySnagLocalization({
+    required this.disabledTitle,
+    required this.disabledContent,
+    required this.start,
+    required this.ok,
+    required this.feedbackModeDialogTitle,
+    required this.feedbackModeDialogContent,
+    required this.feedbackModeAlreadyVisibleTitle,
+    required this.feedbackModeAlreadyVisibleContent,
+    required this.privacyConfirmTitle,
+    required this.privacyConfirmContent,
+    this.privacyShareAccountWithEmailBuilder,
+    required this.privacyShareAccount,
+    required this.privacyAnonymousHint,
+    required this.backToEdit,
+    required this.sendConfirm,
+    required this.cancel,
+    required this.send,
+    required this.sending,
+    required this.titleFeedback,
+    required this.statusSuccess,
+    required this.statusDemoSuccess,
+    required this.statusRateLimit,
+    required this.statusGenericError,
+    required this.userModeUnavailable,
+    required this.statusInvalidKey,
+    required this.statusUnauthorizedPackage,
+    required this.statusNetworkError,
+    required this.done,
+    required this.delete,
+    required this.pinCommentTitle,
+    required this.pinCommentHint,
+    required this.pinLimitReached,
+    required this.pinRequiredSnackBar,
+    required this.existingPinsToggle,
+    required this.sectionPinsTitle,
+    required this.allScreenPinsTitle,
+    required this.allScreenPinsSub,
+    required this.allScreenPinsBtn,
+    required this.previewOriginalScreenshot,
+    required this.originalScreenshotNotFound,
+    required this.issueBadgePrefix,
+    required this.issueBadgeSuffix,
+    required this.noCommentForPin,
+    required this.close,
+    required this.back,
+    required this.elementAttachedBadge,
+    required this.analyzingScreen,
+    required this.clearConfirmTitle,
+    required this.clearConfirmBody,
+    required this.clearConfirmButton,
+    required this.draftFoundTitle,
+    required this.draftFoundContent,
+    required this.resumeDraft,
+    required this.discardAndNewCapture,
+    required this.saveDraftPromptTitle,
+    required this.saveDraftPromptOnCancel,
+    required this.saveDraftPromptOnFailedSend,
+    required this.saveDraft,
+    required this.discardDraft,
+    required this.stayOnScreen,
+    required this.draftSavedToast,
+    required this.devPasscodeDialogTitle,
+    required this.devPasscodeDialogDesc,
+    required this.devPasscodeHint,
+    required this.devPasscodeChecking,
+    required this.devPasscodeInvalid,
+    required this.devPasscodeSubmit,
+    required this.devPasscodeCancel,
+  });
+
+  String privacyShareAccountWithEmail(String email) {
+    if (privacyShareAccountWithEmailBuilder != null) {
+      return privacyShareAccountWithEmailBuilder!(email);
+    }
+    return 'Include diagnostics and account info ($email) to resolve issues';
+  }
+
+  /// Built-in English localization dictionary.
+  factory SnappySnagLocalization.en() => const SnappySnagLocalization(
+        disabledTitle: 'Feedback Feature Disabled',
+        disabledContent: 'The feedback feature is currently disabled and unavailable.',
+        start: 'Start',
+        ok: 'OK',
+        feedbackModeDialogTitle: 'Feedback Mode',
+        feedbackModeDialogContent:
+            'Navigate freely to the screen you want to report.\nTap the button at the bottom right to capture.',
+        feedbackModeAlreadyVisibleTitle: 'Feedback Button',
+        feedbackModeAlreadyVisibleContent:
+            'The feedback button is already visible at the bottom right.\nTap it anytime to report the current screen.',
+        privacyConfirmTitle: 'Privacy Check',
+        privacyConfirmContent:
+            'Are personal or sensitive details (passwords, address, photos) properly masked with blur?',
+        privacyShareAccount: 'Include device diagnostics to resolve issues',
+        privacyAnonymousHint: 'Uncheck to submit anonymously (screenshot and memo only)',
+        backToEdit: 'Back to Edit',
+        sendConfirm: 'Send',
+        cancel: 'Cancel',
+        send: 'Send',
+        sending: 'Sending...',
+        titleFeedback: 'SnappySnag Feedback',
+        statusSuccess: 'Feedback sent successfully!',
+        statusDemoSuccess: '🎯 [Demo Mode] Captured! Check debug console for details.',
+        statusRateLimit: 'Rate limit exceeded. Please wait a minute before retrying.',
+        statusGenericError: 'Failed to send feedback. Please try again later.',
+        userModeUnavailable: 'The feedback feature is currently unavailable. Please try again later.',
+        statusInvalidKey: '[Dev Error] Invalid or inactive API Key.',
+        statusUnauthorizedPackage: '[Dev Error] This app package is not authorized.',
+        statusNetworkError: 'Failed to send feedback (Network or Server Error).',
+        done: 'Done',
+        delete: 'Delete',
+        pinCommentTitle: 'Pin Comment',
+        pinCommentHint: 'Add comment for this pin...',
+        pinLimitReached: 'You can place up to 5 pins.',
+        pinRequiredSnackBar: 'Please tap the screen to place a pin and add a comment.',
+        existingPinsToggle: 'Issue Areas',
+        sectionPinsTitle: 'Issues in this area',
+        allScreenPinsTitle: 'All Issues on this Screen',
+        allScreenPinsSub: 'All pins including off-screen/scrolled areas',
+        allScreenPinsBtn: 'All Issues',
+        previewOriginalScreenshot: 'Screenshot Preview',
+        originalScreenshotNotFound: 'Original screenshot not found',
+        issueBadgePrefix: 'Issues: ',
+        issueBadgeSuffix: '',
+        noCommentForPin: '(No comment)',
+        close: 'Close',
+        back: 'Back',
+        elementAttachedBadge: 'Element',
+        analyzingScreen: 'Analyzing screen...',
+        clearConfirmTitle: 'Clear All?',
+        clearConfirmBody: 'All pins and mosaic strokes will be deleted. This action cannot be undone.',
+        clearConfirmButton: 'Clear All',
+        draftFoundTitle: 'Saved Draft Found',
+        draftFoundContent: 'You have a saved feedback draft. Would you like to resume it?',
+        resumeDraft: 'Resume Draft',
+        discardAndNewCapture: 'Discard & Capture New',
+        saveDraftPromptTitle: 'Save Draft',
+        saveDraftPromptOnCancel: 'Would you like to save your edits as a draft?',
+        saveDraftPromptOnFailedSend: 'Failed to send feedback. Would you like to save it as a draft?',
+        saveDraft: 'Save Draft',
+        discardDraft: 'Discard',
+        stayOnScreen: 'Stay Here',
+        draftSavedToast: 'Draft saved successfully.',
+        devPasscodeDialogTitle: 'Dev Passcode Required',
+        devPasscodeDialogDesc:
+            'Please enter the 4-digit passcode configured in your dashboard project settings to view internal tickets.',
+        devPasscodeHint: '0000',
+        devPasscodeChecking: 'Checking...',
+        devPasscodeInvalid: 'Invalid passcode',
+        devPasscodeSubmit: 'Unlock',
+        devPasscodeCancel: 'Cancel',
+      );
+
+  /// Built-in Japanese localization dictionary.
+  factory SnappySnagLocalization.ja() => SnappySnagLocalization(
+        disabledTitle: 'フィードバック機能は無効です',
+        disabledContent: '現在フィードバック機能は無効に設定されているため、ご利用いただけません。',
+        start: '開始する',
+        ok: '了解',
+        feedbackModeDialogTitle: 'フィードバックモード',
+        feedbackModeDialogContent:
+            'アプリを自由に操作して報告したい画面へ移動してください。\n目的の画面で右下のボタンをタップすると撮影できます。',
+        feedbackModeAlreadyVisibleTitle: 'フィードバックボタン',
+        feedbackModeAlreadyVisibleContent:
+            'フィードバック用のボタンは既に画面右下に表示されています。\nいつでもタップして現在の画面を報告できます。',
+        privacyConfirmTitle: '送信前の確認',
+        privacyConfirmContent:
+            '画面内の個人情報や機密情報（パスワード・住所・顔写真など）はモザイクで隠れていますか？',
+        privacyShareAccountWithEmailBuilder: (email) =>
+            '問題解決のために診断情報とアカウント情報 ($email) を共有する',
+        privacyShareAccount: '問題解決のためにデバイス診断情報を共有する',
+        privacyAnonymousHint: '※チェックを外すと匿名（画像とメモのみ）で送信されます',
+        backToEdit: '戻って編集',
+        sendConfirm: '送信する',
+        cancel: 'キャンセル',
+        send: '送信',
+        sending: '送信中...',
+        titleFeedback: 'フィードバック送信',
+        statusSuccess: 'フィードバックの送信が成功しました！',
+        statusDemoSuccess: '🎯 [デモモード] 送信完了！コンソールログを確認してください。',
+        statusRateLimit: '送信頻度の上限を超えました。1分ほど待って再度お試しください。',
+        statusGenericError: 'フィードバックの送信に失敗しました。しばらく時間をおいて再度お試しください。',
+        userModeUnavailable: '現在フィードバック機能をご利用いただけません。しばらく時間をおいて再度お試しください。',
+        statusInvalidKey: '[開発エラー] APIキーが無効または停止されています。',
+        statusUnauthorizedPackage: '[開発エラー] このアプリパッケージは許可されていません。',
+        statusNetworkError: 'フィードバックの送信に失敗しました（ネットワークまたはサーバーエラー）。',
+        done: '完了',
+        delete: '削除',
+        pinCommentTitle: 'ピンのコメント',
+        pinCommentHint: 'この箇所へのコメントを入力...',
+        pinLimitReached: 'ピンは最大5個まで配置できます。',
+        pinRequiredSnackBar: '画面をタップしてピンを立て、コメントを入力してください。',
+        existingPinsToggle: '指摘エリア',
+        sectionPinsTitle: 'このエリアの指摘一覧',
+        allScreenPinsTitle: 'この画面の全指摘一覧',
+        allScreenPinsSub: '画面外・スクロール先を含むすべての指摘',
+        allScreenPinsBtn: '全指摘一覧',
+        previewOriginalScreenshot: '元スクショプレビュー',
+        originalScreenshotNotFound: '元スクショ画像がありません',
+        issueBadgePrefix: '指摘 ',
+        issueBadgeSuffix: '件',
+        noCommentForPin: '（コメントなし）',
+        close: '閉じる',
+        back: '戻る',
+        elementAttachedBadge: '要素',
+        analyzingScreen: '画面を解析中...',
+        clearConfirmTitle: '全て消去しますか？',
+        clearConfirmBody: 'ピンとモザイクを全て削除します。この操作は元に戻せません。',
+        clearConfirmButton: '全て消去',
+        draftFoundTitle: '保存された下書き',
+        draftFoundContent: '前回保存した下書きがあります。下書きを再開しますか？',
+        resumeDraft: '下書きを再開',
+        discardAndNewCapture: '破棄して新規撮影',
+        saveDraftPromptTitle: '下書きの保存',
+        saveDraftPromptOnCancel: '編集中の内容を下書きとして保存しますか？',
+        saveDraftPromptOnFailedSend: '送信に失敗しました。この内容を下書きとして保存しますか？',
+        saveDraft: '下書き保存',
+        discardDraft: '破棄する',
+        stayOnScreen: '画面に留まる',
+        draftSavedToast: '下書きに保存しました',
+        devPasscodeDialogTitle: '開発者パスコード認証',
+        devPasscodeDialogDesc:
+            '内部指摘一覧を表示するには、ダッシュボードのプロジェクト設定に表示されている4桁のパスコードを入力してください。',
+        devPasscodeHint: '0000',
+        devPasscodeChecking: '確認中...',
+        devPasscodeInvalid: 'パスコードが正しくありません',
+        devPasscodeSubmit: '認証',
+        devPasscodeCancel: 'キャンセル',
+      );
+
+  /// Resolves the built-in dictionary based on a given [locale].
+  /// Defaults to Japanese if the language code starts with 'ja', otherwise English.
+  factory SnappySnagLocalization.fromLocale(Locale? locale) {
+    final code = locale?.languageCode.toLowerCase() ??
+        ui.PlatformDispatcher.instance.locale.languageCode.toLowerCase();
+    if (code.startsWith('ja')) {
+      return SnappySnagLocalization.ja();
+    }
+    return SnappySnagLocalization.en();
+  }
+
+  /// Creates a copy of this localization dictionary with specified fields replaced.
+  SnappySnagLocalization copyWith({
+    String? disabledTitle,
+    String? disabledContent,
+    String? start,
+    String? ok,
+    String? feedbackModeDialogTitle,
+    String? feedbackModeDialogContent,
+    String? feedbackModeAlreadyVisibleTitle,
+    String? feedbackModeAlreadyVisibleContent,
+    String? privacyConfirmTitle,
+    String? privacyConfirmContent,
+    String Function(String email)? privacyShareAccountWithEmailBuilder,
+    String? privacyShareAccount,
+    String? privacyAnonymousHint,
+    String? backToEdit,
+    String? sendConfirm,
+    String? cancel,
+    String? send,
+    String? sending,
+    String? titleFeedback,
+    String? statusSuccess,
+    String? statusDemoSuccess,
+    String? statusRateLimit,
+    String? statusGenericError,
+    String? userModeUnavailable,
+    String? statusInvalidKey,
+    String? statusUnauthorizedPackage,
+    String? statusNetworkError,
+    String? done,
+    String? delete,
+    String? pinCommentTitle,
+    String? pinCommentHint,
+    String? pinLimitReached,
+    String? pinRequiredSnackBar,
+    String? existingPinsToggle,
+    String? sectionPinsTitle,
+    String? allScreenPinsTitle,
+    String? allScreenPinsSub,
+    String? allScreenPinsBtn,
+    String? previewOriginalScreenshot,
+    String? originalScreenshotNotFound,
+    String? issueBadgePrefix,
+    String? issueBadgeSuffix,
+    String? noCommentForPin,
+    String? close,
+    String? back,
+    String? elementAttachedBadge,
+    String? analyzingScreen,
+    String? clearConfirmTitle,
+    String? clearConfirmBody,
+    String? clearConfirmButton,
+    String? draftFoundTitle,
+    String? draftFoundContent,
+    String? resumeDraft,
+    String? discardAndNewCapture,
+    String? saveDraftPromptTitle,
+    String? saveDraftPromptOnCancel,
+    String? saveDraftPromptOnFailedSend,
+    String? saveDraft,
+    String? discardDraft,
+    String? stayOnScreen,
+    String? draftSavedToast,
+    String? devPasscodeDialogTitle,
+    String? devPasscodeDialogDesc,
+    String? devPasscodeHint,
+    String? devPasscodeChecking,
+    String? devPasscodeInvalid,
+    String? devPasscodeSubmit,
+    String? devPasscodeCancel,
+  }) {
+    return SnappySnagLocalization(
+      disabledTitle: disabledTitle ?? this.disabledTitle,
+      disabledContent: disabledContent ?? this.disabledContent,
+      start: start ?? this.start,
+      ok: ok ?? this.ok,
+      feedbackModeDialogTitle: feedbackModeDialogTitle ?? this.feedbackModeDialogTitle,
+      feedbackModeDialogContent: feedbackModeDialogContent ?? this.feedbackModeDialogContent,
+      feedbackModeAlreadyVisibleTitle: feedbackModeAlreadyVisibleTitle ?? this.feedbackModeAlreadyVisibleTitle,
+      feedbackModeAlreadyVisibleContent: feedbackModeAlreadyVisibleContent ?? this.feedbackModeAlreadyVisibleContent,
+      privacyConfirmTitle: privacyConfirmTitle ?? this.privacyConfirmTitle,
+      privacyConfirmContent: privacyConfirmContent ?? this.privacyConfirmContent,
+      privacyShareAccountWithEmailBuilder:
+          privacyShareAccountWithEmailBuilder ?? this.privacyShareAccountWithEmailBuilder,
+      privacyShareAccount: privacyShareAccount ?? this.privacyShareAccount,
+      privacyAnonymousHint: privacyAnonymousHint ?? this.privacyAnonymousHint,
+      backToEdit: backToEdit ?? this.backToEdit,
+      sendConfirm: sendConfirm ?? this.sendConfirm,
+      cancel: cancel ?? this.cancel,
+      send: send ?? this.send,
+      sending: sending ?? this.sending,
+      titleFeedback: titleFeedback ?? this.titleFeedback,
+      statusSuccess: statusSuccess ?? this.statusSuccess,
+      statusDemoSuccess: statusDemoSuccess ?? this.statusDemoSuccess,
+      statusRateLimit: statusRateLimit ?? this.statusRateLimit,
+      statusGenericError: statusGenericError ?? this.statusGenericError,
+      userModeUnavailable: userModeUnavailable ?? this.userModeUnavailable,
+      statusInvalidKey: statusInvalidKey ?? this.statusInvalidKey,
+      statusUnauthorizedPackage: statusUnauthorizedPackage ?? this.statusUnauthorizedPackage,
+      statusNetworkError: statusNetworkError ?? this.statusNetworkError,
+      done: done ?? this.done,
+      delete: delete ?? this.delete,
+      pinCommentTitle: pinCommentTitle ?? this.pinCommentTitle,
+      pinCommentHint: pinCommentHint ?? this.pinCommentHint,
+      pinLimitReached: pinLimitReached ?? this.pinLimitReached,
+      pinRequiredSnackBar: pinRequiredSnackBar ?? this.pinRequiredSnackBar,
+      existingPinsToggle: existingPinsToggle ?? this.existingPinsToggle,
+      sectionPinsTitle: sectionPinsTitle ?? this.sectionPinsTitle,
+      allScreenPinsTitle: allScreenPinsTitle ?? this.allScreenPinsTitle,
+      allScreenPinsSub: allScreenPinsSub ?? this.allScreenPinsSub,
+      allScreenPinsBtn: allScreenPinsBtn ?? this.allScreenPinsBtn,
+      previewOriginalScreenshot: previewOriginalScreenshot ?? this.previewOriginalScreenshot,
+      originalScreenshotNotFound: originalScreenshotNotFound ?? this.originalScreenshotNotFound,
+      issueBadgePrefix: issueBadgePrefix ?? this.issueBadgePrefix,
+      issueBadgeSuffix: issueBadgeSuffix ?? this.issueBadgeSuffix,
+      noCommentForPin: noCommentForPin ?? this.noCommentForPin,
+      close: close ?? this.close,
+      back: back ?? this.back,
+      elementAttachedBadge: elementAttachedBadge ?? this.elementAttachedBadge,
+      analyzingScreen: analyzingScreen ?? this.analyzingScreen,
+      clearConfirmTitle: clearConfirmTitle ?? this.clearConfirmTitle,
+      clearConfirmBody: clearConfirmBody ?? this.clearConfirmBody,
+      clearConfirmButton: clearConfirmButton ?? this.clearConfirmButton,
+      draftFoundTitle: draftFoundTitle ?? this.draftFoundTitle,
+      draftFoundContent: draftFoundContent ?? this.draftFoundContent,
+      resumeDraft: resumeDraft ?? this.resumeDraft,
+      discardAndNewCapture: discardAndNewCapture ?? this.discardAndNewCapture,
+      saveDraftPromptTitle: saveDraftPromptTitle ?? this.saveDraftPromptTitle,
+      saveDraftPromptOnCancel: saveDraftPromptOnCancel ?? this.saveDraftPromptOnCancel,
+      saveDraftPromptOnFailedSend: saveDraftPromptOnFailedSend ?? this.saveDraftPromptOnFailedSend,
+      saveDraft: saveDraft ?? this.saveDraft,
+      discardDraft: discardDraft ?? this.discardDraft,
+      stayOnScreen: stayOnScreen ?? this.stayOnScreen,
+      draftSavedToast: draftSavedToast ?? this.draftSavedToast,
+      devPasscodeDialogTitle: devPasscodeDialogTitle ?? this.devPasscodeDialogTitle,
+      devPasscodeDialogDesc: devPasscodeDialogDesc ?? this.devPasscodeDialogDesc,
+      devPasscodeHint: devPasscodeHint ?? this.devPasscodeHint,
+      devPasscodeChecking: devPasscodeChecking ?? this.devPasscodeChecking,
+      devPasscodeInvalid: devPasscodeInvalid ?? this.devPasscodeInvalid,
+      devPasscodeSubmit: devPasscodeSubmit ?? this.devPasscodeSubmit,
+      devPasscodeCancel: devPasscodeCancel ?? this.devPasscodeCancel,
+    );
+  }
+}
+
 /// Representation of reporter/user information for SnappySnag.
 class SnappySnagUser {
   /// Unique identifier of the user (e.g. database UUID, user ID).
@@ -128,6 +589,32 @@ class SnappySnag {
   bool get enableLogging => _enableLogging;
   SnappySnagTheme _theme = const SnappySnagTheme();
   SnappySnagTheme get theme => _theme;
+  Locale? _locale;
+  Locale? get locale => _locale;
+  SnappySnagLocalization? _customLocalization;
+
+  /// Active localization dictionary for SnappySnag SDK.
+  /// Returns custom localization if configured, or resolves based on [locale] / device OS settings.
+  SnappySnagLocalization get localization {
+    if (_customLocalization != null) {
+      return _customLocalization!;
+    }
+    return SnappySnagLocalization.fromLocale(_locale);
+  }
+
+  /// Sets or dynamically updates the active UI locale.
+  void setLocale(Locale? locale) {
+    _locale = locale;
+    _customLocalization = null;
+    SnappySnag._log('🌐 SnappySnag: Locale updated to ${locale?.languageCode}');
+  }
+
+  /// Sets a custom localization dictionary overriding standard translations.
+  /// Pass `null` to clear the custom dictionary and fall back to [locale] resolution.
+  void setLocalization(SnappySnagLocalization? localization) {
+    _customLocalization = localization;
+    SnappySnag._log('🌐 SnappySnag: Custom localization dictionary ${localization != null ? "applied" : "cleared"}');
+  }
 
   /// 4-digit passcode for unlocking developer features held in memory during the app session.
   /// Never written to local storage, automatically cleared when the app terminates.
@@ -407,12 +894,16 @@ class SnappySnag {
     bool enableHaptics = true,
     bool enableLogging = false,
     SnappySnagTheme? theme,
+    Locale? locale,
+    SnappySnagLocalization? localization,
     String? supabaseUrl,
     bool forceDevInRelease = false,
   }) {
     if (theme != null) {
       _theme = theme;
     }
+    _locale = locale;
+    _customLocalization = localization;
     _enableLogging = enableLogging;
     _enableHaptics = enableHaptics;
     // Trigger button visibility:
@@ -524,7 +1015,7 @@ class SnappySnagOverlay extends StatefulWidget {
   });
 
   @override
-  State<SnappySnagOverlay> createState() => _SnappySnagOverlayState();
+  State<SnappySnagOverlay> createState() => SnappySnagOverlayState();
 }
 
 enum _SnappyOverlayMode {
@@ -533,7 +1024,7 @@ enum _SnappyOverlayMode {
   drawing,
 }
 
-class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
+class SnappySnagOverlayState extends State<SnappySnagOverlay> {
   final ScreenshotController _screenshotController = ScreenshotController();
   StreamSubscription<UserAccelerometerEvent>? _accelerometerSubscription;
   bool _isCapturing = false;
@@ -591,6 +1082,12 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
   DateTime? _firstFlipTime;
   double _lastSignX = 0;
   double _lastSignY = 0;
+
+  // Custom Toast State (rendered at top of overlay stack)
+  String? _toastMessage;
+  _SnappyToastType _toastType = _SnappyToastType.info;
+  bool _isToastVisible = false;
+  Timer? _toastTimer;
 
   @override
   void initState() {
@@ -666,9 +1163,22 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
   @override
   void dispose() {
+    _toastTimer?.cancel();
     _accelerometerSubscription?.cancel();
     _devPasscodeInputController.dispose();
     super.dispose();
+  }
+
+  @visibleForTesting
+  void showToastForTesting({
+    required String message,
+    bool isSuccess = true,
+  }) {
+    _showToast(
+      targetContext: context,
+      message: message,
+      type: isSuccess ? _SnappyToastType.success : _SnappyToastType.error,
+    );
   }
 
   void _showToast({
@@ -678,73 +1188,21 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
     Duration duration = const Duration(seconds: 4),
   }) {
     if (!mounted) return;
-    final theme = SnappySnag().theme;
-    final isDark = theme.isDark(targetContext);
-    final toastBg = isDark ? const Color(0xFF1E1E24) : Colors.white;
-    final toastBorder = isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
-    final textColor = isDark ? Colors.white : Colors.black87;
 
-    final IconData iconData;
-    final Color iconColor;
-    switch (type) {
-      case _SnappyToastType.success:
-        iconData = Icons.check_circle_rounded;
-        iconColor = const Color(0xFF10B981); // Emerald Green
-        break;
-      case _SnappyToastType.error:
-        iconData = Icons.error_outline_rounded;
-        iconColor = const Color(0xFFEF4444); // Rose Red
-        break;
-      case _SnappyToastType.warning:
-        iconData = Icons.warning_amber_rounded;
-        iconColor = const Color(0xFFF59E0B); // Amber
-        break;
-      case _SnappyToastType.info:
-        iconData = Icons.info_outline_rounded;
-        iconColor = theme.primaryColor;
-        break;
-    }
+    _toastTimer?.cancel();
+    setState(() {
+      _toastMessage = message;
+      _toastType = type;
+      _isToastVisible = true;
+    });
 
-    final messenger = ScaffoldMessenger.maybeOf(targetContext);
-    if (messenger == null) return;
-
-    final isButtonVisible =
-        (SnappySnag().isTriggerButtonVisible.value ||
-         SnappySnag().isFeedbackModeActive.value) &&
-        _overlayMode == _SnappyOverlayMode.none;
-
-    final safeBottom = MediaQuery.maybeOf(targetContext)?.padding.bottom ?? 0.0;
-    final bottomMargin = (isButtonVisible ? 84.0 : 16.0) + safeBottom;
-
-    messenger.showSnackBar(
-      SnackBar(
-        elevation: 6,
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.fromLTRB(16, 0, 16, bottomMargin),
-        backgroundColor: toastBg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(theme.borderRadius > 16 ? 16 : theme.borderRadius),
-          side: BorderSide(color: toastBorder),
-        ),
-        duration: duration,
-        content: Row(
-          children: [
-            Icon(iconData, color: iconColor, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                message,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    _toastTimer = Timer(duration, () {
+      if (mounted) {
+        setState(() {
+          _isToastVisible = false;
+        });
+      }
+    });
   }
 
   void _showErrorDialog(String message) {
@@ -4290,6 +4748,49 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
                           ),
                         ),
                       ),
+
+                    // 8. Fullscreen loading overlay while sending feedback
+                    if (_isSendingFeedback)
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          child: Center(
+                            child: Card(
+                              color: dialogBg,
+                              elevation: 12,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: dialogRadius,
+                                side: BorderSide(color: dialogBorder),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(
+                                      width: 36,
+                                      height: 36,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 3,
+                                        valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 18),
+                                    Text(
+                                      _SdkLocale.sending,
+                                      style: TextStyle(
+                                        color: barTextColor,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -4357,6 +4858,83 @@ class _SnappySnagOverlayState extends State<SnappySnagOverlay> {
             );
           },
         ),
+
+        // 9. Foremost Floating Toast Notification (highest Z-index above all overlays and buttons)
+        if (_toastMessage != null)
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 16.0 + MediaQuery.paddingOf(context).bottom,
+            child: IgnorePointer(
+              ignoring: !_isToastVisible,
+              child: AnimatedOpacity(
+                opacity: _isToastVisible ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                child: Builder(
+                  builder: (toastContext) {
+                    final theme = SnappySnag().theme;
+                    final isDark = theme.isDark(toastContext);
+                    final toastBg = isDark ? const Color(0xFF1E1E24) : Colors.white;
+                    final toastBorder = isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
+                    final textColor = isDark ? Colors.white : Colors.black87;
+
+                    final IconData iconData;
+                    final Color iconColor;
+                    switch (_toastType) {
+                      case _SnappyToastType.success:
+                        iconData = Icons.check_circle_rounded;
+                        iconColor = const Color(0xFF10B981); // Emerald Green
+                        break;
+                      case _SnappyToastType.error:
+                        iconData = Icons.error_outline_rounded;
+                        iconColor = const Color(0xFFEF4444); // Rose Red
+                        break;
+                      case _SnappyToastType.warning:
+                        iconData = Icons.warning_amber_rounded;
+                        iconColor = const Color(0xFFF59E0B); // Amber
+                        break;
+                      case _SnappyToastType.info:
+                        iconData = Icons.info_outline_rounded;
+                        iconColor = theme.primaryColor;
+                        break;
+                    }
+
+                    final radius = theme.borderRadius > 16 ? 16.0 : theme.borderRadius;
+
+                    return Material(
+                      elevation: 10,
+                      shadowColor: Colors.black45,
+                      color: toastBg,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(radius),
+                        side: BorderSide(color: toastBorder),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        child: Row(
+                          children: [
+                            Icon(iconData, color: iconColor, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                _toastMessage ?? '',
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -6179,176 +6757,78 @@ class DrawingPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
-/// Internal localization helper for SnappySnag SDK.
+/// Internal bridge delegating to the active [SnappySnagLocalization].
 class _SdkLocale {
-  static bool get _isJa => ui.PlatformDispatcher.instance.locale.languageCode.toLowerCase().startsWith('ja');
+  static SnappySnagLocalization get _l => SnappySnag().localization;
 
-  static String get disabledTitle =>
-      _isJa ? 'フィードバック機能は無効です' : 'Feedback Feature Disabled';
-  static String get disabledContent => _isJa
-      ? '現在フィードバック機能は無効に設定されているため、ご利用いただけません。'
-      : 'The feedback feature is currently disabled and unavailable.';
-
-  static String get start => _isJa ? '開始する' : 'Start';
-  static String get ok => _isJa ? '了解' : 'OK';
-  static String get feedbackModeDialogTitle =>
-      _isJa ? 'フィードバックモード' : 'Feedback Mode';
-  static String get feedbackModeDialogContent => _isJa
-      ? 'アプリを自由に操作して報告したい画面へ移動してください。\n目的の画面で右下のボタンをタップすると撮影できます。'
-      : 'Navigate freely to the screen you want to report.\nTap the button at the bottom right to capture.';
-
-  static String get feedbackModeAlreadyVisibleTitle =>
-      _isJa ? 'フィードバックボタン' : 'Feedback Button';
-  static String get feedbackModeAlreadyVisibleContent => _isJa
-      ? 'フィードバック用のボタンは既に画面右下に表示されています。\nいつでもタップして現在の画面を報告できます。'
-      : 'The feedback button is already visible at the bottom right.\nTap it anytime to report the current screen.';
-
-  static String get privacyConfirmTitle =>
-      _isJa ? '送信前の確認' : 'Privacy Check';
-  static String get privacyConfirmContent => _isJa
-      ? '画面内の個人情報や機密情報（パスワード・住所・顔写真など）はモザイクで隠れていますか？'
-      : 'Are personal or sensitive details (passwords, address, photos) properly masked with blur?';
-  static String privacyShareAccountWithEmail(String email) => _isJa
-      ? '問題解決のために診断情報とアカウント情報 ($email) を共有する'
-      : 'Include diagnostics and account info ($email) to resolve issues';
-  static String get privacyShareAccount => _isJa
-      ? '問題解決のためにデバイス診断情報を共有する'
-      : 'Include device diagnostics to resolve issues';
-  static String get privacyAnonymousHint => _isJa
-      ? '※チェックを外すと匿名（画像とメモのみ）で送信されます'
-      : 'Uncheck to submit anonymously (screenshot and memo only)';
-  static String get backToEdit => _isJa ? '戻って編集' : 'Back to Edit';
-  static String get sendConfirm => _isJa ? '送信する' : 'Send';
-
-  static String get cancel => _isJa ? 'キャンセル' : 'Cancel';
-  static String get send => _isJa ? '送信' : 'Send';
-  static String get titleFeedback =>
-      _isJa ? 'フィードバック送信' : 'SnappySnag Feedback';
-  static String get memoPromptSnackBar => _isJa
-      ? '最初に内容のメモを追加してください。'
-      : 'Please add a memo describing your feedback first.';
-
-  static String get statusSuccess =>
-      _isJa ? 'フィードバックの送信が成功しました！' : 'Feedback sent successfully!';
-  static String get statusDemoSuccess =>
-      _isJa ? '🎯 [デモモード] 送信完了！コンソールログを確認してください。' : '🎯 [Demo Mode] Captured! Check debug console for details.';
-  static String get statusRateLimit => _isJa
-      ? '送信頻度の上限を超えました。1分ほど待って再度お試しください。'
-      : 'Rate limit exceeded. Please wait a minute before retrying.';
-  static String get statusGenericError => _isJa
-      ? 'フィードバックの送信に失敗しました。しばらく時間をおいて再度お試しください。'
-      : 'Failed to send feedback. Please try again later.';
-  static String get userModeUnavailable => _isJa
-      ? '現在フィードバック機能をご利用いただけません。しばらく時間をおいて再度お試しください。'
-      : 'The feedback feature is currently unavailable. Please try again later.';
-  static String get statusInvalidKey => _isJa
-      ? '[開発エラー] APIキーが無効または停止されています。'
-      : '[Dev Error] Invalid or inactive API Key.';
-  static String get statusUnauthorizedPackage => _isJa
-      ? '[開発エラー] このアプリパッケージは許可されていません。'
-      : '[Dev Error] This app package is not authorized.';
-  static String get statusNetworkError => _isJa
-      ? 'フィードバックの送信に失敗しました（ネットワークまたはサーバーエラー）。'
-      : 'Failed to send feedback (Network or Server Error).';
-
-  static String get describeIssue =>
-      _isJa ? 'フィードバックの詳細を説明してください' : 'Describe your feedback';
-  static String get memoHint => _isJa
-      ? '（例: この画面のタイトルのフォントサイズが小さすぎます...）'
-      : 'e.g., The title font size is too small on this screen...';
-  static String get done => _isJa ? '完了' : 'Done';
-  static String get delete => _isJa ? '削除' : 'Delete';
-  static String get pinCommentTitle => _isJa ? 'ピンのコメント' : 'Pin Comment';
-  static String get pinCommentHint => _isJa ? 'この箇所へのコメントを入力...' : 'Add comment for this pin...';
-  static String get pinLimitReached => _isJa
-      ? 'ピンは最大5個まで配置できます。'
-      : 'You can place up to 5 pins.';
-  static String get memoOrPinRequiredSnackBar => _isJa
-      ? 'ピン留めしてコメントを追加するか、全体のメモを入力してください。'
-      : 'Please place a pin with comment or enter a general memo.';
-  static String get pinRequiredSnackBar => _isJa
-      ? '画面をタップしてピンを立て、コメントを入力してください。'
-      : 'Please tap the screen to place a pin and add a comment.';
-  static String get tapToPlacePinHint => _isJa
-      ? '画面をタップして指摘箇所にピンを立ててください'
-      : 'Tap on screen to place feedback pins';
-
-  static String get existingPinsToggle => _isJa ? '指摘エリア' : 'Issue Areas';
-  static String get existingPinDetailTitle => _isJa ? '指摘ピンの詳細' : 'Pin Details';
-  static String get sectionPinsTitle => _isJa ? 'このエリアの指摘一覧' : 'Issues in this area';
-  static String get sectionPinsSub => _isJa ? 'タップして元スクショとピン位置を確認' : 'Tap to preview screenshot and pin';
-  static String get allScreenPinsTitle => _isJa ? 'この画面の全指摘一覧' : 'All Issues on this Screen';
-  static String get allScreenPinsSub => _isJa ? '画面外・スクロール先を含むすべての指摘' : 'All pins including off-screen/scrolled areas';
-  static String get allScreenPinsBtn => _isJa ? '全指摘一覧' : 'All Issues';
-  static String get previewOriginalScreenshot => _isJa ? '元スクショプレビュー' : 'Screenshot Preview';
-  static String get originalScreenshotNotFound => _isJa ? '元スクショ画像がありません' : 'Original screenshot not found';
-  static String get issueBadgePrefix => _isJa ? '指摘 ' : 'Issues: ';
-  static String get issueBadgeSuffix => _isJa ? '件' : '';
-  static String get nearbyPinsTitle => _isJa ? 'この付近のピンを選択' : 'Select a Pin Nearby';
-  static String get nearbyPinsSub => _isJa ? '重なり合っているピンが複数あります' : 'Multiple pins are grouped together';
-  static String get noCommentForPin => _isJa ? '（コメントなし）' : '(No comment)';
-  static String get close => _isJa ? '閉じる' : 'Close';
-  static String get back => _isJa ? '戻る' : 'Back';
-  static String get elementAttachedBadge => _isJa ? '要素' : 'Element';
-
-  static String get analyzingScreen =>
-      _isJa ? '画面を解析中...' : 'Analyzing screen...';
-
-  // Clear all confirmation dialog strings
-  static String get clearConfirmTitle => _isJa ? '全て消去しますか？' : 'Clear All?';
-  static String get clearConfirmBody => _isJa
-      ? 'ピンとモザイクを全て削除します。この操作は元に戻せません。'
-      : 'All pins and mosaic strokes will be deleted. This action cannot be undone.';
-  static String get clearConfirmButton => _isJa ? '全て消去' : 'Clear All';
-
-  // Draft persistence strings
-  static String get draftFoundTitle =>
-      _isJa ? '保存された下書き' : 'Saved Draft Found';
-  static String get draftFoundContent => _isJa
-      ? '前回保存した下書きがあります。下書きを再開しますか？'
-      : 'You have a saved feedback draft. Would you like to resume it?';
-  static String get resumeDraft =>
-      _isJa ? '下書きを再開' : 'Resume Draft';
-  static String get discardAndNewCapture =>
-      _isJa ? '破棄して新規撮影' : 'Discard & Capture New';
-  static String get saveDraftPromptTitle =>
-      _isJa ? '下書きの保存' : 'Save Draft';
-  static String get saveDraftPromptOnCancel => _isJa
-      ? '編集中の内容を下書きとして保存しますか？'
-      : 'Would you like to save your edits as a draft?';
-  static String get saveDraftPromptOnFailedSend => _isJa
-      ? '送信に失敗しました。この内容を下書きとして保存しますか？'
-      : 'Failed to send feedback. Would you like to save it as a draft?';
-  static String get saveDraft =>
-      _isJa ? '下書き保存' : 'Save Draft';
-  static String get discardDraft =>
-      _isJa ? '破棄する' : 'Discard';
-  static String get stayOnScreen =>
-      _isJa ? '画面に留まる' : 'Stay Here';
-  static String get draftSavedToast =>
-      _isJa ? '下書きに保存しました' : 'Draft saved successfully.';
-
-  // Developer passcode verification strings
-  static String get devPasscodeDialogTitle =>
-      _isJa ? '開発者パスコード認証' : 'Dev Passcode Required';
-  static String get devPasscodeDialogDesc =>
-      _isJa ? '内部指摘一覧を表示するには、ダッシュボードのプロジェクト設定に表示されている4桁のパスコードを入力してください。' : 'Please enter the 4-digit passcode configured in your dashboard project settings to view internal tickets.';
-  static String get devPasscodeFieldLabel =>
-      _isJa ? '4桁のパスコード' : '4-digit Passcode';
-  static String get devPasscodeHint =>
-      '0000';
-  static String get devPasscodeChecking =>
-      _isJa ? '確認中...' : 'Checking...';
-  static String get devPasscodeInvalid =>
-      _isJa ? 'パスコードが正しくありません' : 'Invalid passcode';
-  static String get devPasscodeSubmit =>
-      _isJa ? '認証' : 'Unlock';
-  static String get devPasscodeCancel =>
-      _isJa ? 'キャンセル' : 'Cancel';
-  static String get devPasscodeSuccess =>
-      _isJa ? '開発者モードが認証されました' : 'Dev mode unlocked';
-  static String get devPasscodeHeaderRequired =>
-      _isJa ? 'パスコードが必要です' : 'Passcode required to view tickets';
+  static String get disabledTitle => _l.disabledTitle;
+  static String get disabledContent => _l.disabledContent;
+  static String get start => _l.start;
+  static String get ok => _l.ok;
+  static String get feedbackModeDialogTitle => _l.feedbackModeDialogTitle;
+  static String get feedbackModeDialogContent => _l.feedbackModeDialogContent;
+  static String get feedbackModeAlreadyVisibleTitle => _l.feedbackModeAlreadyVisibleTitle;
+  static String get feedbackModeAlreadyVisibleContent => _l.feedbackModeAlreadyVisibleContent;
+  static String get privacyConfirmTitle => _l.privacyConfirmTitle;
+  static String get privacyConfirmContent => _l.privacyConfirmContent;
+  static String privacyShareAccountWithEmail(String email) => _l.privacyShareAccountWithEmail(email);
+  static String get privacyShareAccount => _l.privacyShareAccount;
+  static String get privacyAnonymousHint => _l.privacyAnonymousHint;
+  static String get backToEdit => _l.backToEdit;
+  static String get sendConfirm => _l.sendConfirm;
+  static String get cancel => _l.cancel;
+  static String get send => _l.send;
+  static String get sending => _l.sending;
+  static String get titleFeedback => _l.titleFeedback;
+  static String get statusSuccess => _l.statusSuccess;
+  static String get statusDemoSuccess => _l.statusDemoSuccess;
+  static String get statusRateLimit => _l.statusRateLimit;
+  static String get statusGenericError => _l.statusGenericError;
+  static String get userModeUnavailable => _l.userModeUnavailable;
+  static String get statusInvalidKey => _l.statusInvalidKey;
+  static String get statusUnauthorizedPackage => _l.statusUnauthorizedPackage;
+  static String get statusNetworkError => _l.statusNetworkError;
+  static String get done => _l.done;
+  static String get delete => _l.delete;
+  static String get pinCommentTitle => _l.pinCommentTitle;
+  static String get pinCommentHint => _l.pinCommentHint;
+  static String get pinLimitReached => _l.pinLimitReached;
+  static String get pinRequiredSnackBar => _l.pinRequiredSnackBar;
+  static String get existingPinsToggle => _l.existingPinsToggle;
+  static String get sectionPinsTitle => _l.sectionPinsTitle;
+  static String get allScreenPinsTitle => _l.allScreenPinsTitle;
+  static String get allScreenPinsSub => _l.allScreenPinsSub;
+  static String get allScreenPinsBtn => _l.allScreenPinsBtn;
+  static String get previewOriginalScreenshot => _l.previewOriginalScreenshot;
+  static String get originalScreenshotNotFound => _l.originalScreenshotNotFound;
+  static String get issueBadgePrefix => _l.issueBadgePrefix;
+  static String get issueBadgeSuffix => _l.issueBadgeSuffix;
+  static String get noCommentForPin => _l.noCommentForPin;
+  static String get close => _l.close;
+  static String get back => _l.back;
+  static String get elementAttachedBadge => _l.elementAttachedBadge;
+  static String get analyzingScreen => _l.analyzingScreen;
+  static String get clearConfirmTitle => _l.clearConfirmTitle;
+  static String get clearConfirmBody => _l.clearConfirmBody;
+  static String get clearConfirmButton => _l.clearConfirmButton;
+  static String get draftFoundTitle => _l.draftFoundTitle;
+  static String get draftFoundContent => _l.draftFoundContent;
+  static String get resumeDraft => _l.resumeDraft;
+  static String get discardAndNewCapture => _l.discardAndNewCapture;
+  static String get saveDraftPromptTitle => _l.saveDraftPromptTitle;
+  static String get saveDraftPromptOnCancel => _l.saveDraftPromptOnCancel;
+  static String get saveDraftPromptOnFailedSend => _l.saveDraftPromptOnFailedSend;
+  static String get saveDraft => _l.saveDraft;
+  static String get discardDraft => _l.discardDraft;
+  static String get stayOnScreen => _l.stayOnScreen;
+  static String get draftSavedToast => _l.draftSavedToast;
+  static String get devPasscodeDialogTitle => _l.devPasscodeDialogTitle;
+  static String get devPasscodeDialogDesc => _l.devPasscodeDialogDesc;
+  static String get devPasscodeHint => _l.devPasscodeHint;
+  static String get devPasscodeChecking => _l.devPasscodeChecking;
+  static String get devPasscodeInvalid => _l.devPasscodeInvalid;
+  static String get devPasscodeSubmit => _l.devPasscodeSubmit;
+  static String get devPasscodeCancel => _l.devPasscodeCancel;
 }
 
 /// Custom Widget that draws the SnappySnag lightning logo with circular border gap mask.

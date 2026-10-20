@@ -22,6 +22,9 @@ void main() {
       name: 'Flutter Explorer',
       email: 'demo@example.com',
     ),
+    // 🌐 Multi-language support (English / Japanese)
+    // locale: const Locale('ja'), // Or pass custom localization:
+    // localization: SnappySnagLocalization.ja().copyWith(send: 'フィードバック送信！'),
   );
 
   runApp(const SnappySnagShowroomApp());
@@ -239,7 +242,74 @@ class _ShowroomHomePageState extends State<ShowroomHomePage> {
 
             const SizedBox(height: 12),
 
-            // Card 2: Switch & Slider
+            // Card 2: Language & Localization Selector
+            Card(
+              color: const Color(0xFF1E293B),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.language, color: Color(0xFF818CF8), size: 18),
+                        const SizedBox(width: 8),
+                        const Text('SDK Language & Custom Wording', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    const Text('Test dynamic language switching or customize specific UI copy.', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        ActionChip(
+                          avatar: const Icon(Icons.check, size: 16),
+                          label: const Text('English (Default)'),
+                          onPressed: () {
+                            SnappySnag().setLocale(const Locale('en'));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Switched SnappySnag language to English')),
+                            );
+                          },
+                        ),
+                        ActionChip(
+                          avatar: const Icon(Icons.translate, size: 16),
+                          label: const Text('日本語 (Japanese)'),
+                          onPressed: () {
+                            SnappySnag().setLocale(const Locale('ja'));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('SnappySnagの言語を日本語に変更しました')),
+                            );
+                          },
+                        ),
+                        ActionChip(
+                          avatar: const Icon(Icons.edit_note, size: 16),
+                          label: const Text('Custom Wording (copyWith)'),
+                          onPressed: () {
+                            SnappySnag().setLocalization(
+                              SnappySnagLocalization.ja().copyWith(
+                                send: '送信する！🚀',
+                                titleFeedback: 'フィードバック送信',
+                                statusSuccess: 'ご報告ありがとうございます！',
+                              ),
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('カスタム辞書（copyWith）を適用しました')),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Card 3: Switch & Slider
             Card(
               color: const Color(0xFF1E293B),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

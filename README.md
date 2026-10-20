@@ -22,6 +22,7 @@ SnappySnag is a visual bug reporting and AI auto-fix suggestion tool for Flutter
 * 💾 **Offline Draft & Resilience**: Automatically saves drawing annotations, pins, and comments locally on connection failure or accidental dismissal. Seamlessly resume or discard drafts on the next capture without wasting user efforts.
 * ⚡ **Pre-Validation Error Guard**: Instantly validates API key configuration and bundle identifiers before users spend time drawing or writing, preventing post-submit authentication surprises.
 * 👥 **One-Build Role-Based Sharing**: Show internal tickets and duplicate warnings to developers while keeping external clients on a clean, simple feedback flow in the exact same build.
+* 🌐 **Multi-Language & Localization (i18n)**: Out-of-the-box support for English (`en`) and Japanese (`ja`) with automatic system locale matching and customizable dictionaries via `copyWith()`.
 * 🛡️ **Package Name Lock**: Prevents unauthorized API requests by locking your API Key to your registered bundle identifier.
 * 🚫 **Store Production Safe**: Easily disable the overlay button and sensor listeners completely in App Store/Google Play builds using the `enabled` configuration.
 
@@ -160,7 +161,40 @@ SnappySnag().initialize(
 );
 ```
 
-### 5. Widget Tree Hierarchy & Privacy Opt-Out (`enableWidgetTree`)
+### 5. Multi-Language & Custom Localization (`SnappySnagLocalization`)
+
+SnappySnag provides native internationalization out of the box with complete dictionaries for **English (`en`)** and **Japanese (`ja`)**.
+
+* **Automatic Locale Detection**:
+  By default, SnappySnag automatically follows your app's current locale.
+* **Explicit Locale Override**:
+  ```dart
+  SnappySnag().initialize(
+    apiKey: '...',
+    locale: const Locale('ja'), // Force Japanese UI
+  );
+  ```
+* **Custom Wording & Branding (`copyWith`)**:
+  Fine-tune any button labels, hints, or status messages to match your product's voice without redefining the entire dictionary:
+  ```dart
+  SnappySnag().initialize(
+    apiKey: '...',
+    localization: SnappySnagLocalization.ja().copyWith(
+      send: 'フィードバック送信！',
+      pinCommentTitle: '気になるポイント',
+      statusSuccess: '送信完了！ご協力ありがとうございます。',
+    ),
+  );
+  ```
+* **Dynamic Language Switching**:
+  Update UI language dynamically at runtime (e.g. when user changes language inside app settings):
+  ```dart
+  SnappySnag().setLocale(const Locale('en'));
+  // Or apply a new custom dictionary:
+  SnappySnag().setLocalization(customLocalization);
+  ```
+
+### 6. Widget Tree Hierarchy & Privacy Opt-Out (`enableWidgetTree`)
 
 By default (`enableWidgetTree: true`), SnappySnag extracts the Flutter UI hierarchy (up to 10 levels deep) to give Gemini AI complete context on nested layouts and styling:
 
@@ -177,7 +211,7 @@ By default (`enableWidgetTree: true`), SnappySnag extracts the Flutter UI hierar
   ```
   > 💡 When `enableWidgetTree: false`, SnappySnag skips tree traversal entirely and relies strictly on screenshot visual cues and user annotations for AI analysis. The dashboard will automatically reflect this as `Visual Screenshot Analysis (UI Tree Excluded)`.
 
-### 6. Logging & Console Output (`enableLogging`)
+### 7. Logging & Console Output (`enableLogging`)
 
 By default, SnappySnag suppresses all debug output (`enableLogging: false`) to keep your host app's debug and release console output completely clean.
 
@@ -194,14 +228,14 @@ SnappySnag().initialize(
 >
 > *Note: Critical configuration errors (such as missing `apiKey`, security guard dev-mode fallbacks, and macOS sandbox permission guides) will always be output regardless of `enableLogging`.*
 
-### 7. Multi-Point Pin Drop & Itemized Feedback
+### 8. Multi-Point Pin Drop & Itemized Feedback
 
 When users capture a screenshot, they can annotate specific UI elements with numbered pins (1–5) and write separate notes for each pin:
 * **Drop Pins**: Tap anywhere on the captured screenshot to place a pin marker.
 * **Itemized Notes**: Add targeted feedback or repro notes per pin, helping developers address multiple UI issues in a single report without confusing clutter.
 * **Non-Destructive Vectors**: Pin coordinates (`x`, `y` percentages) are stored separately from the image. The original screenshot remains intact and clean on your dashboard.
 
-### 8. Launch Feedback Mode Manually (e.g. from Settings or In-App Menu)
+### 9. Launch Feedback Mode Manually (e.g. from Settings or In-App Menu)
 
 When the floating button is hidden (via `showTriggerButton: false` or `SnappySnagHideButton`), or if you prefer triggering feedback through your own custom UI (such as a "Report Bug" button in a Settings or Help drawer), call `SnappySnag.startFeedbackMode`:
 
@@ -218,7 +252,7 @@ ListTile(
 
 > 💡 When invoked, it displays a guided prompt modal and temporarily reveals the capture button, allowing the user to navigate anywhere in the app to capture and highlight the issue.
 
-### 9. Build for TestFlight / Internal Testing
+### 10. Build for TestFlight / Internal Testing
 
 To compile your app with SnappySnag enabled, build with the `--dart-define` flag:
 
@@ -227,7 +261,7 @@ flutter build ipa --dart-define=ENABLE_SNAPPY_SNAG=true
 flutter build appbundle --dart-define=ENABLE_SNAPPY_SNAG=true
 ```
 
-### 10. Build for App Store / Google Play Store (Production)
+### 11. Build for App Store / Google Play Store (Production)
 
 To compile your app for production release, build normally. SnappySnag will automatically be disabled, will not render the overlay button, and will not register any shake listeners:
 

@@ -1,3 +1,27 @@
+## 1.1.0
+
+* **Internationalization & Localization (`SnappySnagLocalization`)**:
+  * Added first-class localization support out of the box with built-in English (`en`) and Japanese (`ja`) dictionaries.
+  * **Automatic Locale Resolution**: Automatically adapts UI copy to the app's current locale, with explicit override support via `locale: const Locale('ja')`.
+  * **Custom Dictionaries & Tone Tuning (`copyWith`)**: Developers can easily customize or rebrand individual labels (e.g. `send`, `pinCommentHint`, `statusSuccess`) without replacing the whole dictionary:
+    ```dart
+    SnappySnag().initialize(
+      apiKey: '...',
+      localization: SnappySnagLocalization.ja().copyWith(
+        send: 'フィードバック送信！',
+        pinCommentTitle: '気になるポイント',
+      ),
+    );
+    ```
+  * **Dynamic Language Switching**: Dynamically update language at runtime using `SnappySnag().setLocale(...)` or `SnappySnag().setLocalization(...)`.
+* **Full-Screen Sending Overlay & Tap Block**:
+  * Enhanced submission UX with a dedicated semi-transparent modal overlay and card indicator displaying localized sending status (`sending: '送信中...'` / `'Sending...'`).
+  * Blocks touch interactions across the entire screen during feedback uploads to prevent accidental re-submissions, multi-taps, or misplaced annotations.
+* **Foremost Floating Toast Notifications**:
+  * Decoupled notification toasts from host app's `ScaffoldMessenger`, rendering them directly in `SnappySnagOverlay`'s root stack.
+  * Toasts reliably float above all drawing canvases, modals, dialogs, and floating trigger buttons at standard bottom margin (`16.0 + safeBottom`).
+  * Smooth fade-in/fade-out animations with `IgnorePointer` passthrough when dismissed.
+
 ## 1.0.0 - Official Stable Release 🎉
 
 * **Comprehensive Theme Customization (`SnappySnagTheme`)**:

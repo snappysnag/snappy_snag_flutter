@@ -207,6 +207,34 @@ void main() {
     expect(snappy.isTriggerButtonVisible.value, isTrue);
   });
 
+  testWidgets('SnappySnagOverlay renders toast without throwing Flutter error', (tester) async {
+    final snappy = SnappySnag();
+    snappy.initialize(
+      apiKey: 'test_key',
+      packageName: 'com.example.test',
+      showTriggerButton: false,
+    );
+
+    final overlayKey = GlobalKey<SnappySnagOverlayState>();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (context, child) => SnappySnagOverlay(key: overlayKey, child: child ?? const SizedBox()),
+        home: const Scaffold(
+          body: Text('Home'),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // Trigger toast
+    overlayKey.currentState!.showToastForTesting(message: 'Feedback sent successfully!');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Feedback sent successfully!'), findsOneWidget);
+  });
+
   test('DrawingPoint JSON serialization and deserialization test', () {
     final point = DrawingPoint(
       offsets: [const Offset(10, 20), const Offset(30, 40)],
@@ -362,6 +390,85 @@ void main() {
     expect(snappy.theme.pinColor, Colors.teal);
     expect(snappy.theme.themeMode, ThemeMode.light);
     expect(snappy.theme.borderRadius, 24.0);
+  });
+
+  group('SnappySnagLocalization tests', () {
+    test('Default factory constructors return correct language labels', () {
+      final en = SnappySnagLocalization.en();
+      final ja = SnappySnagLocalization.ja();
+
+      expect(en.send, 'Send');
+      expect(en.sending, 'Sending...');
+      expect(en.cancel, 'Cancel');
+      expect(en.pinCommentTitle, 'Pin Comment');
+      expect(en.pinCommentHint, 'Add comment for this pin...');
+
+      expect(ja.send, '送信');
+      expect(ja.sending, '送信中...');
+      expect(ja.cancel, 'キャンセル');
+      expect(ja.pinCommentTitle, 'ピンのコメント');
+      expect(ja.pinCommentHint, 'この箇所へのコメントを入力...');
+    });
+
+    test('fromLocale resolves ja for Japanese locales and falls back to en', () {
+      expect(
+        SnappySnagLocalization.fromLocale(const Locale('ja')).send,
+        '送信',
+      );
+      expect(
+        SnappySnagLocalization.fromLocale(const Locale('ja', 'JP')).send,
+        '送信',
+      );
+      expect(
+        SnappySnagLocalization.fromLocale(const Locale('en')).send,
+        'Send',
+      );
+      expect(
+        SnappySnagLocalization.fromLocale(const Locale('fr')).send,
+        'Send',
+      );
+      expect(
+        SnappySnagLocalization.fromLocale(const Locale('zh', 'CN')).send,
+        'Send',
+      );
+    });
+
+    test('copyWith properly overrides specific labels while preserving others', () {
+      final custom = SnappySnagLocalization.en().copyWith(
+        send: 'Send Feedback',
+        pinCommentTitle: 'Your Note',
+      );
+
+      expect(custom.send, 'Send Feedback');
+      expect(custom.pinCommentTitle, 'Your Note');
+      // Preserved fields
+      expect(custom.cancel, 'Cancel');
+      expect(custom.done, 'Done');
+    });
+
+    test('SnappySnag initializes with custom locale and localization', () {
+      final snappy = SnappySnag();
+      snappy.initialize(
+        apiKey: 'test_locale_key',
+        locale: const Locale('en'),
+      );
+      expect(snappy.localization.send, 'Send');
+
+      // Change locale dynamically
+      snappy.setLocale(const Locale('ja'));
+      expect(snappy.localization.send, '送信');
+
+      // Set custom localization dictionary
+      snappy.setLocalization(
+        SnappySnagLocalization.ja().copyWith(send: 'フィードバック送信！'),
+      );
+      expect(snappy.localization.send, 'フィードバック送信！');
+      expect(snappy.localization.cancel, 'キャンセル');
+
+      // Resetting custom localization restores locale-based dictionary
+      snappy.setLocalization(null);
+      expect(snappy.localization.send, '送信');
+    });
   });
 }
 
