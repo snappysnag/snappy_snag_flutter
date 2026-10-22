@@ -8,7 +8,12 @@ import 'src/browser_info_helper.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode, defaultTargetPlatform, DiagnosticsSerializationDelegate;
+import 'package:flutter/foundation.dart'
+    show
+        kIsWeb,
+        kReleaseMode,
+        defaultTargetPlatform,
+        DiagnosticsSerializationDelegate;
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:screenshot/screenshot.dart';
@@ -105,16 +110,6 @@ class SnappySnagLocalization {
   final String pinCommentHint;
   final String pinLimitReached;
   final String pinRequiredSnackBar;
-  final String existingPinsToggle;
-  final String sectionPinsTitle;
-  final String allScreenPinsTitle;
-  final String allScreenPinsSub;
-  final String allScreenPinsBtn;
-  final String previewOriginalScreenshot;
-  final String originalScreenshotNotFound;
-  final String issueBadgePrefix;
-  final String issueBadgeSuffix;
-  final String noCommentForPin;
   final String close;
   final String back;
   final String elementAttachedBadge;
@@ -133,13 +128,6 @@ class SnappySnagLocalization {
   final String discardDraft;
   final String stayOnScreen;
   final String draftSavedToast;
-  final String devPasscodeDialogTitle;
-  final String devPasscodeDialogDesc;
-  final String devPasscodeHint;
-  final String devPasscodeChecking;
-  final String devPasscodeInvalid;
-  final String devPasscodeSubmit;
-  final String devPasscodeCancel;
 
   const SnappySnagLocalization({
     required this.disabledTitle,
@@ -175,16 +163,6 @@ class SnappySnagLocalization {
     required this.pinCommentHint,
     required this.pinLimitReached,
     required this.pinRequiredSnackBar,
-    required this.existingPinsToggle,
-    required this.sectionPinsTitle,
-    required this.allScreenPinsTitle,
-    required this.allScreenPinsSub,
-    required this.allScreenPinsBtn,
-    required this.previewOriginalScreenshot,
-    required this.originalScreenshotNotFound,
-    required this.issueBadgePrefix,
-    required this.issueBadgeSuffix,
-    required this.noCommentForPin,
     required this.close,
     required this.back,
     required this.elementAttachedBadge,
@@ -203,13 +181,6 @@ class SnappySnagLocalization {
     required this.discardDraft,
     required this.stayOnScreen,
     required this.draftSavedToast,
-    required this.devPasscodeDialogTitle,
-    required this.devPasscodeDialogDesc,
-    required this.devPasscodeHint,
-    required this.devPasscodeChecking,
-    required this.devPasscodeInvalid,
-    required this.devPasscodeSubmit,
-    required this.devPasscodeCancel,
   });
 
   String privacyShareAccountWithEmail(String email) {
@@ -222,7 +193,8 @@ class SnappySnagLocalization {
   /// Built-in English localization dictionary.
   factory SnappySnagLocalization.en() => const SnappySnagLocalization(
         disabledTitle: 'Feedback Feature Disabled',
-        disabledContent: 'The feedback feature is currently disabled and unavailable.',
+        disabledContent:
+            'The feedback feature is currently disabled and unavailable.',
         start: 'Start',
         ok: 'OK',
         feedbackModeDialogTitle: 'Feedback Mode',
@@ -235,7 +207,8 @@ class SnappySnagLocalization {
         privacyConfirmContent:
             'Are personal or sensitive details (passwords, address, photos) properly masked with blur?',
         privacyShareAccount: 'Include device diagnostics to resolve issues',
-        privacyAnonymousHint: 'Uncheck to submit anonymously (screenshot and memo only)',
+        privacyAnonymousHint:
+            'Uncheck to submit anonymously (screenshot and memo only)',
         backToEdit: 'Back to Edit',
         sendConfirm: 'Send',
         cancel: 'Cancel',
@@ -243,55 +216,47 @@ class SnappySnagLocalization {
         sending: 'Sending...',
         titleFeedback: 'SnappySnag Feedback',
         statusSuccess: 'Feedback sent successfully!',
-        statusDemoSuccess: '🎯 [Demo Mode] Captured! Check debug console for details.',
-        statusRateLimit: 'Rate limit exceeded. Please wait a minute before retrying.',
+        statusDemoSuccess:
+            '🎯 [Demo Mode] Captured! Check debug console for details.',
+        statusRateLimit:
+            'Rate limit exceeded. Please wait a minute before retrying.',
         statusGenericError: 'Failed to send feedback. Please try again later.',
-        userModeUnavailable: 'The feedback feature is currently unavailable. Please try again later.',
+        userModeUnavailable:
+            'The feedback feature is currently unavailable. Please try again later.',
         statusInvalidKey: '[Dev Error] Invalid or inactive API Key.',
-        statusUnauthorizedPackage: '[Dev Error] This app package is not authorized.',
-        statusNetworkError: 'Failed to send feedback (Network or Server Error).',
+        statusUnauthorizedPackage:
+            '[Dev Error] This app package is not authorized.',
+        statusNetworkError:
+            'Failed to send feedback (Network or Server Error).',
         done: 'Done',
         delete: 'Delete',
         pinCommentTitle: 'Pin Comment',
         pinCommentHint: 'Add comment for this pin...',
         pinLimitReached: 'You can place up to 5 pins.',
-        pinRequiredSnackBar: 'Please tap the screen to place a pin and add a comment.',
-        existingPinsToggle: 'Issue Areas',
-        sectionPinsTitle: 'Issues in this area',
-        allScreenPinsTitle: 'All Issues on this Screen',
-        allScreenPinsSub: 'All pins including off-screen/scrolled areas',
-        allScreenPinsBtn: 'All Issues',
-        previewOriginalScreenshot: 'Screenshot Preview',
-        originalScreenshotNotFound: 'Original screenshot not found',
-        issueBadgePrefix: 'Issues: ',
-        issueBadgeSuffix: '',
-        noCommentForPin: '(No comment)',
+        pinRequiredSnackBar:
+            'Please tap the screen to place a pin and add a comment.',
         close: 'Close',
         back: 'Back',
         elementAttachedBadge: 'Element',
         analyzingScreen: 'Analyzing screen...',
         clearConfirmTitle: 'Clear All?',
-        clearConfirmBody: 'All pins and mosaic strokes will be deleted. This action cannot be undone.',
+        clearConfirmBody:
+            'All pins and mosaic strokes will be deleted. This action cannot be undone.',
         clearConfirmButton: 'Clear All',
         draftFoundTitle: 'Saved Draft Found',
-        draftFoundContent: 'You have a saved feedback draft. Would you like to resume it?',
+        draftFoundContent:
+            'You have a saved feedback draft. Would you like to resume it?',
         resumeDraft: 'Resume Draft',
         discardAndNewCapture: 'Discard & Capture New',
         saveDraftPromptTitle: 'Save Draft',
-        saveDraftPromptOnCancel: 'Would you like to save your edits as a draft?',
-        saveDraftPromptOnFailedSend: 'Failed to send feedback. Would you like to save it as a draft?',
+        saveDraftPromptOnCancel:
+            'Would you like to save your edits as a draft?',
+        saveDraftPromptOnFailedSend:
+            'Failed to send feedback. Would you like to save it as a draft?',
         saveDraft: 'Save Draft',
         discardDraft: 'Discard',
         stayOnScreen: 'Stay Here',
         draftSavedToast: 'Draft saved successfully.',
-        devPasscodeDialogTitle: 'Dev Passcode Required',
-        devPasscodeDialogDesc:
-            'Please enter the 4-digit passcode configured in your dashboard project settings to view internal tickets.',
-        devPasscodeHint: '0000',
-        devPasscodeChecking: 'Checking...',
-        devPasscodeInvalid: 'Invalid passcode',
-        devPasscodeSubmit: 'Unlock',
-        devPasscodeCancel: 'Cancel',
       );
 
   /// Built-in Japanese localization dictionary.
@@ -307,8 +272,7 @@ class SnappySnagLocalization {
         feedbackModeAlreadyVisibleContent:
             'フィードバック用のボタンは既に画面右下に表示されています。\nいつでもタップして現在の画面を報告できます。',
         privacyConfirmTitle: '送信前の確認',
-        privacyConfirmContent:
-            '画面内の個人情報や機密情報（パスワード・住所・顔写真など）はモザイクで隠れていますか？',
+        privacyConfirmContent: '画面内の個人情報や機密情報（パスワード・住所・顔写真など）はモザイクで隠れていますか？',
         privacyShareAccountWithEmailBuilder: (email) =>
             '問題解決のために診断情報とアカウント情報 ($email) を共有する',
         privacyShareAccount: '問題解決のためにデバイス診断情報を共有する',
@@ -333,16 +297,6 @@ class SnappySnagLocalization {
         pinCommentHint: 'この箇所へのコメントを入力...',
         pinLimitReached: 'ピンは最大5個まで配置できます。',
         pinRequiredSnackBar: '画面をタップしてピンを立て、コメントを入力してください。',
-        existingPinsToggle: '指摘エリア',
-        sectionPinsTitle: 'このエリアの指摘一覧',
-        allScreenPinsTitle: 'この画面の全指摘一覧',
-        allScreenPinsSub: '画面外・スクロール先を含むすべての指摘',
-        allScreenPinsBtn: '全指摘一覧',
-        previewOriginalScreenshot: '元スクショプレビュー',
-        originalScreenshotNotFound: '元スクショ画像がありません',
-        issueBadgePrefix: '指摘 ',
-        issueBadgeSuffix: '件',
-        noCommentForPin: '（コメントなし）',
         close: '閉じる',
         back: '戻る',
         elementAttachedBadge: '要素',
@@ -361,14 +315,6 @@ class SnappySnagLocalization {
         discardDraft: '破棄する',
         stayOnScreen: '画面に留まる',
         draftSavedToast: '下書きに保存しました',
-        devPasscodeDialogTitle: '開発者パスコード認証',
-        devPasscodeDialogDesc:
-            '内部指摘一覧を表示するには、ダッシュボードのプロジェクト設定に表示されている4桁のパスコードを入力してください。',
-        devPasscodeHint: '0000',
-        devPasscodeChecking: '確認中...',
-        devPasscodeInvalid: 'パスコードが正しくありません',
-        devPasscodeSubmit: '認証',
-        devPasscodeCancel: 'キャンセル',
       );
 
   /// Resolves the built-in dictionary based on a given [locale].
@@ -417,16 +363,6 @@ class SnappySnagLocalization {
     String? pinCommentHint,
     String? pinLimitReached,
     String? pinRequiredSnackBar,
-    String? existingPinsToggle,
-    String? sectionPinsTitle,
-    String? allScreenPinsTitle,
-    String? allScreenPinsSub,
-    String? allScreenPinsBtn,
-    String? previewOriginalScreenshot,
-    String? originalScreenshotNotFound,
-    String? issueBadgePrefix,
-    String? issueBadgeSuffix,
-    String? noCommentForPin,
     String? close,
     String? back,
     String? elementAttachedBadge,
@@ -445,27 +381,26 @@ class SnappySnagLocalization {
     String? discardDraft,
     String? stayOnScreen,
     String? draftSavedToast,
-    String? devPasscodeDialogTitle,
-    String? devPasscodeDialogDesc,
-    String? devPasscodeHint,
-    String? devPasscodeChecking,
-    String? devPasscodeInvalid,
-    String? devPasscodeSubmit,
-    String? devPasscodeCancel,
   }) {
     return SnappySnagLocalization(
       disabledTitle: disabledTitle ?? this.disabledTitle,
       disabledContent: disabledContent ?? this.disabledContent,
       start: start ?? this.start,
       ok: ok ?? this.ok,
-      feedbackModeDialogTitle: feedbackModeDialogTitle ?? this.feedbackModeDialogTitle,
-      feedbackModeDialogContent: feedbackModeDialogContent ?? this.feedbackModeDialogContent,
-      feedbackModeAlreadyVisibleTitle: feedbackModeAlreadyVisibleTitle ?? this.feedbackModeAlreadyVisibleTitle,
-      feedbackModeAlreadyVisibleContent: feedbackModeAlreadyVisibleContent ?? this.feedbackModeAlreadyVisibleContent,
+      feedbackModeDialogTitle:
+          feedbackModeDialogTitle ?? this.feedbackModeDialogTitle,
+      feedbackModeDialogContent:
+          feedbackModeDialogContent ?? this.feedbackModeDialogContent,
+      feedbackModeAlreadyVisibleTitle: feedbackModeAlreadyVisibleTitle ??
+          this.feedbackModeAlreadyVisibleTitle,
+      feedbackModeAlreadyVisibleContent: feedbackModeAlreadyVisibleContent ??
+          this.feedbackModeAlreadyVisibleContent,
       privacyConfirmTitle: privacyConfirmTitle ?? this.privacyConfirmTitle,
-      privacyConfirmContent: privacyConfirmContent ?? this.privacyConfirmContent,
+      privacyConfirmContent:
+          privacyConfirmContent ?? this.privacyConfirmContent,
       privacyShareAccountWithEmailBuilder:
-          privacyShareAccountWithEmailBuilder ?? this.privacyShareAccountWithEmailBuilder,
+          privacyShareAccountWithEmailBuilder ??
+              this.privacyShareAccountWithEmailBuilder,
       privacyShareAccount: privacyShareAccount ?? this.privacyShareAccount,
       privacyAnonymousHint: privacyAnonymousHint ?? this.privacyAnonymousHint,
       backToEdit: backToEdit ?? this.backToEdit,
@@ -480,7 +415,8 @@ class SnappySnagLocalization {
       statusGenericError: statusGenericError ?? this.statusGenericError,
       userModeUnavailable: userModeUnavailable ?? this.userModeUnavailable,
       statusInvalidKey: statusInvalidKey ?? this.statusInvalidKey,
-      statusUnauthorizedPackage: statusUnauthorizedPackage ?? this.statusUnauthorizedPackage,
+      statusUnauthorizedPackage:
+          statusUnauthorizedPackage ?? this.statusUnauthorizedPackage,
       statusNetworkError: statusNetworkError ?? this.statusNetworkError,
       done: done ?? this.done,
       delete: delete ?? this.delete,
@@ -488,16 +424,6 @@ class SnappySnagLocalization {
       pinCommentHint: pinCommentHint ?? this.pinCommentHint,
       pinLimitReached: pinLimitReached ?? this.pinLimitReached,
       pinRequiredSnackBar: pinRequiredSnackBar ?? this.pinRequiredSnackBar,
-      existingPinsToggle: existingPinsToggle ?? this.existingPinsToggle,
-      sectionPinsTitle: sectionPinsTitle ?? this.sectionPinsTitle,
-      allScreenPinsTitle: allScreenPinsTitle ?? this.allScreenPinsTitle,
-      allScreenPinsSub: allScreenPinsSub ?? this.allScreenPinsSub,
-      allScreenPinsBtn: allScreenPinsBtn ?? this.allScreenPinsBtn,
-      previewOriginalScreenshot: previewOriginalScreenshot ?? this.previewOriginalScreenshot,
-      originalScreenshotNotFound: originalScreenshotNotFound ?? this.originalScreenshotNotFound,
-      issueBadgePrefix: issueBadgePrefix ?? this.issueBadgePrefix,
-      issueBadgeSuffix: issueBadgeSuffix ?? this.issueBadgeSuffix,
-      noCommentForPin: noCommentForPin ?? this.noCommentForPin,
       close: close ?? this.close,
       back: back ?? this.back,
       elementAttachedBadge: elementAttachedBadge ?? this.elementAttachedBadge,
@@ -510,19 +436,14 @@ class SnappySnagLocalization {
       resumeDraft: resumeDraft ?? this.resumeDraft,
       discardAndNewCapture: discardAndNewCapture ?? this.discardAndNewCapture,
       saveDraftPromptTitle: saveDraftPromptTitle ?? this.saveDraftPromptTitle,
-      saveDraftPromptOnCancel: saveDraftPromptOnCancel ?? this.saveDraftPromptOnCancel,
-      saveDraftPromptOnFailedSend: saveDraftPromptOnFailedSend ?? this.saveDraftPromptOnFailedSend,
+      saveDraftPromptOnCancel:
+          saveDraftPromptOnCancel ?? this.saveDraftPromptOnCancel,
+      saveDraftPromptOnFailedSend:
+          saveDraftPromptOnFailedSend ?? this.saveDraftPromptOnFailedSend,
       saveDraft: saveDraft ?? this.saveDraft,
       discardDraft: discardDraft ?? this.discardDraft,
       stayOnScreen: stayOnScreen ?? this.stayOnScreen,
       draftSavedToast: draftSavedToast ?? this.draftSavedToast,
-      devPasscodeDialogTitle: devPasscodeDialogTitle ?? this.devPasscodeDialogTitle,
-      devPasscodeDialogDesc: devPasscodeDialogDesc ?? this.devPasscodeDialogDesc,
-      devPasscodeHint: devPasscodeHint ?? this.devPasscodeHint,
-      devPasscodeChecking: devPasscodeChecking ?? this.devPasscodeChecking,
-      devPasscodeInvalid: devPasscodeInvalid ?? this.devPasscodeInvalid,
-      devPasscodeSubmit: devPasscodeSubmit ?? this.devPasscodeSubmit,
-      devPasscodeCancel: devPasscodeCancel ?? this.devPasscodeCancel,
     );
   }
 }
@@ -564,7 +485,8 @@ class SnappySnag {
 
   /// Default top-level NavigatorKey provided by SnappySnag SDK.
   /// Pass this directly to `MaterialApp(navigatorKey: SnappySnag.defaultNavigatorKey)` or `SnappySnag().navigatorKey` to avoid manual key management.
-  static final GlobalKey<NavigatorState> defaultNavigatorKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> defaultNavigatorKey =
+      GlobalKey<NavigatorState>();
 
   String? _apiKey;
   String? _deviceId;
@@ -577,8 +499,6 @@ class SnappySnag {
 
   SnappySnagMode _mode = SnappySnagMode.user;
   SnappySnagMode get mode => _mode;
-  bool _isDevChatEnabled = true;
-  bool get isDevChatEnabled => _isDevChatEnabled;
   bool _enableWidgetTree = true;
   bool get enableWidgetTree => _enableWidgetTree;
   bool _enableShakeTrigger = true;
@@ -613,18 +533,8 @@ class SnappySnag {
   /// Pass `null` to clear the custom dictionary and fall back to [locale] resolution.
   void setLocalization(SnappySnagLocalization? localization) {
     _customLocalization = localization;
-    SnappySnag._log('🌐 SnappySnag: Custom localization dictionary ${localization != null ? "applied" : "cleared"}');
-  }
-
-  /// 4-digit passcode for unlocking developer features held in memory during the app session.
-  /// Never written to local storage, automatically cleared when the app terminates.
-  String? _devPasscode;
-  String? get devPasscode => _devPasscode;
-  void setDevPasscode(String? code) {
-    _devPasscode = code;
-  }
-  void clearDevPasscode() {
-    _devPasscode = null;
+    SnappySnag._log(
+        '🌐 SnappySnag: Custom localization dictionary ${localization != null ? "applied" : "cleared"}');
   }
 
   /// Current user/reporter information.
@@ -675,12 +585,14 @@ class SnappySnag {
   }
 
   void _updateTriggerButtonVisibility() {
-    final shouldBeVisible = _baseTriggerButtonVisibility && _hideRequestsCount == 0;
+    final shouldBeVisible =
+        _baseTriggerButtonVisibility && _hideRequestsCount == 0;
     if (isTriggerButtonVisible.value != shouldBeVisible) {
       final binding = WidgetsBinding.instance;
       if (binding.schedulerPhase == SchedulerPhase.persistentCallbacks) {
         binding.addPostFrameCallback((_) {
-          final currentTarget = _baseTriggerButtonVisibility && _hideRequestsCount == 0;
+          final currentTarget =
+              _baseTriggerButtonVisibility && _hideRequestsCount == 0;
           if (isTriggerButtonVisible.value != currentTarget) {
             isTriggerButtonVisible.value = currentTarget;
           }
@@ -705,7 +617,8 @@ class SnappySnag {
       if (ctx != null) {
         final isDark = theme.isDark(ctx);
         final dialogBg = isDark ? const Color(0xFF1E1E24) : Colors.white;
-        final dialogBorder = isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
+        final dialogBorder =
+            isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
         final titleColor = isDark ? Colors.white : Colors.black87;
         final bodyColor = isDark ? Colors.white70 : Colors.black54;
 
@@ -742,7 +655,8 @@ class SnappySnag {
             actions: [
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark ? const Color(0xFF3E3E48) : Colors.grey.shade300,
+                  backgroundColor:
+                      isDark ? const Color(0xFF3E3E48) : Colors.grey.shade300,
                   foregroundColor: isDark ? Colors.white : Colors.black87,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -758,9 +672,11 @@ class SnappySnag {
           ),
         );
       } else {
-        debugPrint('⚠️ SnappySnag Warning: Cannot show disabled dialog because BuildContext is null. Please pass context to SnappySnag.startFeedbackMode(context: context) or pass navigatorKey to SnappySnag().initialize().');
+        debugPrint(
+            '⚠️ SnappySnag Warning: Cannot show disabled dialog because BuildContext is null. Please pass context to SnappySnag.startFeedbackMode(context: context) or pass navigatorKey to SnappySnag().initialize().');
       }
-      SnappySnag._log('ℹ️ SnappySnag: Feedback feature is currently disabled (enabled: false).');
+      SnappySnag._log(
+          'ℹ️ SnappySnag: Feedback feature is currently disabled (enabled: false).');
       return;
     }
 
@@ -769,7 +685,8 @@ class SnappySnag {
     if (ctx != null) {
       final isDark = theme.isDark(ctx);
       final dialogBg = isDark ? const Color(0xFF1E1E24) : Colors.white;
-      final dialogBorder = isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
+      final dialogBorder =
+          isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
       final titleColor = isDark ? Colors.white : Colors.black87;
       final bodyColor = isDark ? Colors.white70 : Colors.black54;
       final primaryColor = theme.primaryColor;
@@ -814,15 +731,18 @@ class SnappySnag {
                 onPressed: () => Navigator.of(dialogCtx).pop(),
                 child: Text(
                   _SdkLocale.cancel,
-                  style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
+                  style: TextStyle(
+                      color: isDark ? Colors.white60 : Colors.black54),
                 ),
               ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
-                foregroundColor: ThemeData.estimateBrightnessForColor(primaryColor) == Brightness.dark
-                    ? Colors.white
-                    : Colors.black,
+                foregroundColor:
+                    ThemeData.estimateBrightnessForColor(primaryColor) ==
+                            Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -873,7 +793,8 @@ class SnappySnag {
 
   /// GlobalKey for accessing top-level Navigator context.
   /// Returns custom navigatorKey if provided to `initialize()`, otherwise returns the default `SnappySnag.navigatorKey`.
-  GlobalKey<NavigatorState>? get navigatorKey => _customNavigatorKey ?? SnappySnag.defaultNavigatorKey;
+  GlobalKey<NavigatorState>? get navigatorKey =>
+      _customNavigatorKey ?? SnappySnag.defaultNavigatorKey;
 
   /// Initialize the SnappySnag SDK with a Project/API Key, optional Package Name, optional SnappySnagUser, and optional custom NavigatorKey.
   ///
@@ -919,7 +840,8 @@ class SnappySnag {
     if (kReleaseMode && mode == SnappySnagMode.dev && !forceDevInRelease) {
       _mode = SnappySnagMode.user;
       // High-priority notification: Security guard warning
-      debugPrint('🛡️ SnappySnag Security Guard: SnappySnagMode.dev was specified in release mode without forceDevInRelease: true. Automatically falling back to SnappySnagMode.user to protect internal tickets & developer chats.');
+      debugPrint(
+          '🛡️ SnappySnag Security Guard: SnappySnagMode.dev was specified in release mode without forceDevInRelease: true. Automatically falling back to SnappySnagMode.user to protect internal tickets & developer chats.');
     } else {
       _mode = mode;
     }
@@ -940,7 +862,8 @@ class SnappySnag {
 
     if (isDemoMode) {
       // Demo / Sandbox mode notification
-      debugPrint('🎯 [SnappySnag] Demo/Sandbox Mode Active! Local capturing & pin testing enabled without server account.');
+      debugPrint(
+          '🎯 [SnappySnag] Demo/Sandbox Mode Active! Local capturing & pin testing enabled without server account.');
     } else if (_apiKey == null || _apiKey!.trim().isEmpty) {
       // Essential config warning
       debugPrint('⚠️ SnappySnag Warning: apiKey is empty or not configured.');
@@ -985,7 +908,8 @@ class SnappySnag {
       _deviceId = savedId;
       return _deviceId!;
     } catch (e) {
-      SnappySnag._log('⚠️ SnappySnag: Failed to access SharedPreferences for deviceId: $e');
+      SnappySnag._log(
+          '⚠️ SnappySnag: Failed to access SharedPreferences for deviceId: $e');
       _deviceId ??= _generateUuidV4();
       return _deviceId!;
     }
@@ -1044,17 +968,6 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
   final List<Object> _undoStack = [];
   final List<Object> _redoStack = [];
   SnappyPin? _editingPin;
-  // Internal experimental flag (disabled for initial releases):
-  static const bool _enableSectionHighlights = false;
-
-  List<dynamic> _existingFeedbacks = [];
-  List<ExistingPinItem> _existingPins = [];
-  List<ExistingSectionItem> _existingSections = [];
-  bool _requiresPasscode = false;
-  bool _showExistingPins = _enableSectionHighlights;
-  ExistingSectionItem? _selectedSection;
-  ExistingPinItem? _previewingPin;
-  bool _showAllScreenPinsModal = false;
   Offset? _dragStartGlobal;
   double? _dragStartPinX;
   double? _dragStartPinY;
@@ -1066,14 +979,10 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
   bool _isCancelDraftConfirmOpen = false;
   bool _isFailedSendDraftConfirmOpen = false;
   bool _isClearConfirmOpen = false;
-  bool _isDevPasscodeDialogOpen = false;
-  bool _isVerifyingDevPasscode = false;
-  bool _isLoadingAllScreenPins = false;
-  final TextEditingController _devPasscodeInputController = TextEditingController();
-  String? _devPasscodeErrorMessage;
   bool _includeAccountAndDiagnostics = true;
   final TextEditingController _feedbackMemoController = TextEditingController();
-  final ScreenshotController _canvasScreenshotController = ScreenshotController();
+  final ScreenshotController _canvasScreenshotController =
+      ScreenshotController();
   Completer<void>? _drawingCompleter;
   double? _drawingAspectRatio;
 
@@ -1110,7 +1019,9 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
     _accelerometerSubscription = userAccelerometerEventStream().listen(
       (UserAccelerometerEvent event) {
-        if (_isCapturing || _isFeedbackDialogOpen || _overlayMode != _SnappyOverlayMode.none) return;
+        if (_isCapturing ||
+            _isFeedbackDialogOpen ||
+            _overlayMode != _SnappyOverlayMode.none) return;
 
         // Calculate G-force vector length
         final double gForce = sqrt(
@@ -1119,19 +1030,27 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
         if (gForce > shakeThreshold) {
           final now = DateTime.now();
-          final currentSignX = event.x.abs() > 8.0 ? (event.x > 0 ? 1.0 : -1.0) : 0.0;
-          final currentSignY = event.y.abs() > 8.0 ? (event.y > 0 ? 1.0 : -1.0) : 0.0;
+          final currentSignX =
+              event.x.abs() > 8.0 ? (event.x > 0 ? 1.0 : -1.0) : 0.0;
+          final currentSignY =
+              event.y.abs() > 8.0 ? (event.y > 0 ? 1.0 : -1.0) : 0.0;
 
           // Reset flip count if more than 600ms elapsed since the previous flip
-          if (_firstFlipTime == null || now.difference(_firstFlipTime!) > const Duration(milliseconds: 600)) {
+          if (_firstFlipTime == null ||
+              now.difference(_firstFlipTime!) >
+                  const Duration(milliseconds: 600)) {
             _shakeFlipCount = 1;
             _firstFlipTime = now;
             _lastSignX = currentSignX;
             _lastSignY = currentSignY;
           } else {
             // Detect sharp direction reversal (positive/negative flip from wrist motion)
-            final bool isReversedX = (currentSignX != 0.0 && _lastSignX != 0.0 && currentSignX != _lastSignX);
-            final bool isReversedY = (currentSignY != 0.0 && _lastSignY != 0.0 && currentSignY != _lastSignY);
+            final bool isReversedX = (currentSignX != 0.0 &&
+                _lastSignX != 0.0 &&
+                currentSignX != _lastSignX);
+            final bool isReversedY = (currentSignY != 0.0 &&
+                _lastSignY != 0.0 &&
+                currentSignY != _lastSignY);
 
             if (isReversedX || isReversedY) {
               _shakeFlipCount++;
@@ -1144,9 +1063,12 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                 _firstFlipTime = null;
 
                 // Anti-chattering (ensure at least 2 seconds between capture triggers)
-                if (_lastShakeTime == null || now.difference(_lastShakeTime!) > const Duration(seconds: 2)) {
+                if (_lastShakeTime == null ||
+                    now.difference(_lastShakeTime!) >
+                        const Duration(seconds: 2)) {
                   _lastShakeTime = now;
-                  SnappySnag._log('📱 SnappySnag: Genuine device shake detected (gForce: ${gForce.toStringAsFixed(1)}). Triggering capture.');
+                  SnappySnag._log(
+                      '📱 SnappySnag: Genuine device shake detected (gForce: ${gForce.toStringAsFixed(1)}). Triggering capture.');
                   _triggerCapture();
                 }
               }
@@ -1165,7 +1087,6 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
   void dispose() {
     _toastTimer?.cancel();
     _accelerometerSubscription?.cancel();
-    _devPasscodeInputController.dispose();
     super.dispose();
   }
 
@@ -1211,7 +1132,8 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
     // In user mode, suppress technical dialogs and show a friendly toast/SnackBar instead
     if (isUserMode) {
-      SnappySnag._log('⚠️ SnappySnag [UserMode] Suppressed error dialog: $message');
+      SnappySnag._log(
+          '⚠️ SnappySnag [UserMode] Suppressed error dialog: $message');
       _showToast(
         targetContext: targetContext,
         message: _SdkLocale.userModeUnavailable,
@@ -1277,81 +1199,6 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
     );
   }
 
-  /// Verifies passcode, updates existing pin items and returns true on success, false otherwise.
-  Future<bool> _verifyDevPasscodeAndFetch(String code) async {
-    final apiKey = SnappySnag()._apiKey;
-    if (apiKey == null) return false;
-
-    final String url =
-        '${SnappySnag().supabaseUrl}/functions/v1/get-existing-feedbacks'
-        '?screen_class_name=${Uri.encodeComponent(_drawingScreenClassName)}'
-        '&screen_signature=${Uri.encodeComponent(_drawingScreenSignature)}';
-
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'x-snappy-api-key': apiKey,
-          'x-snappy-package-name': SnappySnag()._packageName ?? '',
-          if (SnappySnag().reporterEmail != null && SnappySnag().reporterEmail!.isNotEmpty)
-            'x-snappy-reporter-email': SnappySnag().reporterEmail!,
-          'x-snappy-dev-passcode': code,
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final isVerified = data['is_passcode_verified'] == true;
-        if (isVerified) {
-          SnappySnag().setDevPasscode(code);
-          if (data['is_dev_chat_enabled'] != null) {
-            SnappySnag()._isDevChatEnabled = data['is_dev_chat_enabled'] == true;
-          }
-          final duplicates = (data['duplicates'] as List<dynamic>?) ?? [];
-          _updateExistingFeedbacksState(duplicates);
-          return true;
-        }
-      }
-    } catch (e) {
-      SnappySnag._log('❌ SnappySnag Dev Passcode Verify Error: $e');
-    }
-    return false;
-  }
-
-  Future<void> _submitDevPasscode() async {
-    final code = _devPasscodeInputController.text.trim();
-    if (code.length != 4) {
-      setState(() {
-        _devPasscodeErrorMessage = _SdkLocale.devPasscodeInvalid;
-      });
-      return;
-    }
-
-    setState(() {
-      _isVerifyingDevPasscode = true;
-      _devPasscodeErrorMessage = null;
-    });
-
-    final success = await _verifyDevPasscodeAndFetch(code);
-
-    if (!mounted) return;
-
-    if (success) {
-      setState(() {
-        _isVerifyingDevPasscode = false;
-        _isDevPasscodeDialogOpen = false;
-        _devPasscodeErrorMessage = null;
-        _devPasscodeInputController.clear();
-        _showAllScreenPinsModal = true;
-      });
-    } else {
-      setState(() {
-        _isVerifyingDevPasscode = false;
-        _devPasscodeErrorMessage = _SdkLocale.devPasscodeInvalid;
-      });
-    }
-  }
-
   Future<void> _triggerCapture() async {
     final isDemo = SnappySnag().isDemoMode;
     final apiKey = SnappySnag()._apiKey;
@@ -1371,7 +1218,8 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
       final theme = SnappySnag().theme;
       final isDark = theme.isDark(targetContext);
       final dialogBg = isDark ? const Color(0xFF1E1E24) : Colors.white;
-      final dialogBorder = isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
+      final dialogBorder =
+          isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
       final titleColor = isDark ? Colors.white : Colors.black87;
       final bodyColor = isDark ? Colors.white70 : Colors.black54;
       final primaryColor = theme.primaryColor;
@@ -1418,9 +1266,11 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
-                foregroundColor: ThemeData.estimateBrightnessForColor(primaryColor) == Brightness.dark
-                    ? Colors.white
-                    : Colors.black,
+                foregroundColor:
+                    ThemeData.estimateBrightnessForColor(primaryColor) ==
+                            Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1447,13 +1297,6 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
             _isFeedbackDialogOpen = true;
           });
           try {
-            // When resuming drafts, reuse cached existing feedbacks without making network calls.
-            // This ensures offline resilience and retains the "All Issues" modal button.
-            final isUserMode = SnappySnag().mode == SnappySnagMode.user || draft.isDevChatEnabled == false;
-            final existingFeedbacksForDraft = isUserMode ? <dynamic>[] : draft.existingFeedbacks;
-            // Restore cached isDevChatEnabled flag
-            SnappySnag()._isDevChatEnabled = draft.isDevChatEnabled;
-
             await _startDrawingFlow(
               draft.imageBytes,
               draft.widgetTree,
@@ -1463,7 +1306,6 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
               initialPins: draft.pins,
               initialMemo: draft.memo,
               initialAspectRatio: draft.drawingAspectRatio,
-              existingFeedbacks: existingFeedbacksForDraft,
             );
           } finally {
             if (mounted) {
@@ -1496,10 +1338,12 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
       screenClassName,
     );
     // Automatically detect global bounds of sensitive fields (password, email, etc.)
-    final List<Rect> sensitiveBounds = WidgetTreeDumper.findSensitiveFieldBounds(
+    final List<Rect> sensitiveBounds =
+        WidgetTreeDumper.findSensitiveFieldBounds(
       targetContext,
     );
-    SnappySnag._log('🎬 SnappySnag: Captured Screen ID: $screenClassName, Signature: $screenSignature, Sensitive Areas: ${sensitiveBounds.length}');
+    SnappySnag._log(
+        '🎬 SnappySnag: Captured Screen ID: $screenClassName, Signature: $screenSignature, Sensitive Areas: ${sensitiveBounds.length}');
 
     // Immediately capture screenshot (zero delay to freeze button-press moment)
     final Uint8List? imageBytes = await _screenshotController.capture();
@@ -1522,9 +1366,7 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
         // Pre-validation of authentication & active status:
         // Validates API Key & Package Name with server regardless of mode.
         // Throws SnappySnagException on 401/403 so errors are caught early before user begins editing.
-        final fetched = await _fetchExistingFeedbacks(screenClassName, screenSignature);
-        final isUserMode = SnappySnag().mode == SnappySnagMode.user || SnappySnag().isDevChatEnabled == false;
-        final duplicates = isUserMode ? <dynamic>[] : fetched;
+        await _fetchExistingFeedbacks(screenClassName, screenSignature);
         _hideLoadingOverlay();
         if (!mounted) return;
 
@@ -1540,7 +1382,6 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
             screenClassName: screenClassName,
             screenSignature: screenSignature,
             sensitiveBounds: sensitiveBounds,
-            existingFeedbacks: duplicates,
           );
         } finally {
           if (mounted) {
@@ -1576,9 +1417,10 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
     }
   }
 
-  Future<List<dynamic>> _fetchExistingFeedbacks(String screenClassName, String screenSignature) async {
+  Future<List<dynamic>> _fetchExistingFeedbacks(
+      String screenClassName, String screenSignature) async {
     if (SnappySnag().isDemoMode) {
-      SnappySnag._log('🎯 [SnappySnag Demo] Skipping server validation for existing feedbacks.');
+      SnappySnag._log('🎯 [SnappySnag Demo] Skipping server pre-validation.');
       return [];
     }
 
@@ -1591,35 +1433,17 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
         '&screen_signature=${Uri.encodeComponent(screenSignature)}';
 
     try {
-      final devPasscode = SnappySnag().devPasscode;
       final response = await http.get(
         Uri.parse(url),
         headers: {
           'x-snappy-api-key': apiKey,
           'x-snappy-package-name': SnappySnag()._packageName ?? '',
-          if (SnappySnag().reporterEmail != null && SnappySnag().reporterEmail!.isNotEmpty)
-            'x-snappy-reporter-email': SnappySnag().reporterEmail!,
-          if (devPasscode != null && devPasscode.isNotEmpty)
-            'x-snappy-dev-passcode': devPasscode,
         },
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['is_dev_chat_enabled'] != null) {
-          SnappySnag()._isDevChatEnabled = data['is_dev_chat_enabled'] == true;
-        }
-        if (data['requires_passcode'] != null) {
-          _requiresPasscode = data['requires_passcode'] == true;
-        }
-        final bool isPasscodeRejected = devPasscode != null &&
-            (data['is_passcode_verified'] == false ||
-             (data['requires_passcode'] == true && data['is_dev_chat_enabled'] == false) ||
-             (data['requires_passcode'] == true && data['is_passcode_verified'] != true));
-        if (isPasscodeRejected) {
-          SnappySnag().clearDevPasscode();
-        }
-        return (data['duplicates'] as List<dynamic>?) ?? [];
+        // Write-Only security model: only pre-validates API key and package lock, never returns existing feedback items
+        return [];
       } else {
         String serverError = '';
         try {
@@ -1628,7 +1452,8 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
         } catch (_) {}
 
         if (response.statusCode == 401) {
-          throw SnappySnagException(serverError.isNotEmpty ? serverError : 'Invalid API Key');
+          throw SnappySnagException(
+              serverError.isNotEmpty ? serverError : 'Invalid API Key');
         } else if (response.statusCode == 403) {
           throw SnappySnagException(
             serverError.isNotEmpty
@@ -1640,11 +1465,10 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
     } on SnappySnagException {
       rethrow;
     } catch (e) {
-      SnappySnag._log('❌ SnappySnag Fetch Duplicates Error: $e');
+      SnappySnag._log('❌ SnappySnag Pre-validation Error: $e');
     }
     return [];
   }
-
 
   Future<_FeedbackResponse> _sendFeedback({
     required Uint8List imageBytes,
@@ -1678,7 +1502,11 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
         body: jsonEncode({
           'device_id': deviceId,
           'screenshot_base64': base64Image,
-          'widget_tree': (SnappySnag().enableWidgetTree && (_includeAccountAndDiagnostics || SnappySnag().mode != SnappySnagMode.user)) ? widgetTree : <String, dynamic>{},
+          'widget_tree': (SnappySnag().enableWidgetTree &&
+                  (_includeAccountAndDiagnostics ||
+                      SnappySnag().mode != SnappySnagMode.user))
+              ? widgetTree
+              : <String, dynamic>{},
           'memo': memo,
           'pins': pins.map((p) => p.toJson()).toList(),
           'screen_class_name': screenClassName,
@@ -1686,26 +1514,40 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
           'tags': [
             'debug',
             'feedback',
-            SnappySnag().mode == SnappySnagMode.user ? 'user_feedback' : 'dev_report',
+            SnappySnag().mode == SnappySnagMode.user
+                ? 'user_feedback'
+                : 'dev_report',
           ],
           'metadata': {
             'device_id': deviceId,
             'platform': 'flutter',
-            'os_name': kIsWeb ? 'web_${defaultTargetPlatform.name.toLowerCase()}' : Platform.operatingSystem,
-            'os_version': kIsWeb ? getBrowserInfoHelper() : Platform.operatingSystemVersion,
+            'os_name': kIsWeb
+                ? 'web_${defaultTargetPlatform.name.toLowerCase()}'
+                : Platform.operatingSystem,
+            'os_version': kIsWeb
+                ? getBrowserInfoHelper()
+                : Platform.operatingSystemVersion,
             'package_name': SnappySnag()._packageName,
-            'reporter_user_id': (_includeAccountAndDiagnostics || SnappySnag().mode != SnappySnagMode.user)
+            'reporter_user_id': (_includeAccountAndDiagnostics ||
+                    SnappySnag().mode != SnappySnagMode.user)
                 ? (SnappySnag().reporterUserId ?? 'anonymous')
                 : 'anonymous',
-            'reporter_email': (_includeAccountAndDiagnostics || SnappySnag().mode != SnappySnagMode.user)
+            'reporter_email': (_includeAccountAndDiagnostics ||
+                    SnappySnag().mode != SnappySnagMode.user)
                 ? (SnappySnag().reporterEmail ?? 'anonymous')
                 : 'anonymous',
-            if (SnappySnag()._user?.name != null && (_includeAccountAndDiagnostics || SnappySnag().mode != SnappySnagMode.user))
+            if (SnappySnag()._user?.name != null &&
+                (_includeAccountAndDiagnostics ||
+                    SnappySnag().mode != SnappySnagMode.user))
               'reporter_name': SnappySnag()._user!.name!,
             'mode': SnappySnag().mode == SnappySnagMode.user ? 'user' : 'dev',
-            'is_anonymous': (SnappySnag().mode == SnappySnagMode.user && !_includeAccountAndDiagnostics),
-            if (_includeAccountAndDiagnostics || SnappySnag().mode != SnappySnagMode.user) ...?SnappySnag()._user?.customAttributes,
-            if (_includeAccountAndDiagnostics || SnappySnag().mode != SnappySnagMode.user)
+            'is_anonymous': (SnappySnag().mode == SnappySnagMode.user &&
+                !_includeAccountAndDiagnostics),
+            if (_includeAccountAndDiagnostics ||
+                SnappySnag().mode != SnappySnagMode.user)
+              ...?SnappySnag()._user?.customAttributes,
+            if (_includeAccountAndDiagnostics ||
+                SnappySnag().mode != SnappySnagMode.user)
               ...?SnappySnag()._customMetadata,
           },
         }),
@@ -1722,14 +1564,21 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
       return _FeedbackResponse(response.statusCode, errorMessage);
     } catch (e) {
       SnappySnag._log('❌ SnappySnag Network Error: $e');
-      if (!kIsWeb && Platform.isMacOS && e.toString().contains('Operation not permitted')) {
-        debugPrint('⚠️ [SnappySnag WARNING] macOS Sandbox Network client restriction detected!');
-        debugPrint('======================================================================');
-        debugPrint('To allow internet access for your macOS build, please add:');
+      if (!kIsWeb &&
+          Platform.isMacOS &&
+          e.toString().contains('Operation not permitted')) {
+        debugPrint(
+            '⚠️ [SnappySnag WARNING] macOS Sandbox Network client restriction detected!');
+        debugPrint(
+            '======================================================================');
+        debugPrint(
+            'To allow internet access for your macOS build, please add:');
         debugPrint('  <key>com.apple.security.network.client</key>');
         debugPrint('  <true/>');
-        debugPrint('inside macos/Runner/DebugProfile.entitlements and Release.entitlements.');
-        debugPrint('======================================================================');
+        debugPrint(
+            'inside macos/Runner/DebugProfile.entitlements and Release.entitlements.');
+        debugPrint(
+            '======================================================================');
       }
       return _FeedbackResponse(-1, e.toString());
     }
@@ -1745,12 +1594,14 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
     List<SnappyPin>? initialPins,
     String? initialMemo,
     double? initialAspectRatio,
-    List<dynamic>? existingFeedbacks,
   }) async {
     if (!mounted) return;
     _drawingCompleter = Completer<void>();
     final mediaSize = MediaQuery.of(context).size;
-    final capturedAspect = initialAspectRatio ?? (mediaSize.height > 0 ? (mediaSize.width / mediaSize.height) : (9 / 16));
+    final capturedAspect = initialAspectRatio ??
+        (mediaSize.height > 0
+            ? (mediaSize.width / mediaSize.height)
+            : (9 / 16));
 
     // Automatically detect sensitive fields and add initial masking points
     final List<DrawingPoint> initialPoints = [];
@@ -1771,8 +1622,6 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
       }
     }
 
-    final parsedExistingFeedbacks = existingFeedbacks ?? <dynamic>[];
-
     setState(() {
       _drawingImageBytes = imageBytes;
       _drawingWidgetTree = widgetTree;
@@ -1783,8 +1632,6 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
       _undoStack.clear();
       _redoStack.clear();
       _editingPin = null;
-      _updateExistingFeedbacksState(parsedExistingFeedbacks);
-      _showAllScreenPinsModal = false;
       _activeTool = SnappyDrawingTool.pin;
       _isSendingFeedback = false;
       _isMemoOpen = false;
@@ -1792,226 +1639,11 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
       _isCancelDraftConfirmOpen = false;
       _isFailedSendDraftConfirmOpen = false;
       _isClearConfirmOpen = false;
-      _isDevPasscodeDialogOpen = false;
       _feedbackMemoController.text = initialMemo ?? '';
       _drawingAspectRatio = capturedAspect;
       _overlayMode = _SnappyOverlayMode.drawing;
     });
     return _drawingCompleter!.future;
-  }
-
-  /// Parses feedback data from server and updates local state
-  void _updateExistingFeedbacksState(List<dynamic> feedbacks) {
-    final parsedExistingFeedbacks = feedbacks;
-    final List<ExistingPinItem> parsedExistingPins = [];
-    final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
-    final targetRenderBox = targetContext.findRenderObject() as RenderBox?;
-    final targetOrigin = (targetRenderBox != null && targetRenderBox.attached)
-        ? targetRenderBox.localToGlobal(Offset.zero)
-        : Offset.zero;
-    final mediaSize = MediaQuery.maybeOf(context)?.size ?? Size.zero;
-    final targetSize = (targetRenderBox != null && targetRenderBox.attached && targetRenderBox.hasSize)
-        ? targetRenderBox.size
-        : (MediaQuery.maybeOf(targetContext)?.size ?? mediaSize);
-
-    for (final fb in parsedExistingFeedbacks) {
-      final feedbackId = fb['id']?.toString() ?? '';
-      final userMemo = fb['user_memo']?.toString() ?? '';
-      final severity = fb['severity']?.toString() ?? 'unassessed';
-      final rawScreenshot = fb['screenshot_url']?.toString();
-
-      String? resolvedScreenshotUrl;
-      if (rawScreenshot != null && rawScreenshot.trim().isNotEmpty) {
-        final trimmed = rawScreenshot.trim();
-        if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-          resolvedScreenshotUrl = trimmed;
-        } else {
-          final cleanPath = trimmed.startsWith('/') ? trimmed.substring(1) : trimmed;
-          resolvedScreenshotUrl = '${SnappySnag().supabaseUrl}/storage/v1/object/public/feedback-assets/$cleanPath';
-        }
-      }
-
-      final rawPins = fb['pins'];
-      if (rawPins is List) {
-        for (final p in rawPins) {
-          if (p is Map<String, dynamic>) {
-            final pin = SnappyPin.fromJson(p);
-            if (!pin.isActive) continue;
-
-            Offset? resolvedRatio;
-            if (pin.target != null) {
-              try {
-                final resolvedPos = WidgetTreeDumper.resolveTargetPosition(
-                  targetContext,
-                  pin.target!,
-                  fallbackPosition: Offset(pin.xRatio, pin.yRatio),
-                );
-                if (resolvedPos != null && targetSize.width > 0 && targetSize.height > 0) {
-                  resolvedRatio = Offset(
-                    ((resolvedPos.dx - targetOrigin.dx) / targetSize.width).clamp(0.0, 1.0),
-                    ((resolvedPos.dy - targetOrigin.dy) / targetSize.height).clamp(0.0, 1.0),
-                  );
-                }
-              } catch (e) {
-                SnappySnag._log('⚠️ SnappySnag: Failed to resolve target position: $e');
-              }
-            }
-            parsedExistingPins.add(
-              ExistingPinItem(
-                feedbackId: feedbackId,
-                userMemo: userMemo,
-                severity: severity,
-                pin: pin,
-                resolvedRatio: resolvedRatio,
-                screenshotUrl: resolvedScreenshotUrl,
-              ),
-            );
-          }
-        }
-      }
-    }
-
-    final List<ExistingSectionItem> parsedExistingSections = [];
-    final Map<String, List<ExistingPinItem>> sectionPinGroups = {};
-    final Map<String, Rect> sectionRects = {};
-    final Map<String, String> sectionNames = {};
-
-    for (final item in parsedExistingPins) {
-      final target = item.pin.target;
-      if (target != null) {
-        try {
-          final rect = WidgetTreeDumper.resolveTargetRect(
-            targetContext,
-            target,
-            fallbackPosition: Offset(item.pin.xRatio, item.pin.yRatio),
-          );
-          if (rect != null) {
-            final groupKey = '${target.widgetType}_${target.widgetKey ?? ""}_${(rect.left / 10).round()}_${(rect.top / 10).round()}';
-            sectionPinGroups.putIfAbsent(groupKey, () => []).add(item);
-            sectionRects[groupKey] = rect;
-            final label = (target.widgetText != null && target.widgetText!.isNotEmpty)
-                ? '${target.widgetType} ("${target.widgetText}")'
-                : target.widgetType;
-            sectionNames[groupKey] = label;
-          }
-        } catch (e) {
-          SnappySnag._log('⚠️ SnappySnag: Error resolving target section rect: $e');
-        }
-      }
-    }
-
-    final List<ExistingSectionItem> rawSections = [];
-    sectionPinGroups.forEach((key, pinList) {
-      final rect = sectionRects[key]!;
-      final name = sectionNames[key]!;
-      rawSections.add(
-        ExistingSectionItem(
-          id: key,
-          sectionName: name,
-          screenRect: rect,
-          pins: pinList,
-        ),
-      );
-    });
-
-    final double screenTotalArea = (targetSize.width > 0 && targetSize.height > 0)
-        ? (targetSize.width * targetSize.height)
-        : (mediaSize.width * mediaSize.height);
-
-    rawSections.sort((a, b) {
-      final areaA = a.screenRect.width * a.screenRect.height;
-      final areaB = b.screenRect.width * b.screenRect.height;
-      return areaB.compareTo(areaA);
-    });
-
-    final List<ExistingSectionItem> mergedSections = [];
-    for (final sec in rawSections) {
-      bool mergedIntoParent = false;
-      final childArea = sec.screenRect.width * sec.screenRect.height;
-
-      for (int i = 0; i < mergedSections.length; i++) {
-        final parent = mergedSections[i];
-        final parentRect = parent.screenRect;
-        final childRect = sec.screenRect;
-        final parentArea = parentRect.width * parentRect.height;
-
-        final isParentTooHuge = screenTotalArea > 0 && (parentArea / screenTotalArea) >= 0.5;
-        if (isParentTooHuge) {
-          continue;
-        }
-
-        final centerInParent = parentRect.contains(childRect.center);
-        final overlapLeft = max(parentRect.left, childRect.left);
-        final overlapTop = max(parentRect.top, childRect.top);
-        final overlapRight = min(parentRect.right, childRect.right);
-        final overlapBottom = min(parentRect.bottom, childRect.bottom);
-        final overlapWidth = max(0.0, overlapRight - overlapLeft);
-        final overlapHeight = max(0.0, overlapBottom - overlapTop);
-        final overlapArea = overlapWidth * overlapHeight;
-        final overlapRatio = childArea > 0 ? (overlapArea / childArea) : 0.0;
-
-        if (centerInParent || overlapRatio >= 0.7) {
-          final updatedPins = List<ExistingPinItem>.from(parent.pins)..addAll(sec.pins);
-          mergedSections[i] = ExistingSectionItem(
-            id: parent.id,
-            sectionName: parent.sectionName,
-            screenRect: parent.screenRect,
-            pins: updatedPins,
-          );
-          mergedIntoParent = true;
-          break;
-        }
-      }
-
-      if (!mergedIntoParent) {
-        mergedSections.add(sec);
-      }
-    }
-
-    mergedSections.sort((a, b) {
-      final areaA = a.screenRect.width * a.screenRect.height;
-      final areaB = b.screenRect.width * b.screenRect.height;
-      return areaB.compareTo(areaA);
-    });
-
-    parsedExistingSections.addAll(mergedSections);
-
-    _existingFeedbacks = parsedExistingFeedbacks;
-    _existingPins = parsedExistingPins;
-    _existingSections = parsedExistingSections;
-    _showExistingPins = _enableSectionHighlights;
-    _selectedSection = null;
-    _previewingPin = null;
-  }
-
-  /// Resolves actual pixel dimensions of network image (with in-memory caching)
-  /// Used in pin coordinate calculations instead of _drawingAspectRatio to prevent EXIF rotation errors
-  final Map<String, Size> _imageSizeCache = {};
-  Future<Size> _resolveImageSize(String url) async {
-    if (_imageSizeCache.containsKey(url)) return _imageSizeCache[url]!;
-    final completer = Completer<Size>();
-    final imageProvider = NetworkImage(url);
-    final stream = imageProvider.resolve(ImageConfiguration.empty);
-    late ImageStreamListener listener;
-    listener = ImageStreamListener(
-      (ImageInfo info, bool _) {
-        final size = Size(
-          info.image.width.toDouble(),
-          info.image.height.toDouble(),
-        );
-        _imageSizeCache[url] = size;
-        if (!completer.isCompleted) completer.complete(size);
-        stream.removeListener(listener);
-      },
-      onError: (dynamic exception, StackTrace? stackTrace) {
-        if (!completer.isCompleted) {
-          completer.completeError(exception, stackTrace);
-        }
-        stream.removeListener(listener);
-      },
-    );
-    stream.addListener(listener);
-    return completer.future;
   }
 
   void _renumberPins() {
@@ -2022,7 +1654,8 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
   Future<void> _cancelDrawingFlow() async {
     // Check if user has added pins or non-rect mosaic drawings
-    final hasUserEdits = _pins.isNotEmpty || _drawingPoints.any((p) => p.rect == null);
+    final hasUserEdits =
+        _pins.isNotEmpty || _drawingPoints.any((p) => p.rect == null);
 
     if (hasUserEdits && mounted) {
       // Display inline dialog to ensure topmost visibility inside fullscreen OverlayEntry
@@ -2039,8 +1672,6 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
     setState(() {
       _isCancelDraftConfirmOpen = false;
       _isFailedSendDraftConfirmOpen = false;
-      _isDevPasscodeDialogOpen = false;
-      _isVerifyingDevPasscode = false;
       _overlayMode = _SnappyOverlayMode.none;
       _isCapturing = false;
     });
@@ -2052,7 +1683,8 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
     final validPins = _pins.where((p) => p.comment.trim().isNotEmpty).toList();
     if (validPins.isEmpty) {
       if (mounted) {
-        final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
+        final messengerContext =
+            SnappySnag().navigatorKey?.currentContext ?? context;
         _showToast(
           targetContext: messengerContext,
           message: _SdkLocale.pinRequiredSnackBar,
@@ -2078,7 +1710,8 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
   Future<void> _executeFeedbackSubmission() async {
     // Automatically synthesize summary text from itemized pin comments
     final validPins = _pins.where((p) => p.comment.trim().isNotEmpty).toList();
-    final memo = validPins.map((p) => '【Pin ${p.number}】${p.comment.trim()}').join('\n');
+    final memo =
+        validPins.map((p) => '【Pin ${p.number}】${p.comment.trim()}').join('\n');
     setState(() {
       _isPrivacyConfirmOpen = false;
       _isSendingFeedback = true;
@@ -2091,20 +1724,27 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
     // 2. Submission (simulated locally in demo mode)
     final _FeedbackResponse feedbackRes;
     if (SnappySnag().isDemoMode) {
-      debugPrint('\n======================================================================');
+      debugPrint(
+          '\n======================================================================');
       debugPrint('🎯 [SnappySnag Demo Mode] Feedback Captured Successfully!');
-      debugPrint('======================================================================');
+      debugPrint(
+          '======================================================================');
       debugPrint('📍 Screen: $_drawingScreenClassName');
       debugPrint('💬 Memo:\n$memo');
       debugPrint('📌 Pins count: ${_pins.length}');
       for (final p in _pins) {
-        debugPrint('  - Pin #${p.number}: "${p.comment}" (x: ${p.xRatio.toStringAsFixed(2)}, y: ${p.yRatio.toStringAsFixed(2)}, widget: ${p.target?.widgetType ?? "Unknown"})');
+        debugPrint(
+            '  - Pin #${p.number}: "${p.comment}" (x: ${p.xRatio.toStringAsFixed(2)}, y: ${p.yRatio.toStringAsFixed(2)}, widget: ${p.target?.widgetType ?? "Unknown"})');
       }
-      debugPrint('🌳 Widget Tree: ${_drawingWidgetTree.keys.join(", ")} (${_drawingWidgetTree.length} nodes)');
-      debugPrint('----------------------------------------------------------------------');
-      debugPrint('👉 To sync feedback to GitHub Issues and enable AI auto-fix,');
+      debugPrint(
+          '🌳 Widget Tree: ${_drawingWidgetTree.keys.join(", ")} (${_drawingWidgetTree.length} nodes)');
+      debugPrint(
+          '----------------------------------------------------------------------');
+      debugPrint(
+          '👉 To sync feedback to GitHub Issues and enable AI auto-fix,');
       debugPrint('   get your free API key at: https://snappysnag.com');
-      debugPrint('======================================================================\n');
+      debugPrint(
+          '======================================================================\n');
 
       // Slight simulated network delay for smooth UX
       await Future.delayed(const Duration(milliseconds: 350));
@@ -2142,18 +1782,22 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
 
     // Feedback notification toast
     if (mounted) {
-      final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
+      final messengerContext =
+          SnappySnag().navigatorKey?.currentContext ?? context;
       final isUserMode = SnappySnag().mode == SnappySnagMode.user;
       final isDemo = SnappySnag().isDemoMode;
-      String message = isDemo ? _SdkLocale.statusDemoSuccess : _SdkLocale.statusSuccess;
+      String message =
+          isDemo ? _SdkLocale.statusDemoSuccess : _SdkLocale.statusSuccess;
       if (!success) {
         if (isUserMode) {
           // For end users: friendly, calm message
           message = _SdkLocale.statusGenericError;
-          SnappySnag._log('⚠️ SnappySnag [UserMode] Submit failed (code: ${feedbackRes.statusCode}, msg: ${feedbackRes.errorMessage})');
+          SnappySnag._log(
+              '⚠️ SnappySnag [UserMode] Submit failed (code: ${feedbackRes.statusCode}, msg: ${feedbackRes.errorMessage})');
         } else {
           // For developers: detailed diagnostics message
-          if (feedbackRes.errorMessage != null && feedbackRes.errorMessage!.isNotEmpty) {
+          if (feedbackRes.errorMessage != null &&
+              feedbackRes.errorMessage!.isNotEmpty) {
             message = feedbackRes.errorMessage!;
           } else {
             if (feedbackRes.statusCode == 429) {
@@ -2164,7 +1808,8 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
               message = _SdkLocale.statusUnauthorizedPackage;
             } else {
               if (!kIsWeb && Platform.isMacOS) {
-                message = 'Network error: macOS network.client entitlement may be missing.';
+                message =
+                    'Network error: macOS network.client entitlement may be missing.';
               } else {
                 message = _SdkLocale.statusNetworkError;
               }
@@ -2269,8 +1914,10 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                   builder: (dialogContext) {
                     final theme = SnappySnag().theme;
                     final isDark = theme.isDark(dialogContext);
-                    final dialogBg = isDark ? const Color(0xFF1E1E24) : Colors.white;
-                    final dialogBorder = isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
+                    final dialogBg =
+                        isDark ? const Color(0xFF1E1E24) : Colors.white;
+                    final dialogBorder =
+                        isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
                     final textColor = isDark ? Colors.white : Colors.black87;
 
                     return Container(
@@ -2310,7 +1957,8 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
             ),
           ),
         // ⚡️ Inline drawing and feedback submission screen
-        if (_overlayMode == _SnappyOverlayMode.drawing && _drawingImageBytes != null)
+        if (_overlayMode == _SnappyOverlayMode.drawing &&
+            _drawingImageBytes != null)
           Positioned.fill(
             child: Overlay(
               initialEntries: [
@@ -2321,17 +1969,23 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                     final isDark = theme.isDark(overlayContext);
                     final primaryColor = theme.primaryColor;
                     final pinColor = theme.pinColor ?? const Color(0xFFF95738);
-                    final barBgColor = isDark ? Colors.grey.shade900 : Colors.white;
+                    final barBgColor =
+                        isDark ? Colors.grey.shade900 : Colors.white;
                     final barTextColor = isDark ? Colors.white : Colors.black87;
-                    final barSubtextColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
-                    final dialogBg = isDark ? const Color(0xFF1E1E24) : Colors.white;
-                    final dialogBorder = isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
-                    final dialogRadius = BorderRadius.circular(theme.borderRadius);
+                    final barSubtextColor =
+                        isDark ? Colors.grey.shade400 : Colors.grey.shade600;
+                    final dialogBg =
+                        isDark ? const Color(0xFF1E1E24) : Colors.white;
+                    final dialogBorder =
+                        isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
+                    final dialogRadius =
+                        BorderRadius.circular(theme.borderRadius);
 
                     return Material(
                       type: MaterialType.transparency,
                       child: Scaffold(
-                        backgroundColor: isDark ? Colors.black : const Color(0xFFF0F0F2),
+                        backgroundColor:
+                            isDark ? Colors.black : const Color(0xFFF0F0F2),
                         appBar: AppBar(
                           backgroundColor: barBgColor,
                           leading: TextButton(
@@ -2340,7 +1994,9 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                 : () => _cancelDrawingFlow(),
                             child: Text(
                               _SdkLocale.cancel,
-                              style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+                              style: TextStyle(
+                                  color:
+                                      isDark ? Colors.white70 : Colors.black54),
                             ),
                           ),
                           title: Column(
@@ -2367,195 +2023,6 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                           ),
                           centerTitle: true,
                           actions: [
-                            if (SnappySnag().mode == SnappySnagMode.dev && (_existingPins.isNotEmpty || _requiresPasscode))
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(16),
-                                  onTap: _isLoadingAllScreenPins ? null : () async {
-                                    if (_requiresPasscode) {
-                                      if (SnappySnag().devPasscode == null) {
-                                        setState(() {
-                                          _devPasscodeErrorMessage = null;
-                                          _isVerifyingDevPasscode = false;
-                                          _devPasscodeInputController.clear();
-                                          _isDevPasscodeDialogOpen = true;
-                                        });
-                                        return;
-                                      }
-
-                                      // If passcode is already stored, verify its current validity
-                                      // If passcode was changed in dashboard, clear the obsolete passcode and prompt for re-entry
-                                      setState(() {
-                                        _isLoadingAllScreenPins = true;
-                                      });
-                                      try {
-                                        final isValid = await _verifyDevPasscodeAndFetch(SnappySnag().devPasscode!);
-                                        if (!isValid) {
-                                          SnappySnag().clearDevPasscode();
-                                          if (mounted) {
-                                            setState(() {
-                                              _devPasscodeErrorMessage = _SdkLocale.devPasscodeInvalid;
-                                              _isVerifyingDevPasscode = false;
-                                              _devPasscodeInputController.clear();
-                                              _isDevPasscodeDialogOpen = true;
-                                            });
-                                          }
-                                          return;
-                                        }
-                                      } finally {
-                                        if (mounted) {
-                                          setState(() {
-                                            _isLoadingAllScreenPins = false;
-                                          });
-                                        }
-                                      }
-                                    }
-
-                                    setState(() {
-                                      _showAllScreenPinsModal = true;
-                                    });
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: Colors.white24,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        if (_isLoadingAllScreenPins)
-                                          const SizedBox(
-                                            width: 12,
-                                            height: 12,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white70,
-                                            ),
-                                          )
-                                        else
-                                          Icon(
-                                            _requiresPasscode && SnappySnag().devPasscode == null
-                                                ? Icons.lock_outline
-                                                : Icons.list_alt,
-                                            size: 14,
-                                            color: Colors.white70,
-                                          ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          _isLoadingAllScreenPins
-                                              ? _SdkLocale.devPasscodeChecking
-                                              : (_requiresPasscode && SnappySnag().devPasscode == null
-                                                  ? _SdkLocale.allScreenPinsBtn
-                                                  : '${_SdkLocale.allScreenPinsBtn} (${_existingPins.length})'),
-                                          style: const TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white70,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              )
-                            else if (SnappySnag().mode != SnappySnagMode.dev && _existingPins.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(16),
-                                  onTap: () {
-                                    setState(() {
-                                      _showAllScreenPinsModal = true;
-                                    });
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: Colors.white24,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(
-                                          Icons.list_alt,
-                                          size: 14,
-                                          color: Colors.white70,
-                                        ),
-                                        const SizedBox(width: 3),
-                                        Text(
-                                          '${_SdkLocale.allScreenPinsBtn} (${_existingPins.length})',
-                                          style: const TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white70,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            if (_enableSectionHighlights && _existingSections.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(16),
-                                  onTap: () {
-                                    setState(() {
-                                      _showExistingPins = !_showExistingPins;
-                                    });
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: _showExistingPins
-                                          ? const Color(0xFF8B5CF6).withValues(alpha: 0.25)
-                                          : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: _showExistingPins
-                                            ? const Color(0xFF8B5CF6)
-                                            : Colors.white38,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          _showExistingPins ? Icons.layers : Icons.layers_outlined,
-                                          size: 14,
-                                          color: _showExistingPins
-                                              ? const Color(0xFFA78BFA)
-                                              : Colors.white60,
-                                        ),
-                                        const SizedBox(width: 3),
-                                        Text(
-                                          '${_SdkLocale.existingPinsToggle} (${_existingSections.length})',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: _showExistingPins
-                                                ? const Color(0xFFA78BFA)
-                                                : Colors.white60,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
                             TextButton(
                               onPressed: _isSendingFeedback
                                   ? null
@@ -2584,20 +2051,24 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                             children: [
                               // 1. Drawing canvas area (expanded fullscreen)
                               Positioned.fill(
-                                bottom: 80, // Reserve space for the bottom toolbar
+                                bottom:
+                                    80, // Reserve space for the bottom toolbar
                                 child: Center(
                                   child: AspectRatio(
                                     aspectRatio: canvasRatio,
                                     child: LayoutBuilder(
                                       builder: (layoutContext, constraints) {
-                                        final canvasSize = Size(constraints.maxWidth, constraints.maxHeight);
+                                        final canvasSize = Size(
+                                            constraints.maxWidth,
+                                            constraints.maxHeight);
                                         return Stack(
                                           children: [
                                             // 1. Screenshot capture target (background image + mosaic blur only)
                                             // Note: Pins are not baked into the screenshot image, but saved and synchronized as coordinate/comment metadata.
                                             Positioned.fill(
                                               child: Screenshot(
-                                                controller: _canvasScreenshotController,
+                                                controller:
+                                                    _canvasScreenshotController,
                                                 child: Stack(
                                                   children: [
                                                     Positioned.fill(
@@ -2608,7 +2079,9 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                     ),
                                                     Positioned.fill(
                                                       child: CustomPaint(
-                                                        painter: DrawingPainter(points: _drawingPoints),
+                                                        painter: DrawingPainter(
+                                                            points:
+                                                                _drawingPoints),
                                                         size: Size.infinite,
                                                       ),
                                                     ),
@@ -2620,50 +2093,116 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                             // 2. Gesture listener layer for drawing and pin placement
                                             Positioned.fill(
                                               child: GestureDetector(
-                                                behavior: HitTestBehavior.translucent,
+                                                behavior:
+                                                    HitTestBehavior.translucent,
                                                 onTapUp: (details) {
-                                                  if (_isSendingFeedback || _isMemoOpen || _editingPin != null) return;
-                                                  if (_activeTool == SnappyDrawingTool.pin) {
+                                                  if (_isSendingFeedback ||
+                                                      _isMemoOpen ||
+                                                      _editingPin != null)
+                                                    return;
+                                                  if (_activeTool ==
+                                                      SnappyDrawingTool.pin) {
                                                     // Pin count limit check (maximum 5)
                                                     if (_pins.length >= 5) {
-                                                      final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
+                                                      final messengerContext =
+                                                          SnappySnag()
+                                                                  .navigatorKey
+                                                                  ?.currentContext ??
+                                                              context;
                                                       _showToast(
-                                                        targetContext: messengerContext,
-                                                        message: _SdkLocale.pinLimitReached,
-                                                        type: _SnappyToastType.warning,
-                                                        duration: const Duration(seconds: 2),
+                                                        targetContext:
+                                                            messengerContext,
+                                                        message: _SdkLocale
+                                                            .pinLimitReached,
+                                                        type: _SnappyToastType
+                                                            .warning,
+                                                        duration:
+                                                            const Duration(
+                                                                seconds: 2),
                                                       );
                                                       return;
                                                     }
 
-                                                    final double xRatio = (details.localPosition.dx / canvasSize.width).clamp(0.0, 1.0);
-                                                    final double yRatio = (details.localPosition.dy / canvasSize.height).clamp(0.0, 1.0);
-                                                    final int nextNumber = _pins.isEmpty
+                                                    final double xRatio =
+                                                        (details.localPosition
+                                                                    .dx /
+                                                                canvasSize
+                                                                    .width)
+                                                            .clamp(0.0, 1.0);
+                                                    final double yRatio =
+                                                        (details.localPosition
+                                                                    .dy /
+                                                                canvasSize
+                                                                    .height)
+                                                            .clamp(0.0, 1.0);
+                                                    final int nextNumber = _pins
+                                                            .isEmpty
                                                         ? 1
-                                                        : (_pins.map((p) => p.number).reduce((a, b) => a > b ? a : b) + 1);
+                                                        : (_pins
+                                                                .map((p) =>
+                                                                    p.number)
+                                                                .reduce((a,
+                                                                        b) =>
+                                                                    a > b
+                                                                        ? a
+                                                                        : b) +
+                                                            1);
                                                     // Identify anchor information for the topmost UI element at tapped coordinates.
                                                     // Traverses the application screen tree (targetContext) instead of overlayContext,
                                                     // converting canvas ratios (xRatio, yRatio) into global screen coordinates.
-                                                    final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
-                                                    final targetRenderBox = targetContext.findRenderObject() as RenderBox?;
-                                                    final targetOrigin = (targetRenderBox != null && targetRenderBox.attached)
-                                                        ? targetRenderBox.localToGlobal(Offset.zero)
-                                                        : Offset.zero;
-                                                    final targetSize = (targetRenderBox != null && targetRenderBox.attached && targetRenderBox.hasSize)
-                                                        ? targetRenderBox.size
-                                                        : MediaQuery.of(targetContext).size;
-                                                    final screenGlobalPos = Offset(
-                                                      targetOrigin.dx + (xRatio * targetSize.width),
-                                                      targetOrigin.dy + (yRatio * targetSize.height),
+                                                    final targetContext =
+                                                        SnappySnag()
+                                                                .navigatorKey
+                                                                ?.currentContext ??
+                                                            context;
+                                                    final targetRenderBox =
+                                                        targetContext
+                                                                .findRenderObject()
+                                                            as RenderBox?;
+                                                    final targetOrigin =
+                                                        (targetRenderBox !=
+                                                                    null &&
+                                                                targetRenderBox
+                                                                    .attached)
+                                                            ? targetRenderBox
+                                                                .localToGlobal(
+                                                                    Offset.zero)
+                                                            : Offset.zero;
+                                                    final targetSize =
+                                                        (targetRenderBox !=
+                                                                    null &&
+                                                                targetRenderBox
+                                                                    .attached &&
+                                                                targetRenderBox
+                                                                    .hasSize)
+                                                            ? targetRenderBox
+                                                                .size
+                                                            : MediaQuery.of(
+                                                                    targetContext)
+                                                                .size;
+                                                    final screenGlobalPos =
+                                                        Offset(
+                                                      targetOrigin.dx +
+                                                          (xRatio *
+                                                              targetSize.width),
+                                                      targetOrigin.dy +
+                                                          (yRatio *
+                                                              targetSize
+                                                                  .height),
                                                     );
-                                                    final detectedTarget = WidgetTreeDumper.findTargetAtPosition(
+                                                    final detectedTarget =
+                                                        WidgetTreeDumper
+                                                            .findTargetAtPosition(
                                                       targetContext,
                                                       screenGlobalPos,
                                                     );
-                                                    if (detectedTarget != null) {
-                                                      SnappySnag._log('🎯 SnappySnag: Pin placed on element -> [${detectedTarget.widgetType}] (Text: "${detectedTarget.widgetText ?? ''}", Key: "${detectedTarget.widgetKey ?? ''}") at screen pos: $screenGlobalPos');
+                                                    if (detectedTarget !=
+                                                        null) {
+                                                      SnappySnag._log(
+                                                          '🎯 SnappySnag: Pin placed on element -> [${detectedTarget.widgetType}] (Text: "${detectedTarget.widgetText ?? ''}", Key: "${detectedTarget.widgetKey ?? ''}") at screen pos: $screenGlobalPos');
                                                     } else {
-                                                      SnappySnag._log('⚠️ SnappySnag: No specific UI element detected at screen pos: $screenGlobalPos. Falling back to relative coordinate.');
+                                                      SnappySnag._log(
+                                                          '⚠️ SnappySnag: No specific UI element detected at screen pos: $screenGlobalPos. Falling back to relative coordinate.');
                                                     }
                                                     final newPin = SnappyPin(
                                                       id: 'pin_${DateTime.now().millisecondsSinceEpoch}',
@@ -2673,50 +2212,83 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                       comment: '',
                                                       target: detectedTarget,
                                                     );
-                                                    if (SnappySnag().enableHaptics) {
-                                                      HapticFeedback.mediumImpact();
+                                                    if (SnappySnag()
+                                                        .enableHaptics) {
+                                                      HapticFeedback
+                                                          .mediumImpact();
                                                     }
                                                     setState(() {
                                                       _pins.add(newPin);
                                                       _editingPin = newPin;
-                                                      _pinCommentController.text = '';
+                                                      _pinCommentController
+                                                          .text = '';
                                                     });
                                                   }
                                                 },
                                                 onPanStart: (details) {
-                                                  if (_isSendingFeedback || _isMemoOpen || _editingPin != null) return;
-                                                  if (_activeTool != SnappyDrawingTool.mosaic) return;
+                                                  if (_isSendingFeedback ||
+                                                      _isMemoOpen ||
+                                                      _editingPin != null)
+                                                    return;
+                                                  if (_activeTool !=
+                                                      SnappyDrawingTool.mosaic)
+                                                    return;
                                                   setState(() {
-                                                    const double strokeWidth = 24.0;
-                                                    const Color color = Color(0xEE303036);
+                                                    const double strokeWidth =
+                                                        24.0;
+                                                    const Color color =
+                                                        Color(0xEE303036);
                                                     _drawingPoints.add(
                                                       DrawingPoint(
-                                                        offsets: [details.localPosition],
+                                                        offsets: [
+                                                          details.localPosition
+                                                        ],
                                                         color: color,
-                                                        strokeWidth: strokeWidth,
-                                                        tool: SnappyDrawingTool.mosaic,
-                                                        recordedSize: canvasSize,
+                                                        strokeWidth:
+                                                            strokeWidth,
+                                                        tool: SnappyDrawingTool
+                                                            .mosaic,
+                                                        recordedSize:
+                                                            canvasSize,
                                                       ),
                                                     );
                                                   });
                                                 },
                                                 onPanUpdate: (details) {
-                                                  if (_isSendingFeedback || _isMemoOpen || _editingPin != null) return;
-                                                  if (_activeTool != SnappyDrawingTool.mosaic) return;
+                                                  if (_isSendingFeedback ||
+                                                      _isMemoOpen ||
+                                                      _editingPin != null)
+                                                    return;
+                                                  if (_activeTool !=
+                                                      SnappyDrawingTool.mosaic)
+                                                    return;
                                                   setState(() {
-                                                    if (_drawingPoints.isNotEmpty) {
-                                                      _drawingPoints.last.offsets.add(details.localPosition);
+                                                    if (_drawingPoints
+                                                        .isNotEmpty) {
+                                                      _drawingPoints
+                                                          .last.offsets
+                                                          .add(details
+                                                              .localPosition);
                                                     }
                                                   });
                                                 },
                                                 onPanEnd: (details) {
-                                                  if (_isSendingFeedback || _isMemoOpen || _editingPin != null) return;
-                                                  if (_activeTool != SnappyDrawingTool.mosaic) return;
+                                                  if (_isSendingFeedback ||
+                                                      _isMemoOpen ||
+                                                      _editingPin != null)
+                                                    return;
+                                                  if (_activeTool !=
+                                                      SnappyDrawingTool.mosaic)
+                                                    return;
                                                   setState(() {
-                                                    if (_drawingPoints.isNotEmpty) {
-                                                      _drawingPoints.last.offsets.add(null);
+                                                    if (_drawingPoints
+                                                        .isNotEmpty) {
+                                                      _drawingPoints
+                                                          .last.offsets
+                                                          .add(null);
                                                       // Record completed stroke to undo stack
-                                                      _undoStack.add(_drawingPoints.last);
+                                                      _undoStack.add(
+                                                          _drawingPoints.last);
                                                       _redoStack.clear();
                                                     }
                                                   });
@@ -2724,176 +2296,181 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                               ),
                                             ),
 
-                                            // 3. Highlight borders for sections with existing feedback (active when in dev mode, _enableSectionHighlights, and _showExistingPins)
-                                            if (_enableSectionHighlights && _showExistingPins)
-                                              ..._existingSections.map((sec) {
-                                                // Map application screen coordinates to relative ratios within the canvas
-                                                final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
-                                                final targetRenderBox = targetContext.findRenderObject() as RenderBox?;
-                                                final targetOrigin = (targetRenderBox != null && targetRenderBox.attached)
-                                                    ? targetRenderBox.localToGlobal(Offset.zero)
-                                                    : Offset.zero;
-                                                final targetSize = (targetRenderBox != null && targetRenderBox.attached && targetRenderBox.hasSize)
-                                                    ? targetRenderBox.size
-                                                    : (MediaQuery.maybeOf(targetContext)?.size ?? canvasSize);
-
-                                                final double leftRatio = targetSize.width > 0
-                                                    ? ((sec.screenRect.left - targetOrigin.dx) / targetSize.width).clamp(0.0, 1.0)
-                                                    : 0.0;
-                                                final double topRatio = targetSize.height > 0
-                                                    ? ((sec.screenRect.top - targetOrigin.dy) / targetSize.height).clamp(0.0, 1.0)
-                                                    : 0.0;
-                                                final double widthRatio = targetSize.width > 0
-                                                    ? (sec.screenRect.width / targetSize.width).clamp(0.0, 1.0)
-                                                    : 0.0;
-                                                final double heightRatio = targetSize.height > 0
-                                                    ? (sec.screenRect.height / targetSize.height).clamp(0.0, 1.0)
-                                                    : 0.0;
-
-                                                final double pixelLeft = leftRatio * canvasSize.width;
-                                                final double pixelTop = topRatio * canvasSize.height;
-                                                final double pixelWidth = (widthRatio * canvasSize.width).clamp(32.0, canvasSize.width);
-                                                final double pixelHeight = (heightRatio * canvasSize.height).clamp(24.0, canvasSize.height);
-
-                                                return Positioned(
-                                                  left: pixelLeft.clamp(0.0, canvasSize.width - 32),
-                                                  top: pixelTop.clamp(0.0, canvasSize.height - 24),
-                                                  width: pixelWidth.clamp(0.0, canvasSize.width - pixelLeft),
-                                                  height: pixelHeight.clamp(0.0, canvasSize.height - pixelTop),
-                                                  child: GestureDetector(
-                                                    behavior: HitTestBehavior.opaque,
-                                                    onTap: () {
-                                                      if (_isSendingFeedback || _isMemoOpen) return;
-                                                      setState(() {
-                                                        _selectedSection = sec;
-                                                      });
-                                                    },
-                                                    child: Stack(
-                                                      clipBehavior: Clip.none,
-                                                      children: [
-                                                        Container(
-                                                          decoration: BoxDecoration(
-                                                            color: const Color(0xFF8B5CF6).withValues(alpha: 0.14),
-                                                            borderRadius: BorderRadius.circular(8),
-                                                            border: Border.all(
-                                                              color: const Color(0xFF8B5CF6),
-                                                              width: 2.0,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        Positioned(
-                                                          top: -10,
-                                                          right: 4,
-                                                          child: Container(
-                                                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                                            decoration: BoxDecoration(
-                                                              color: const Color(0xFF8B5CF6),
-                                                              borderRadius: BorderRadius.circular(10),
-                                                              border: Border.all(color: Colors.white, width: 1.5),
-                                                              boxShadow: const [
-                                                                BoxShadow(
-                                                                  color: Colors.black45,
-                                                                  blurRadius: 4,
-                                                                  offset: Offset(0, 2),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                            child: Row(
-                                                              mainAxisSize: MainAxisSize.min,
-                                                              children: [
-                                                                const Icon(Icons.comment, size: 10, color: Colors.white),
-                                                                const SizedBox(width: 3),
-                                                                Text(
-                                                                  '${_SdkLocale.issueBadgePrefix}${sec.pins.length}${_SdkLocale.issueBadgeSuffix}',
-                                                                  style: const TextStyle(
-                                                                    color: Colors.white,
-                                                                    fontSize: 10,
-                                                                    fontWeight: FontWeight.bold,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                );
-                                              }),
-
                                             // 4. Pin overlay display (not baked into the screenshot image)
                                             ..._pins.map((pin) {
-                                              final pinPixelX = pin.xRatio * canvasSize.width;
-                                              final pinPixelY = pin.yRatio * canvasSize.height;
+                                              final pinPixelX =
+                                                  pin.xRatio * canvasSize.width;
+                                              final pinPixelY = pin.yRatio *
+                                                  canvasSize.height;
                                               const pinSize = 34.0;
 
                                               return Positioned(
-                                                left: (pinPixelX - pinSize / 2).clamp(0.0, canvasSize.width - pinSize),
-                                                top: (pinPixelY - pinSize).clamp(0.0, canvasSize.height - pinSize),
+                                                left: (pinPixelX - pinSize / 2)
+                                                    .clamp(
+                                                        0.0,
+                                                        canvasSize.width -
+                                                            pinSize),
+                                                top: (pinPixelY - pinSize)
+                                                    .clamp(
+                                                        0.0,
+                                                        canvasSize.height -
+                                                            pinSize),
                                                 child: GestureDetector(
-                                                  behavior: HitTestBehavior.opaque,
+                                                  behavior:
+                                                      HitTestBehavior.opaque,
                                                   onTap: () {
-                                                    if (_isSendingFeedback || _isMemoOpen) return;
+                                                    if (_isSendingFeedback ||
+                                                        _isMemoOpen) return;
                                                     setState(() {
                                                       _editingPin = pin;
-                                                      _pinCommentController.text = pin.comment;
+                                                      _pinCommentController
+                                                          .text = pin.comment;
                                                     });
                                                   },
                                                   onPanStart: (details) {
-                                                    if (_isSendingFeedback || _isMemoOpen || _editingPin != null) return;
-                                                    if (SnappySnag().enableHaptics) {
-                                                      HapticFeedback.selectionClick();
+                                                    if (_isSendingFeedback ||
+                                                        _isMemoOpen ||
+                                                        _editingPin != null)
+                                                      return;
+                                                    if (SnappySnag()
+                                                        .enableHaptics) {
+                                                      HapticFeedback
+                                                          .selectionClick();
                                                     }
-                                                    _dragStartGlobal = details.globalPosition;
-                                                    _dragStartPinX = pin.xRatio * canvasSize.width;
-                                                    _dragStartPinY = pin.yRatio * canvasSize.height;
+                                                    _dragStartGlobal =
+                                                        details.globalPosition;
+                                                    _dragStartPinX =
+                                                        pin.xRatio *
+                                                            canvasSize.width;
+                                                    _dragStartPinY =
+                                                        pin.yRatio *
+                                                            canvasSize.height;
                                                   },
                                                   onPanUpdate: (details) {
-                                                    if (_isSendingFeedback || _isMemoOpen || _editingPin != null) return;
-                                                    if (_dragStartGlobal == null || _dragStartPinX == null || _dragStartPinY == null) return;
-                                                    final dx = details.globalPosition.dx - _dragStartGlobal!.dx;
-                                                    final dy = details.globalPosition.dy - _dragStartGlobal!.dy;
-                                                    final newDx = (_dragStartPinX! + dx).clamp(0.0, canvasSize.width);
-                                                    final newDy = (_dragStartPinY! + dy).clamp(0.0, canvasSize.height);
-                                                    final newXRatio = (newDx / canvasSize.width).clamp(0.0, 1.0);
-                                                    final newYRatio = (newDy / canvasSize.height).clamp(0.0, 1.0);
+                                                    if (_isSendingFeedback ||
+                                                        _isMemoOpen ||
+                                                        _editingPin != null)
+                                                      return;
+                                                    if (_dragStartGlobal ==
+                                                            null ||
+                                                        _dragStartPinX ==
+                                                            null ||
+                                                        _dragStartPinY == null)
+                                                      return;
+                                                    final dx = details
+                                                            .globalPosition.dx -
+                                                        _dragStartGlobal!.dx;
+                                                    final dy = details
+                                                            .globalPosition.dy -
+                                                        _dragStartGlobal!.dy;
+                                                    final newDx =
+                                                        (_dragStartPinX! + dx)
+                                                            .clamp(
+                                                                0.0,
+                                                                canvasSize
+                                                                    .width);
+                                                    final newDy =
+                                                        (_dragStartPinY! + dy)
+                                                            .clamp(
+                                                                0.0,
+                                                                canvasSize
+                                                                    .height);
+                                                    final newXRatio = (newDx /
+                                                            canvasSize.width)
+                                                        .clamp(0.0, 1.0);
+                                                    final newYRatio = (newDy /
+                                                            canvasSize.height)
+                                                        .clamp(0.0, 1.0);
 
                                                     setState(() {
-                                                      final idx = _pins.indexWhere((p) => p.id == pin.id);
+                                                      final idx = _pins
+                                                          .indexWhere((p) =>
+                                                              p.id == pin.id);
                                                       if (idx != -1) {
-                                                        _pins[idx] = pin.copyWith(xRatio: newXRatio, yRatio: newYRatio);
+                                                        _pins[idx] =
+                                                            pin.copyWith(
+                                                                xRatio:
+                                                                    newXRatio,
+                                                                yRatio:
+                                                                    newYRatio);
                                                       }
                                                     });
                                                   },
                                                   onPanEnd: (_) {
                                                     // Re-detect and update UI element anchor at drop position upon drag completion
-                                                    if (_dragStartGlobal != null) {
-                                                      final currentPin = _pins.firstWhere((p) => p.id == pin.id, orElse: () => pin);
-                                                      final targetContext = SnappySnag().navigatorKey?.currentContext ?? context;
-                                                      final targetRenderBox = targetContext.findRenderObject() as RenderBox?;
-                                                      final targetOrigin = (targetRenderBox != null && targetRenderBox.attached)
-                                                          ? targetRenderBox.localToGlobal(Offset.zero)
-                                                          : Offset.zero;
-                                                      final targetSize = (targetRenderBox != null && targetRenderBox.attached && targetRenderBox.hasSize)
-                                                          ? targetRenderBox.size
-                                                          : MediaQuery.of(targetContext).size;
-                                                      final screenGlobalPos = Offset(
-                                                        targetOrigin.dx + (currentPin.xRatio * targetSize.width),
-                                                        targetOrigin.dy + (currentPin.yRatio * targetSize.height),
+                                                    if (_dragStartGlobal !=
+                                                        null) {
+                                                      final currentPin =
+                                                          _pins.firstWhere(
+                                                              (p) =>
+                                                                  p.id ==
+                                                                  pin.id,
+                                                              orElse: () =>
+                                                                  pin);
+                                                      final targetContext =
+                                                          SnappySnag()
+                                                                  .navigatorKey
+                                                                  ?.currentContext ??
+                                                              context;
+                                                      final targetRenderBox =
+                                                          targetContext
+                                                                  .findRenderObject()
+                                                              as RenderBox?;
+                                                      final targetOrigin =
+                                                          (targetRenderBox !=
+                                                                      null &&
+                                                                  targetRenderBox
+                                                                      .attached)
+                                                              ? targetRenderBox
+                                                                  .localToGlobal(
+                                                                      Offset
+                                                                          .zero)
+                                                              : Offset.zero;
+                                                      final targetSize =
+                                                          (targetRenderBox !=
+                                                                      null &&
+                                                                  targetRenderBox
+                                                                      .attached &&
+                                                                  targetRenderBox
+                                                                      .hasSize)
+                                                              ? targetRenderBox
+                                                                  .size
+                                                              : MediaQuery.of(
+                                                                      targetContext)
+                                                                  .size;
+                                                      final screenGlobalPos =
+                                                          Offset(
+                                                        targetOrigin.dx +
+                                                            (currentPin.xRatio *
+                                                                targetSize
+                                                                    .width),
+                                                        targetOrigin.dy +
+                                                            (currentPin.yRatio *
+                                                                targetSize
+                                                                    .height),
                                                       );
-                                                      final newTarget = WidgetTreeDumper.findTargetAtPosition(
+                                                      final newTarget =
+                                                          WidgetTreeDumper
+                                                              .findTargetAtPosition(
                                                         targetContext,
                                                         screenGlobalPos,
                                                       );
                                                       if (newTarget != null) {
-                                                        SnappySnag._log('🎯 SnappySnag: Pin moved to element -> [${newTarget.widgetType}] (Text: "${newTarget.widgetText ?? ''}", Key: "${newTarget.widgetKey ?? ''}") at screen pos: $screenGlobalPos');
+                                                        SnappySnag._log(
+                                                            '🎯 SnappySnag: Pin moved to element -> [${newTarget.widgetType}] (Text: "${newTarget.widgetText ?? ''}", Key: "${newTarget.widgetKey ?? ''}") at screen pos: $screenGlobalPos');
                                                       } else {
-                                                        SnappySnag._log('⚠️ SnappySnag: Pin moved to relative coordinate (no specific element detected at $screenGlobalPos)');
+                                                        SnappySnag._log(
+                                                            '⚠️ SnappySnag: Pin moved to relative coordinate (no specific element detected at $screenGlobalPos)');
                                                       }
                                                       setState(() {
-                                                        final idx = _pins.indexWhere((p) => p.id == pin.id);
+                                                        final idx = _pins
+                                                            .indexWhere((p) =>
+                                                                p.id == pin.id);
                                                         if (idx != -1) {
-                                                          _pins[idx] = currentPin.copyWith(target: newTarget);
+                                                          _pins[idx] = currentPin
+                                                              .copyWith(
+                                                                  target:
+                                                                      newTarget);
                                                         }
                                                       });
                                                     }
@@ -2902,29 +2479,41 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                     _dragStartPinY = null;
                                                   },
                                                   child: Column(
-                                                    mainAxisSize: MainAxisSize.min,
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
                                                     children: [
                                                       Container(
                                                         width: pinSize,
                                                         height: pinSize,
-                                                        decoration: BoxDecoration(
+                                                        decoration:
+                                                            BoxDecoration(
                                                           color: pinColor,
-                                                          shape: BoxShape.circle,
-                                                          border: Border.all(color: Colors.white, width: 2),
+                                                          shape:
+                                                              BoxShape.circle,
+                                                          border: Border.all(
+                                                              color:
+                                                                  Colors.white,
+                                                              width: 2),
                                                           boxShadow: const [
                                                             BoxShadow(
-                                                              color: Colors.black45,
+                                                              color: Colors
+                                                                  .black45,
                                                               blurRadius: 6,
-                                                              offset: Offset(0, 3),
+                                                              offset:
+                                                                  Offset(0, 3),
                                                             ),
                                                           ],
                                                         ),
                                                         child: Center(
                                                           child: Text(
                                                             '${pin.number}',
-                                                            style: const TextStyle(
-                                                              color: Colors.white,
-                                                              fontWeight: FontWeight.bold,
+                                                            style:
+                                                                const TextStyle(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
                                                               fontSize: 14,
                                                             ),
                                                           ),
@@ -2943,1864 +2532,1198 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                 ),
                               ),
 
-                    // 2. Bottom floating toolbar
-                    Positioned(
-                      bottom: 16,
-                      left: 16,
-                      right: 16,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: barBgColor.withValues(alpha: isDark ? 0.9 : 0.95),
-                          borderRadius: BorderRadius.circular(theme.borderRadius > 20 ? theme.borderRadius : 30),
-                          border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
-                          boxShadow: [
-                            BoxShadow(
-                              color: isDark ? Colors.black54 : Colors.black12,
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            // 1. Pin tool (default)
-                            Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.place,
-                                    color: _activeTool == SnappyDrawingTool.pin
-                                        ? pinColor
-                                        : (isDark ? Colors.grey : Colors.grey.shade500),
+                              // 2. Bottom floating toolbar
+                              Positioned(
+                                bottom: 16,
+                                left: 16,
+                                right: 16,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 8,
                                   ),
-                                  tooltip: 'Pin Marker (Max 5)',
-                                  onPressed: _isSendingFeedback
-                                      ? null
-                                      : () {
-                                          if (SnappySnag().enableHaptics) {
-                                            HapticFeedback.selectionClick();
-                                          }
-                                          setState(
-                                            () => _activeTool = SnappyDrawingTool.pin,
-                                          );
-                                        },
-                                ),
-                                if (_pins.isNotEmpty)
-                                  Positioned(
-                                    right: 4,
-                                    top: 4,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                      decoration: BoxDecoration(
-                                        color: pinColor,
-                                        borderRadius: BorderRadius.circular(10),
+                                  decoration: BoxDecoration(
+                                    color: barBgColor.withValues(
+                                        alpha: isDark ? 0.9 : 0.95),
+                                    borderRadius: BorderRadius.circular(
+                                        theme.borderRadius > 20
+                                            ? theme.borderRadius
+                                            : 30),
+                                    border: Border.all(
+                                        color: isDark
+                                            ? Colors.grey.shade800
+                                            : Colors.grey.shade300),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: isDark
+                                            ? Colors.black54
+                                            : Colors.black12,
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
                                       ),
-                                      child: Text(
-                                        '${_pins.length}/5',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
+                                    ],
                                   ),
-                              ],
-                            ),
-                            // 2. Mosaic blur pen
-                            IconButton(
-                              icon: Icon(
-                                Icons.blur_on,
-                                color: _activeTool == SnappyDrawingTool.mosaic
-                                    ? primaryColor
-                                    : (isDark ? Colors.grey : Colors.grey.shade500),
-                              ),
-                              tooltip: 'Mosaic Blur',
-                              onPressed: _isSendingFeedback
-                                  ? null
-                                  : () {
-                                      if (SnappySnag().enableHaptics) {
-                                        HapticFeedback.selectionClick();
-                                      }
-                                      setState(
-                                        () => _activeTool = SnappyDrawingTool.mosaic,
-                                      );
-                                    },
-                            ),
-                            const SizedBox(width: 8),
-                            // 3. Undo (chronological action history)
-                            IconButton(
-                              icon: Icon(
-                                Icons.undo,
-                                color: (!_isSendingFeedback && _undoStack.isNotEmpty)
-                                    ? (isDark ? Colors.white70 : Colors.black87)
-                                    : (isDark ? Colors.grey.shade700 : Colors.grey.shade400),
-                              ),
-                              tooltip: 'Undo',
-                              onPressed: _isSendingFeedback || _undoStack.isEmpty
-                                  ? null
-                                  : () {
-                                      if (SnappySnag().enableHaptics) {
-                                        HapticFeedback.selectionClick();
-                                      }
-                                      setState(() {
-                                        final last = _undoStack.removeLast();
-                                        _redoStack.add(last);
-                                        if (last is SnappyPin) {
-                                          _pins.removeWhere((p) => p.id == last.id);
-                                        } else if (last is DrawingPoint) {
-                                          _drawingPoints.remove(last);
-                                        }
-                                      });
-                                    },
-                            ),
-                            // 4. Redo (restore undone action)
-                            IconButton(
-                              icon: Icon(
-                                Icons.redo,
-                                color: (!_isSendingFeedback && _redoStack.isNotEmpty)
-                                    ? (isDark ? Colors.white70 : Colors.black87)
-                                    : (isDark ? Colors.grey.shade700 : Colors.grey.shade400),
-                              ),
-                              tooltip: 'Redo',
-                              onPressed: _isSendingFeedback || _redoStack.isEmpty
-                                  ? null
-                                  : () {
-                                      if (SnappySnag().enableHaptics) {
-                                        HapticFeedback.selectionClick();
-                                      }
-                                      setState(() {
-                                        final next = _redoStack.removeLast();
-                                        _undoStack.add(next);
-                                        if (next is SnappyPin) {
-                                          _pins.add(next);
-                                        } else if (next is DrawingPoint) {
-                                          _drawingPoints.add(next);
-                                        }
-                                      });
-                                    },
-                            ),
-                            // 5. Clear all - prompts confirmation dialog
-                            IconButton(
-                              icon: Icon(
-                                Icons.delete_outline,
-                                color: (!_isSendingFeedback && (_drawingPoints.isNotEmpty || _pins.isNotEmpty))
-                                    ? Colors.redAccent
-                                    : Colors.grey.shade700,
-                              ),
-                              tooltip: 'Clear',
-                              onPressed: _isSendingFeedback || (_drawingPoints.isEmpty && _pins.isEmpty)
-                                  ? null
-                                  : () => setState(() => _isClearConfirmOpen = true),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // 3. Floating overlay for editing pin comments
-                    if (_editingPin != null)
-                      Positioned.fill(
-                        child: LayoutBuilder(
-                          builder: (context, modalConstraints) {
-                            final isLandscape = modalConstraints.maxWidth > modalConstraints.maxHeight;
-                            return Container(
-                              color: Colors.black.withValues(alpha: 0.75),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: isLandscape ? 8 : 20,
-                              ),
-                              child: Center(
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    maxWidth: 480,
-                                    maxHeight: isLandscape ? modalConstraints.maxHeight * 0.95 : 540,
-                                  ),
-                                  child: Card(
-                                    color: barBgColor,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(theme.borderRadius),
-                                      side: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16),
-                                      child: SingleChildScrollView(
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Container(
-                                                  width: 28,
-                                                  height: 28,
-                                                  decoration: BoxDecoration(
-                                                    color: pinColor,
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  child: Center(
-                                                    child: Text(
-                                                      '${_editingPin!.number}',
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontWeight: FontWeight.bold,
-                                                        fontSize: 13,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  _SdkLocale.pinCommentTitle,
-                                                  style: TextStyle(
-                                                    color: barTextColor,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 16,
-                                                  ),
-                                                ),
-                                                const Spacer(),
-                                                IconButton(
-                                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                                                  tooltip: _SdkLocale.delete,
-                                                  onPressed: () {
-                                                    if (SnappySnag().enableHaptics) {
-                                                      HapticFeedback.lightImpact();
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      // 1. Pin tool (default)
+                                      Stack(
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          IconButton(
+                                            icon: Icon(
+                                              Icons.place,
+                                              color: _activeTool ==
+                                                      SnappyDrawingTool.pin
+                                                  ? pinColor
+                                                  : (isDark
+                                                      ? Colors.grey
+                                                      : Colors.grey.shade500),
+                                            ),
+                                            tooltip: 'Pin Marker (Max 5)',
+                                            onPressed: _isSendingFeedback
+                                                ? null
+                                                : () {
+                                                    if (SnappySnag()
+                                                        .enableHaptics) {
+                                                      HapticFeedback
+                                                          .selectionClick();
                                                     }
-                                                    setState(() {
-                                                      _pins.removeWhere((p) => p.id == _editingPin!.id);
-                                                      _renumberPins();
-                                                      _editingPin = null;
-                                                    });
+                                                    setState(
+                                                      () => _activeTool =
+                                                          SnappyDrawingTool.pin,
+                                                    );
                                                   },
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 12),
-                                            TextField(
-                                              controller: _pinCommentController,
-                                              maxLength: 500,
-                                              maxLengthEnforcement: MaxLengthEnforcement.enforced,
-                                              maxLines: isLandscape ? 2 : 4,
-                                              autofocus: true,
-                                              style: TextStyle(color: barTextColor),
-                                              decoration: InputDecoration(
-                                                hintText: _SdkLocale.pinCommentHint,
-                                                hintStyle: TextStyle(color: barSubtextColor),
-                                                fillColor: isDark ? Colors.black26 : Colors.grey.shade100,
-                                                filled: true,
-                                                border: OutlineInputBorder(
-                                                  borderRadius: BorderRadius.circular(8),
-                                                  borderSide: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
-                                                ),
-                                                enabledBorder: OutlineInputBorder(
-                                                  borderRadius: BorderRadius.circular(8),
-                                                  borderSide: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(height: 16),
-                                            ElevatedButton(
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: primaryColor,
-                                                foregroundColor: ThemeData.estimateBrightnessForColor(primaryColor) == Brightness.dark
-                                                    ? Colors.white
-                                                    : Colors.black,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius: BorderRadius.circular(8),
-                                                ),
-                                              ),
-                                              onPressed: () {
-                                                final updatedComment = _pinCommentController.text.trim();
-                                                final editingId = _editingPin!.id;
-                                                // Determine if pin is new: new only if not yet registered in undoStack
-                                                final isNewPin = !_undoStack.any((e) => e is SnappyPin && e.id == editingId);
-                                                setState(() {
-                                                  if (updatedComment.isEmpty) {
-                                                    // Delete pin if comment is empty (do not push to undoStack)
-                                                    _pins.removeWhere((p) => p.id == editingId);
-                                                    _renumberPins();
-                                                  } else {
-                                                    final idx = _pins.indexWhere((p) => p.id == editingId);
-                                                    if (idx != -1) {
-                                                      final finalPin = _editingPin!.copyWith(comment: updatedComment);
-                                                      _pins[idx] = finalPin;
-                                                      if (isNewPin) {
-                                                        // New pin: record finalized content to undoStack once comment is submitted
-                                                        _undoStack.add(finalPin);
-                                                        _redoStack.clear();
-                                                      }
-                                                      // Editing existing pin is excluded from undoStack (same as moving)
-                                                    }
-                                                  }
-                                                  _editingPin = null;
-                                                });
-                                              },
-                                              child: Text(
-                                                _SdkLocale.done,
-                                                style: const TextStyle(fontWeight: FontWeight.bold),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-
-
-
-                    // 4-A. Section detail modal (feedback list for tapped section/block)
-                    if (_selectedSection != null)
-                      Positioned.fill(
-                        child: LayoutBuilder(
-                          builder: (context, modalConstraints) {
-                            final isLandscape = modalConstraints.maxWidth > modalConstraints.maxHeight;
-                            return Container(
-                              color: Colors.black.withValues(alpha: 0.75),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: isLandscape ? 8 : 20,
-                              ),
-                              child: Center(
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    maxWidth: 420,
-                                    maxHeight: isLandscape ? modalConstraints.maxHeight * 0.95 : 540,
-                                  ),
-                                  child: Card(
-                                    color: Colors.grey.shade900,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      side: const BorderSide(color: Color(0xFF8B5CF6), width: 1.5),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Container(
-                                                padding: const EdgeInsets.all(6),
-                                                decoration: const BoxDecoration(
-                                                  color: Color(0xFF8B5CF6),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: const Icon(Icons.layers, color: Colors.white, size: 16),
-                                              ),
-                                              const SizedBox(width: 10),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      _selectedSection!.sectionName,
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontWeight: FontWeight.bold,
-                                                        fontSize: 15,
-                                                      ),
-                                                      maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                    const SizedBox(height: 2),
-                                                    Text(
-                                                      '${_SdkLocale.sectionPinsTitle} (${_selectedSection!.pins.length}${_SdkLocale.issueBadgeSuffix})',
-                                                      style: TextStyle(
-                                                        color: Colors.grey.shade400,
-                                                        fontSize: 11,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              IconButton(
-                                                icon: const Icon(Icons.close, color: Colors.white70, size: 20),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    _selectedSection = null;
-                                                  });
-                                                },
-                                              ),
-                                            ],
                                           ),
-                                          const SizedBox(height: 10),
-                                          Flexible(
-                                            child: ConstrainedBox(
-                                              constraints: BoxConstraints(maxHeight: isLandscape ? 160 : 280),
-                                              child: ListView.separated(
-                                                shrinkWrap: true,
-                                                itemCount: _selectedSection!.pins.length,
-                                                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                                                itemBuilder: (context, index) {
-                                                  final item = _selectedSection!.pins[index];
-                                                  final commentText = item.pin.comment.trim().isNotEmpty
-                                                      ? item.pin.comment.trim()
-                                                      : _SdkLocale.noCommentForPin;
-                                                  return InkWell(
-                                                    onTap: () {
-                                                      setState(() {
-                                                        _previewingPin = item;
-                                                      });
-                                                    },
-                                                    borderRadius: BorderRadius.circular(10),
-                                                    child: Container(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.white.withValues(alpha: 0.05),
-                                                        borderRadius: BorderRadius.circular(10),
-                                                        border: Border.all(color: Colors.white12),
-                                                      ),
-                                                      child: Row(
-                                                        children: [
-                                                          Container(
-                                                            width: 24,
-                                                            height: 24,
-                                                            decoration: const BoxDecoration(
-                                                              color: Color(0xFF8B5CF6),
-                                                              shape: BoxShape.circle,
-                                                            ),
-                                                            child: Center(
-                                                              child: Text(
-                                                                '${item.pin.number}',
-                                                                style: const TextStyle(
-                                                                  color: Colors.white,
-                                                                  fontSize: 11,
-                                                                  fontWeight: FontWeight.bold,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          const SizedBox(width: 10),
-                                                          Expanded(
-                                                            child: Column(
-                                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                                              children: [
-                                                                Text(
-                                                                  commentText,
-                                                                  maxLines: 2,
-                                                                  overflow: TextOverflow.ellipsis,
-                                                                  style: const TextStyle(
-                                                                    color: Colors.white,
-                                                                    fontSize: 13,
-                                                                  ),
-                                                                ),
-                                                                if (item.screenshotUrl != null)
-                                                                  Padding(
-                                                                    padding: const EdgeInsets.only(top: 2),
-                                                                    child: Row(
-                                                                      children: [
-                                                                        const Icon(Icons.image_outlined, size: 10, color: Color(0xFFA78BFA)),
-                                                                        const SizedBox(width: 3),
-                                                                        Text(
-                                                                          _SdkLocale.previewOriginalScreenshot,
-                                                                          style: const TextStyle(
-                                                                            color: Color(0xFFA78BFA),
-                                                                            fontSize: 10,
-                                                                          ),
-                                                                        ),
-                                                                      ],
-                                                                    ),
-                                                                  ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                          const Icon(Icons.chevron_right, color: Colors.white54, size: 18),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 10),
-                                          OutlinedButton(
-                                            style: OutlinedButton.styleFrom(
-                                              foregroundColor: Colors.white70,
-                                              side: const BorderSide(color: Colors.white24),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                            ),
-                                            onPressed: () {
-                                              setState(() {
-                                                _selectedSection = null;
-                                              });
-                                            },
-                                            child: Text(_SdkLocale.close),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-
-                    // 4-B. All feedback modal for this screen (launched from AppBar "All Feedback" button)
-                    if (_showAllScreenPinsModal)
-                      Positioned.fill(
-                        child: LayoutBuilder(
-                          builder: (context, modalConstraints) {
-                            final isLandscape = modalConstraints.maxWidth > modalConstraints.maxHeight;
-                            return Container(
-                              color: Colors.black.withValues(alpha: 0.75),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: isLandscape ? 8 : 20,
-                              ),
-                              child: Center(
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    maxWidth: 440,
-                                    maxHeight: isLandscape ? modalConstraints.maxHeight * 0.95 : 560,
-                                  ),
-                                  child: Card(
-                                    color: Colors.grey.shade900,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      side: const BorderSide(color: Colors.white24, width: 1.5),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Container(
-                                                padding: const EdgeInsets.all(6),
+                                          if (_pins.isNotEmpty)
+                                            Positioned(
+                                              right: 4,
+                                              top: 4,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 4,
+                                                        vertical: 1),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.white.withValues(alpha: 0.15),
-                                                  shape: BoxShape.circle,
+                                                  color: pinColor,
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
                                                 ),
-                                                child: const Icon(Icons.list_alt, color: Colors.white, size: 16),
-                                              ),
-                                              const SizedBox(width: 10),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      _SdkLocale.allScreenPinsTitle,
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontWeight: FontWeight.bold,
-                                                        fontSize: 15,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 2),
-                                                    Text(
-                                                      _SdkLocale.allScreenPinsSub,
-                                                      style: TextStyle(
-                                                        color: Colors.grey.shade400,
-                                                        fontSize: 11,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              IconButton(
-                                                icon: const Icon(Icons.close, color: Colors.white70, size: 20),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    _showAllScreenPinsModal = false;
-                                                  });
-                                                },
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 10),
-                                          Flexible(
-                                            child: ConstrainedBox(
-                                              constraints: BoxConstraints(maxHeight: isLandscape ? 170 : 320),
-                                              child: ListView.separated(
-                                                shrinkWrap: true,
-                                                itemCount: _existingPins.length,
-                                                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                                                itemBuilder: (context, index) {
-                                                  final item = _existingPins[index];
-                                                  final commentText = item.pin.comment.trim().isNotEmpty
-                                                      ? item.pin.comment.trim()
-                                                      : _SdkLocale.noCommentForPin;
-                                                  return InkWell(
-                                                    onTap: () {
-                                                      setState(() {
-                                                        _previewingPin = item;
-                                                      });
-                                                    },
-                                                    borderRadius: BorderRadius.circular(10),
-                                                    child: Container(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.white.withValues(alpha: 0.05),
-                                                        borderRadius: BorderRadius.circular(10),
-                                                        border: Border.all(color: Colors.white12),
-                                                      ),
-                                                      child: Row(
-                                                        children: [
-                                                          Container(
-                                                            width: 24,
-                                                            height: 24,
-                                                            decoration: const BoxDecoration(
-                                                              color: Color(0xFF8B5CF6),
-                                                              shape: BoxShape.circle,
-                                                            ),
-                                                            child: Center(
-                                                              child: Text(
-                                                                '${item.pin.number}',
-                                                                style: const TextStyle(
-                                                                  color: Colors.white,
-                                                                  fontSize: 11,
-                                                                  fontWeight: FontWeight.bold,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          const SizedBox(width: 10),
-                                                          Expanded(
-                                                            child: Column(
-                                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                                              children: [
-                                                                Text(
-                                                                  commentText,
-                                                                  maxLines: 2,
-                                                                  overflow: TextOverflow.ellipsis,
-                                                                  style: const TextStyle(
-                                                                    color: Colors.white,
-                                                                    fontSize: 13,
-                                                                  ),
-                                                                ),
-                                                                if (item.pin.target != null)
-                                                                  Padding(
-                                                                    padding: const EdgeInsets.only(top: 2),
-                                                                    child: Text(
-                                                                      '${_SdkLocale.elementAttachedBadge}: ${item.pin.target!.widgetType}',
-                                                                      style: const TextStyle(
-                                                                        color: Color(0xFFA78BFA),
-                                                                        fontSize: 10,
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                          const Icon(Icons.chevron_right, color: Colors.white54, size: 18),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 10),
-                                          OutlinedButton(
-                                            style: OutlinedButton.styleFrom(
-                                              foregroundColor: Colors.white70,
-                                              side: const BorderSide(color: Colors.white24),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                            ),
-                                            onPressed: () {
-                                              setState(() {
-                                                _showAllScreenPinsModal = false;
-                                              });
-                                            },
-                                            child: Text(_SdkLocale.close),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-
-                    // 4-C. Preview modal for selected feedback pin: original screenshot and pin coordinates
-                    if (_previewingPin != null)
-                      Positioned.fill(
-                        child: LayoutBuilder(
-                          builder: (context, modalConstraints) {
-                            final isLandscape = modalConstraints.maxWidth > modalConstraints.maxHeight;
-                            return Container(
-                              color: Colors.black.withValues(alpha: 0.88),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: isLandscape ? 8 : 20,
-                              ),
-                              child: Center(
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    maxWidth: isLandscape ? 600 : 480,
-                                    maxHeight: isLandscape ? modalConstraints.maxHeight * 0.96 : 680,
-                                  ),
-                                  child: Card(
-                                    color: Colors.grey.shade900,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      side: const BorderSide(color: Color(0xFF8B5CF6), width: 1.5),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(14),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                                        children: [
-                                          // Header (common to landscape and portrait)
-                                          Row(
-                                            children: [
-                                              IconButton(
-                                                icon: const Icon(Icons.arrow_back, color: Colors.white70, size: 20),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    _previewingPin = null;
-                                                  });
-                                                },
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Expanded(
                                                 child: Text(
-                                                  _SdkLocale.previewOriginalScreenshot,
+                                                  '${_pins.length}/5',
                                                   style: const TextStyle(
                                                     color: Colors.white,
+                                                    fontSize: 9,
                                                     fontWeight: FontWeight.bold,
-                                                    fontSize: 15,
                                                   ),
                                                 ),
                                               ),
-                                              IconButton(
-                                                icon: const Icon(Icons.close, color: Colors.white70, size: 20),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    _previewingPin = null;
-                                                  });
-                                                },
+                                            ),
+                                        ],
+                                      ),
+                                      // 2. Mosaic blur pen
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.blur_on,
+                                          color: _activeTool ==
+                                                  SnappyDrawingTool.mosaic
+                                              ? primaryColor
+                                              : (isDark
+                                                  ? Colors.grey
+                                                  : Colors.grey.shade500),
+                                        ),
+                                        tooltip: 'Mosaic Blur',
+                                        onPressed: _isSendingFeedback
+                                            ? null
+                                            : () {
+                                                if (SnappySnag()
+                                                    .enableHaptics) {
+                                                  HapticFeedback
+                                                      .selectionClick();
+                                                }
+                                                setState(
+                                                  () => _activeTool =
+                                                      SnappyDrawingTool.mosaic,
+                                                );
+                                              },
+                                      ),
+                                      const SizedBox(width: 8),
+                                      // 3. Undo (chronological action history)
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.undo,
+                                          color: (!_isSendingFeedback &&
+                                                  _undoStack.isNotEmpty)
+                                              ? (isDark
+                                                  ? Colors.white70
+                                                  : Colors.black87)
+                                              : (isDark
+                                                  ? Colors.grey.shade700
+                                                  : Colors.grey.shade400),
+                                        ),
+                                        tooltip: 'Undo',
+                                        onPressed: _isSendingFeedback ||
+                                                _undoStack.isEmpty
+                                            ? null
+                                            : () {
+                                                if (SnappySnag()
+                                                    .enableHaptics) {
+                                                  HapticFeedback
+                                                      .selectionClick();
+                                                }
+                                                setState(() {
+                                                  final last =
+                                                      _undoStack.removeLast();
+                                                  _redoStack.add(last);
+                                                  if (last is SnappyPin) {
+                                                    _pins.removeWhere(
+                                                        (p) => p.id == last.id);
+                                                  } else if (last
+                                                      is DrawingPoint) {
+                                                    _drawingPoints.remove(last);
+                                                  }
+                                                });
+                                              },
+                                      ),
+                                      // 4. Redo (restore undone action)
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.redo,
+                                          color: (!_isSendingFeedback &&
+                                                  _redoStack.isNotEmpty)
+                                              ? (isDark
+                                                  ? Colors.white70
+                                                  : Colors.black87)
+                                              : (isDark
+                                                  ? Colors.grey.shade700
+                                                  : Colors.grey.shade400),
+                                        ),
+                                        tooltip: 'Redo',
+                                        onPressed: _isSendingFeedback ||
+                                                _redoStack.isEmpty
+                                            ? null
+                                            : () {
+                                                if (SnappySnag()
+                                                    .enableHaptics) {
+                                                  HapticFeedback
+                                                      .selectionClick();
+                                                }
+                                                setState(() {
+                                                  final next =
+                                                      _redoStack.removeLast();
+                                                  _undoStack.add(next);
+                                                  if (next is SnappyPin) {
+                                                    _pins.add(next);
+                                                  } else if (next
+                                                      is DrawingPoint) {
+                                                    _drawingPoints.add(next);
+                                                  }
+                                                });
+                                              },
+                                      ),
+                                      // 5. Clear all - prompts confirmation dialog
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.delete_outline,
+                                          color: (!_isSendingFeedback &&
+                                                  (_drawingPoints.isNotEmpty ||
+                                                      _pins.isNotEmpty))
+                                              ? Colors.redAccent
+                                              : Colors.grey.shade700,
+                                        ),
+                                        tooltip: 'Clear',
+                                        onPressed: _isSendingFeedback ||
+                                                (_drawingPoints.isEmpty &&
+                                                    _pins.isEmpty)
+                                            ? null
+                                            : () => setState(() =>
+                                                _isClearConfirmOpen = true),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                              // 3. Floating overlay for editing pin comments
+                              if (_editingPin != null)
+                                Positioned.fill(
+                                  child: LayoutBuilder(
+                                    builder: (context, modalConstraints) {
+                                      final isLandscape =
+                                          modalConstraints.maxWidth >
+                                              modalConstraints.maxHeight;
+                                      return Container(
+                                        color: Colors.black
+                                            .withValues(alpha: 0.75),
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: isLandscape ? 8 : 20,
+                                        ),
+                                        child: Center(
+                                          child: ConstrainedBox(
+                                            constraints: BoxConstraints(
+                                              maxWidth: 480,
+                                              maxHeight: isLandscape
+                                                  ? modalConstraints.maxHeight *
+                                                      0.95
+                                                  : 540,
+                                            ),
+                                            child: Card(
+                                              color: barBgColor,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        theme.borderRadius),
+                                                side: BorderSide(
+                                                    color: isDark
+                                                        ? Colors.grey.shade800
+                                                        : Colors.grey.shade300),
                                               ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 6),
-                                           if (isLandscape)
-                                            // Landscape: side-by-side layout with left (screenshot) + right (comment + actions)
-                                            Expanded(
-                                              child: Row(
-                                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                                children: [
-                                                  // Left: screenshot area (calculates pin coordinates using intrinsic image dimensions)
-                                                  Expanded(
-                                                    child: ClipRRect(
-                                                      borderRadius: BorderRadius.circular(10),
-                                                      child: Container(
-                                                        color: Colors.black,
-                                                        child: _previewingPin!.screenshotUrl != null && _previewingPin!.screenshotUrl!.isNotEmpty
-                                                            ? LayoutBuilder(
-                                                                builder: (context, constraints) {
-                                                                  final pWidth = constraints.maxWidth;
-                                                                  final pHeight = constraints.maxHeight;
-                                                                  final pin = _previewingPin!.pin;
-                                                                  const pinSize = 30.0;
-                                                                  final url = _previewingPin!.screenshotUrl!;
-
-                                                                  return FutureBuilder<Size>(
-                                                                    future: _resolveImageSize(url),
-                                                                    builder: (context, snapshot) {
-                                                                      // Use intrinsic image dimensions if available; fallback to _drawingAspectRatio otherwise
-                                                                      final double imgAspect = snapshot.hasData && snapshot.data!.height > 0
-                                                                          ? snapshot.data!.width / snapshot.data!.height
-                                                                          : (_drawingAspectRatio ?? (9 / 16));
-                                                                      final containerAspect = pWidth / (pHeight > 0 ? pHeight : 1.0);
-                                                                      double renderW = pWidth;
-                                                                      double renderH = pHeight;
-                                                                      double offsetX = 0.0;
-                                                                      double offsetY = 0.0;
-
-                                                                      if (containerAspect > imgAspect) {
-                                                                        renderW = pHeight * imgAspect;
-                                                                        offsetX = (pWidth - renderW) / 2.0;
-                                                                      } else {
-                                                                        renderH = pWidth / (imgAspect > 0 ? imgAspect : 1.0);
-                                                                        offsetY = (pHeight - renderH) / 2.0;
-                                                                      }
-
-                                                                      final pinX = (offsetX + (pin.xRatio * renderW) - (pinSize / 2.0)).clamp(0.0, pWidth - pinSize);
-                                                                      final pinY = (offsetY + (pin.yRatio * renderH) - (pinSize / 2.0)).clamp(0.0, pHeight - pinSize);
-
-                                                                      return Stack(
-                                                                        fit: StackFit.expand,
-                                                                        children: [
-                                                                          Image.network(
-                                                                            url,
-                                                                            fit: BoxFit.contain,
-                                                                            loadingBuilder: (context, child, loadingProgress) {
-                                                                              if (loadingProgress == null) return child;
-                                                                              return const Center(
-                                                                                child: CircularProgressIndicator(color: Color(0xFF8B5CF6)),
-                                                                              );
-                                                                            },
-                                                                            errorBuilder: (context, error, stackTrace) {
-                                                                              SnappySnag._log('⚠️ SnappySnag: Failed to load screenshot image from $url: $error');
-                                                                              return Center(
-                                                                                child: Column(
-                                                                                  mainAxisSize: MainAxisSize.min,
-                                                                                  children: [
-                                                                                    const Icon(Icons.broken_image_outlined, color: Colors.white38, size: 36),
-                                                                                    const SizedBox(height: 8),
-                                                                                    Text(
-                                                                                      _SdkLocale.originalScreenshotNotFound,
-                                                                                      style: const TextStyle(color: Colors.white60, fontSize: 12),
-                                                                                    ),
-                                                                                  ],
-                                                                                ),
-                                                                              );
-                                                                            },
-                                                                          ),
-                                                                          if (snapshot.hasData)
-                                                                            Positioned(
-                                                                              left: pinX,
-                                                                              top: pinY,
-                                                                              child: Container(
-                                                                                width: pinSize,
-                                                                                height: pinSize,
-                                                                                decoration: BoxDecoration(
-                                                                                  color: const Color(0xFF8B5CF6),
-                                                                                  shape: BoxShape.circle,
-                                                                                  border: Border.all(color: Colors.white, width: 2),
-                                                                                  boxShadow: const [
-                                                                                    BoxShadow(
-                                                                                      color: Colors.black54,
-                                                                                      blurRadius: 6,
-                                                                                      offset: Offset(0, 3),
-                                                                                    ),
-                                                                                  ],
-                                                                                ),
-                                                                                child: Center(
-                                                                                  child: Text(
-                                                                                    '${pin.number}',
-                                                                                    style: const TextStyle(
-                                                                                      color: Colors.white,
-                                                                                      fontWeight: FontWeight.bold,
-                                                                                      fontSize: 12,
-                                                                                    ),
-                                                                                  ),
-                                                                                ),
-                                                                              ),
-                                                                            ),
-                                                                        ],
-                                                                      );
-                                                                    },
-                                                                  );
-                                                                },
-                                                              )
-                                                            : Center(
-                                                                child: Text(
-                                                                  _SdkLocale.originalScreenshotNotFound,
-                                                                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.all(16),
+                                                child: SingleChildScrollView(
+                                                  child: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .stretch,
+                                                    children: [
+                                                      Row(
+                                                        children: [
+                                                          Container(
+                                                            width: 28,
+                                                            height: 28,
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: pinColor,
+                                                              shape: BoxShape
+                                                                  .circle,
+                                                            ),
+                                                            child: Center(
+                                                              child: Text(
+                                                                '${_editingPin!.number}',
+                                                                style:
+                                                                    const TextStyle(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  fontSize: 13,
                                                                 ),
                                                               ),
+                                                            ),
+                                                          ),
+                                                          const SizedBox(
+                                                              width: 8),
+                                                          Text(
+                                                            _SdkLocale
+                                                                .pinCommentTitle,
+                                                            style: TextStyle(
+                                                              color:
+                                                                  barTextColor,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 16,
+                                                            ),
+                                                          ),
+                                                          const Spacer(),
+                                                          IconButton(
+                                                            icon: const Icon(
+                                                                Icons
+                                                                    .delete_outline,
+                                                                color: Colors
+                                                                    .redAccent,
+                                                                size: 20),
+                                                            tooltip: _SdkLocale
+                                                                .delete,
+                                                            onPressed: () {
+                                                              if (SnappySnag()
+                                                                  .enableHaptics) {
+                                                                HapticFeedback
+                                                                    .lightImpact();
+                                                              }
+                                                              setState(() {
+                                                                _pins.removeWhere(
+                                                                    (p) =>
+                                                                        p.id ==
+                                                                        _editingPin!
+                                                                            .id);
+                                                                _renumberPins();
+                                                                _editingPin =
+                                                                    null;
+                                                              });
+                                                            },
+                                                          ),
+                                                        ],
                                                       ),
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 12),
-                                                  // Right: comment and back button
-                                                  SizedBox(
-                                                    width: 200,
-                                                    child: Column(
-                                                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                                                      children: [
-                                                        Expanded(
-                                                          child: Container(
-                                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                                            decoration: BoxDecoration(
-                                                              color: Colors.black38,
-                                                              borderRadius: BorderRadius.circular(8),
-                                                              border: Border.all(color: Colors.white12),
-                                                            ),
-                                                            child: Column(
-                                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                                              children: [
-                                                                // Fix: use Column instead of Row to prevent overflow when element name is long
-                                                                Text(
-                                                                  _SdkLocale.pinCommentTitle,
-                                                                  style: const TextStyle(
-                                                                    color: Color(0xFFC4B5FD),
-                                                                    fontSize: 11,
-                                                                    fontWeight: FontWeight.bold,
-                                                                  ),
-                                                                ),
-                                                                if (_previewingPin!.pin.target != null) ...[
-                                                                  const SizedBox(height: 2),
-                                                                  Text(
-                                                                    '${_SdkLocale.elementAttachedBadge}: ${_previewingPin!.pin.target!.widgetType}',
-                                                                    style: const TextStyle(
-                                                                      color: Color(0xFFA78BFA),
-                                                                      fontSize: 10,
-                                                                      fontWeight: FontWeight.bold,
-                                                                      overflow: TextOverflow.ellipsis,
-                                                                    ),
-                                                                    maxLines: 1,
-                                                                    overflow: TextOverflow.ellipsis,
-                                                                  ),
-                                                                ],
-                                                                const SizedBox(height: 4),
-                                                                Expanded(
-                                                                  child: SingleChildScrollView(
-                                                                    child: Text(
-                                                                      _previewingPin!.pin.comment.trim().isNotEmpty
-                                                                          ? _previewingPin!.pin.comment.trim()
-                                                                          : _SdkLocale.noCommentForPin,
-                                                                      style: const TextStyle(
-                                                                        color: Colors.white,
-                                                                        fontSize: 13,
-                                                                        height: 1.3,
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
+                                                      const SizedBox(
+                                                          height: 12),
+                                                      TextField(
+                                                        controller:
+                                                            _pinCommentController,
+                                                        maxLength: 500,
+                                                        maxLengthEnforcement:
+                                                            MaxLengthEnforcement
+                                                                .enforced,
+                                                        maxLines:
+                                                            isLandscape ? 2 : 4,
+                                                        autofocus: true,
+                                                        style: TextStyle(
+                                                            color:
+                                                                barTextColor),
+                                                        decoration:
+                                                            InputDecoration(
+                                                          hintText: _SdkLocale
+                                                              .pinCommentHint,
+                                                          hintStyle: TextStyle(
+                                                              color:
+                                                                  barSubtextColor),
+                                                          fillColor: isDark
+                                                              ? Colors.black26
+                                                              : Colors.grey
+                                                                  .shade100,
+                                                          filled: true,
+                                                          border:
+                                                              OutlineInputBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        8),
+                                                            borderSide: BorderSide(
+                                                                color: isDark
+                                                                    ? Colors
+                                                                        .grey
+                                                                        .shade800
+                                                                    : Colors
+                                                                        .grey
+                                                                        .shade300),
+                                                          ),
+                                                          enabledBorder:
+                                                              OutlineInputBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        8),
+                                                            borderSide: BorderSide(
+                                                                color: isDark
+                                                                    ? Colors
+                                                                        .grey
+                                                                        .shade800
+                                                                    : Colors
+                                                                        .grey
+                                                                        .shade300),
                                                           ),
                                                         ),
-                                                        const SizedBox(height: 8),
-                                                        ElevatedButton(
-                                                          style: ElevatedButton.styleFrom(
-                                                            backgroundColor: const Color(0xFF8B5CF6),
-                                                            foregroundColor: Colors.white,
-                                                            padding: const EdgeInsets.symmetric(vertical: 10),
-                                                            shape: RoundedRectangleBorder(
-                                                              borderRadius: BorderRadius.circular(8),
-                                                            ),
+                                                      ),
+                                                      const SizedBox(
+                                                          height: 16),
+                                                      ElevatedButton(
+                                                        style: ElevatedButton
+                                                            .styleFrom(
+                                                          backgroundColor:
+                                                              primaryColor,
+                                                          foregroundColor:
+                                                              ThemeData.estimateBrightnessForColor(
+                                                                          primaryColor) ==
+                                                                      Brightness
+                                                                          .dark
+                                                                  ? Colors.white
+                                                                  : Colors
+                                                                      .black,
+                                                          shape:
+                                                              RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        8),
                                                           ),
-                                                          onPressed: () {
-                                                            setState(() {
-                                                              _previewingPin = null;
-                                                            });
-                                                          },
-                                                          child: Text(
-                                                            _SdkLocale.back,
-                                                            style: const TextStyle(fontWeight: FontWeight.bold),
+                                                        ),
+                                                        onPressed: () {
+                                                          final updatedComment =
+                                                              _pinCommentController
+                                                                  .text
+                                                                  .trim();
+                                                          final editingId =
+                                                              _editingPin!.id;
+                                                          // Determine if pin is new: new only if not yet registered in undoStack
+                                                          final isNewPin =
+                                                              !_undoStack.any((e) =>
+                                                                  e is SnappyPin &&
+                                                                  e.id ==
+                                                                      editingId);
+                                                          setState(() {
+                                                            if (updatedComment
+                                                                .isEmpty) {
+                                                              // Delete pin if comment is empty (do not push to undoStack)
+                                                              _pins.removeWhere(
+                                                                  (p) =>
+                                                                      p.id ==
+                                                                      editingId);
+                                                              _renumberPins();
+                                                            } else {
+                                                              final idx = _pins
+                                                                  .indexWhere((p) =>
+                                                                      p.id ==
+                                                                      editingId);
+                                                              if (idx != -1) {
+                                                                final finalPin =
+                                                                    _editingPin!.copyWith(
+                                                                        comment:
+                                                                            updatedComment);
+                                                                _pins[idx] =
+                                                                    finalPin;
+                                                                if (isNewPin) {
+                                                                  // New pin: record finalized content to undoStack once comment is submitted
+                                                                  _undoStack.add(
+                                                                      finalPin);
+                                                                  _redoStack
+                                                                      .clear();
+                                                                }
+                                                                // Editing existing pin is excluded from undoStack (same as moving)
+                                                              }
+                                                            }
+                                                            _editingPin = null;
+                                                          });
+                                                        },
+                                                        child: Text(
+                                                          _SdkLocale.done,
+                                                          style: const TextStyle(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+
+                              // 5. Privacy confirmation floating overlay (rendered on topmost layer)
+                              if (_isPrivacyConfirmOpen)
+                                Positioned.fill(
+                                  child: Container(
+                                    color: Colors.black.withValues(alpha: 0.75),
+                                    padding: const EdgeInsets.all(24),
+                                    child: Center(
+                                      child: ConstrainedBox(
+                                        constraints:
+                                            const BoxConstraints(maxWidth: 440),
+                                        child: Card(
+                                          color: dialogBg,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: dialogRadius,
+                                            side:
+                                                BorderSide(color: dialogBorder),
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(20),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.stretch,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Icon(Icons.shield_outlined,
+                                                        color: primaryColor),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      _SdkLocale
+                                                          .privacyConfirmTitle,
+                                                      style: TextStyle(
+                                                        color: barTextColor,
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 12),
+                                                // 1. Image mosaic review
+                                                Text(
+                                                  _SdkLocale
+                                                      .privacyConfirmContent,
+                                                  style: TextStyle(
+                                                    color: isDark
+                                                        ? Colors.white70
+                                                        : Colors.black87,
+                                                    fontSize: 13,
+                                                    height: 1.4,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 14),
+                                                Divider(color: dialogBorder),
+                                                const SizedBox(height: 8),
+                                                // 2. Diagnostics and account metadata sharing checkbox
+                                                InkWell(
+                                                  onTap: () {
+                                                    setState(() {
+                                                      _includeAccountAndDiagnostics =
+                                                          !_includeAccountAndDiagnostics;
+                                                    });
+                                                  },
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  child: Padding(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(vertical: 4),
+                                                    child: Row(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        SizedBox(
+                                                          width: 24,
+                                                          height: 24,
+                                                          child: Checkbox(
+                                                            value:
+                                                                _includeAccountAndDiagnostics,
+                                                            activeColor:
+                                                                primaryColor,
+                                                            checkColor: ThemeData
+                                                                        .estimateBrightnessForColor(
+                                                                            primaryColor) ==
+                                                                    Brightness
+                                                                        .dark
+                                                                ? Colors.white
+                                                                : Colors.black,
+                                                            side: BorderSide(
+                                                                color: isDark
+                                                                    ? Colors
+                                                                        .white38
+                                                                    : Colors
+                                                                        .black38),
+                                                            shape:
+                                                                RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          4),
+                                                            ),
+                                                            onChanged: (val) {
+                                                              setState(() {
+                                                                _includeAccountAndDiagnostics =
+                                                                    val ?? true;
+                                                              });
+                                                            },
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                            width: 8),
+                                                        Expanded(
+                                                          child: Column(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              Text(
+                                                                SnappySnag().reporterEmail !=
+                                                                            null &&
+                                                                        SnappySnag()
+                                                                            .reporterEmail!
+                                                                            .isNotEmpty
+                                                                    ? _SdkLocale.privacyShareAccountWithEmail(
+                                                                        SnappySnag()
+                                                                            .reporterEmail!)
+                                                                    : _SdkLocale
+                                                                        .privacyShareAccount,
+                                                                style:
+                                                                    TextStyle(
+                                                                  color:
+                                                                      barTextColor,
+                                                                  fontSize: 12,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w500,
+                                                                ),
+                                                              ),
+                                                              const SizedBox(
+                                                                  height: 2),
+                                                              Text(
+                                                                _SdkLocale
+                                                                    .privacyAnonymousHint,
+                                                                style:
+                                                                    TextStyle(
+                                                                  color:
+                                                                      barSubtextColor,
+                                                                  fontSize: 11,
+                                                                ),
+                                                              ),
+                                                            ],
                                                           ),
                                                         ),
                                                       ],
                                                     ),
                                                   ),
-                                                ],
-                                              ),
-                                            )
-                                           else ...[
-                                            // Portrait: original screenshot preview with pin overlay
-                                            Expanded(
-                                              child: ClipRRect(
-                                                borderRadius: BorderRadius.circular(10),
-                                                child: Container(
-                                                  color: Colors.black,
-                                                  child: _previewingPin!.screenshotUrl != null && _previewingPin!.screenshotUrl!.isNotEmpty
-                                                      ? LayoutBuilder(
-                                                          builder: (context, constraints) {
-                                                            final pWidth = constraints.maxWidth;
-                                                            final pHeight = constraints.maxHeight;
-                                                            final pin = _previewingPin!.pin;
-                                                            const pinSize = 30.0;
-                                                            final url = _previewingPin!.screenshotUrl!;
-
-                                                            return FutureBuilder<Size>(
-                                                              future: _resolveImageSize(url),
-                                                              builder: (context, snapshot) {
-                                                                // Use intrinsic image dimensions if available; fallback to _drawingAspectRatio otherwise
-                                                                final double imgAspect = snapshot.hasData && snapshot.data!.height > 0
-                                                                    ? snapshot.data!.width / snapshot.data!.height
-                                                                    : (_drawingAspectRatio ?? (9 / 16));
-                                                                final containerAspect = pWidth / (pHeight > 0 ? pHeight : 1.0);
-                                                                double renderW = pWidth;
-                                                                double renderH = pHeight;
-                                                                double offsetX = 0.0;
-                                                                double offsetY = 0.0;
-
-                                                                if (containerAspect > imgAspect) {
-                                                                  // Horizontal letterboxing on left and right
-                                                                  renderW = pHeight * imgAspect;
-                                                                  offsetX = (pWidth - renderW) / 2.0;
-                                                                } else {
-                                                                  // Vertical letterboxing on top and bottom
-                                                                  renderH = pWidth / (imgAspect > 0 ? imgAspect : 1.0);
-                                                                  offsetY = (pHeight - renderH) / 2.0;
-                                                                }
-
-                                                                final pinX = (offsetX + (pin.xRatio * renderW) - (pinSize / 2.0)).clamp(0.0, pWidth - pinSize);
-                                                                final pinY = (offsetY + (pin.yRatio * renderH) - (pinSize / 2.0)).clamp(0.0, pHeight - pinSize);
-
-                                                                return Stack(
-                                                                  fit: StackFit.expand,
-                                                                  children: [
-                                                                    Image.network(
-                                                                      url,
-                                                                      fit: BoxFit.contain,
-                                                                      loadingBuilder: (context, child, loadingProgress) {
-                                                                        if (loadingProgress == null) return child;
-                                                                        return const Center(
-                                                                          child: CircularProgressIndicator(color: Color(0xFF8B5CF6)),
-                                                                        );
-                                                                      },
-                                                                      errorBuilder: (context, error, stackTrace) {
-                                                                        SnappySnag._log('⚠️ SnappySnag: Failed to load screenshot image from $url: $error');
-                                                                        return Center(
-                                                                          child: Column(
-                                                                            mainAxisSize: MainAxisSize.min,
-                                                                            children: [
-                                                                              const Icon(Icons.broken_image_outlined, color: Colors.white38, size: 36),
-                                                                              const SizedBox(height: 8),
-                                                                              Text(
-                                                                                _SdkLocale.originalScreenshotNotFound,
-                                                                                style: const TextStyle(color: Colors.white60, fontSize: 12),
-                                                                              ),
-                                                                            ],
-                                                                          ),
-                                                                        );
-                                                                      },
-                                                                    ),
-                                                                    if (snapshot.hasData)
-                                                                      Positioned(
-                                                                        left: pinX,
-                                                                        top: pinY,
-                                                                        child: Container(
-                                                                          width: pinSize,
-                                                                          height: pinSize,
-                                                                          decoration: BoxDecoration(
-                                                                            color: const Color(0xFF8B5CF6),
-                                                                            shape: BoxShape.circle,
-                                                                            border: Border.all(color: Colors.white, width: 2),
-                                                                            boxShadow: const [
-                                                                              BoxShadow(
-                                                                                color: Colors.black54,
-                                                                                blurRadius: 6,
-                                                                                offset: Offset(0, 3),
-                                                                              ),
-                                                                            ],
-                                                                          ),
-                                                                          child: Center(
-                                                                            child: Text(
-                                                                              '${pin.number}',
-                                                                              style: const TextStyle(
-                                                                                color: Colors.white,
-                                                                                fontWeight: FontWeight.bold,
-                                                                                fontSize: 12,
-                                                                              ),
-                                                                            ),
-                                                                          ),
-                                                                        ),
-                                                                      ),
-                                                                  ],
-                                                                );
-                                                              },
-                                                            );
-                                                          },
-                                                        )
-                                                      : Center(
-                                                          child: Text(
-                                                            _SdkLocale.originalScreenshotNotFound,
-                                                            style: const TextStyle(color: Colors.white60, fontSize: 12),
-                                                          ),
-                                                        ),
                                                 ),
-                                              ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            // Display feedback comment
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black38,
-                                                borderRadius: BorderRadius.circular(8),
-                                                border: Border.all(color: Colors.white12),
-                                              ),
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Row(
-                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                    children: [
-                                                      Text(
-                                                        _SdkLocale.pinCommentTitle,
-                                                        style: const TextStyle(
-                                                          color: Color(0xFFC4B5FD),
-                                                          fontSize: 11,
-                                                          fontWeight: FontWeight.bold,
-                                                        ),
-                                                      ),
-                                                      if (_previewingPin!.pin.target != null)
-                                                        Text(
-                                                          '${_SdkLocale.elementAttachedBadge}: ${_previewingPin!.pin.target!.widgetType}',
-                                                          style: const TextStyle(
-                                                            color: Color(0xFFA78BFA),
-                                                            fontSize: 10,
-                                                            fontWeight: FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                    ],
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  ConstrainedBox(
-                                                    constraints: const BoxConstraints(maxHeight: 80),
-                                                    child: SingleChildScrollView(
+                                                const SizedBox(height: 16),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.end,
+                                                  children: [
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        setState(() =>
+                                                            _isPrivacyConfirmOpen =
+                                                                false);
+                                                      },
                                                       child: Text(
-                                                        _previewingPin!.pin.comment.trim().isNotEmpty
-                                                            ? _previewingPin!.pin.comment.trim()
-                                                            : _SdkLocale.noCommentForPin,
-                                                        style: const TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 13,
-                                                          height: 1.3,
-                                                        ),
+                                                        _SdkLocale.backToEdit,
+                                                        style: TextStyle(
+                                                            color: isDark
+                                                                ? Colors.white60
+                                                                : Colors
+                                                                    .black54),
                                                       ),
                                                     ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            ElevatedButton(
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: const Color(0xFF8B5CF6),
-                                                foregroundColor: Colors.white,
-                                                padding: const EdgeInsets.symmetric(vertical: 10),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius: BorderRadius.circular(8),
+                                                    const SizedBox(width: 8),
+                                                    ElevatedButton(
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            primaryColor,
+                                                        foregroundColor:
+                                                            ThemeData.estimateBrightnessForColor(
+                                                                        primaryColor) ==
+                                                                    Brightness
+                                                                        .dark
+                                                                ? Colors.white
+                                                                : Colors.black,
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                      ),
+                                                      onPressed: () {
+                                                        _executeFeedbackSubmission();
+                                                      },
+                                                      child: Text(
+                                                        _SdkLocale.sendConfirm,
+                                                        style: const TextStyle(
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .bold),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                              ),
-                                              onPressed: () {
-                                                setState(() {
-                                                  _previewingPin = null;
-                                                });
-                                              },
-                                              child: Text(
-                                                _SdkLocale.back,
-                                                style: const TextStyle(fontWeight: FontWeight.bold),
-                                              ),
+                                              ],
                                             ),
-                                          ],
-                                        ],
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-
-                    // 5. Privacy confirmation floating overlay (rendered on topmost layer)
-                    if (_isPrivacyConfirmOpen)
-                      Positioned.fill(
-                        child: Container(
-                          color: Colors.black.withValues(alpha: 0.75),
-                          padding: const EdgeInsets.all(24),
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 440),
-                              child: Card(
-                                color: dialogBg,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: dialogRadius,
-                                  side: BorderSide(color: dialogBorder),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(Icons.shield_outlined, color: primaryColor),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            _SdkLocale.privacyConfirmTitle,
-                                            style: TextStyle(
-                                              color: barTextColor,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                              // 5. Clear all confirmation overlay
+                              if (_isClearConfirmOpen)
+                                Positioned.fill(
+                                  child: Container(
+                                    color: Colors.black.withValues(alpha: 0.75),
+                                    padding: const EdgeInsets.all(24),
+                                    child: Center(
+                                      child: ConstrainedBox(
+                                        constraints:
+                                            const BoxConstraints(maxWidth: 420),
+                                        child: Card(
+                                          color: dialogBg,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: dialogRadius,
+                                            side:
+                                                BorderSide(color: dialogBorder),
                                           ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      // 1. Image mosaic review
-                                      Text(
-                                        _SdkLocale.privacyConfirmContent,
-                                        style: TextStyle(
-                                          color: isDark ? Colors.white70 : Colors.black87,
-                                          fontSize: 13,
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 14),
-                                      Divider(color: dialogBorder),
-                                      const SizedBox(height: 8),
-                                      // 2. Diagnostics and account metadata sharing checkbox
-                                      InkWell(
-                                        onTap: () {
-                                          setState(() {
-                                            _includeAccountAndDiagnostics = !_includeAccountAndDiagnostics;
-                                          });
-                                        },
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(vertical: 4),
-                                          child: Row(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              SizedBox(
-                                                width: 24,
-                                                height: 24,
-                                                child: Checkbox(
-                                                  value: _includeAccountAndDiagnostics,
-                                                  activeColor: primaryColor,
-                                                  checkColor: ThemeData.estimateBrightnessForColor(primaryColor) == Brightness.dark
-                                                      ? Colors.white
-                                                      : Colors.black,
-                                                  side: BorderSide(color: isDark ? Colors.white38 : Colors.black38),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(4),
-                                                  ),
-                                                  onChanged: (val) {
-                                                    setState(() {
-                                                      _includeAccountAndDiagnostics = val ?? true;
-                                                    });
-                                                  },
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(20),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.stretch,
+                                              children: [
+                                                Row(
                                                   children: [
+                                                    const Icon(
+                                                        Icons.delete_outline,
+                                                        color:
+                                                            Colors.redAccent),
+                                                    const SizedBox(width: 8),
                                                     Text(
-                                                      SnappySnag().reporterEmail != null && SnappySnag().reporterEmail!.isNotEmpty
-                                                          ? _SdkLocale.privacyShareAccountWithEmail(SnappySnag().reporterEmail!)
-                                                          : _SdkLocale.privacyShareAccount,
+                                                      _SdkLocale
+                                                          .clearConfirmTitle,
                                                       style: TextStyle(
                                                         color: barTextColor,
-                                                        fontSize: 12,
-                                                        fontWeight: FontWeight.w500,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 2),
-                                                    Text(
-                                                      _SdkLocale.privacyAnonymousHint,
-                                                      style: TextStyle(
-                                                        color: barSubtextColor,
-                                                        fontSize: 11,
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.bold,
                                                       ),
                                                     ),
                                                   ],
+                                                ),
+                                                const SizedBox(height: 12),
+                                                Text(
+                                                  _SdkLocale.clearConfirmBody,
+                                                  style: TextStyle(
+                                                    color: isDark
+                                                        ? Colors.white70
+                                                        : Colors.black87,
+                                                    fontSize: 13,
+                                                    height: 1.5,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 16),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.end,
+                                                  children: [
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        setState(() =>
+                                                            _isClearConfirmOpen =
+                                                                false);
+                                                      },
+                                                      child: Text(
+                                                        _SdkLocale.cancel,
+                                                        style: TextStyle(
+                                                            color: isDark
+                                                                ? Colors.white54
+                                                                : Colors
+                                                                    .black54),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    ElevatedButton(
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            Colors.redAccent,
+                                                        foregroundColor:
+                                                            Colors.white,
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                      ),
+                                                      onPressed: () {
+                                                        setState(() {
+                                                          _drawingPoints
+                                                              .clear();
+                                                          _pins.clear();
+                                                          _undoStack.clear();
+                                                          _redoStack.clear();
+                                                          _isClearConfirmOpen =
+                                                              false;
+                                                        });
+                                                      },
+                                                      child: Text(
+                                                        _SdkLocale
+                                                            .clearConfirmButton,
+                                                        style: const TextStyle(
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .bold),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              // 6. Draft save confirmation overlay on cancel
+                              if (_isCancelDraftConfirmOpen)
+                                Positioned.fill(
+                                  child: Container(
+                                    color: Colors.black.withValues(alpha: 0.75),
+                                    padding: const EdgeInsets.all(24),
+                                    child: Center(
+                                      child: ConstrainedBox(
+                                        constraints:
+                                            const BoxConstraints(maxWidth: 420),
+                                        child: Card(
+                                          color: dialogBg,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: dialogRadius,
+                                            side:
+                                                BorderSide(color: dialogBorder),
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(20),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.stretch,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Icon(Icons.bookmark_border,
+                                                        color: primaryColor),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      _SdkLocale
+                                                          .saveDraftPromptTitle,
+                                                      style: TextStyle(
+                                                        color: barTextColor,
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 12),
+                                                Text(
+                                                  _SdkLocale
+                                                      .saveDraftPromptOnCancel,
+                                                  style: TextStyle(
+                                                    color: isDark
+                                                        ? Colors.white70
+                                                        : Colors.black87,
+                                                    fontSize: 13,
+                                                    height: 1.5,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 16),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.end,
+                                                  children: [
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        setState(() =>
+                                                            _isCancelDraftConfirmOpen =
+                                                                false);
+                                                      },
+                                                      child: Text(
+                                                        _SdkLocale.cancel,
+                                                        style: TextStyle(
+                                                            color: isDark
+                                                                ? Colors.white54
+                                                                : Colors
+                                                                    .black54),
+                                                      ),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () async {
+                                                        await _SnappyDraftData
+                                                            .clear();
+                                                        _closeDrawingOverlay();
+                                                      },
+                                                      child: Text(
+                                                        _SdkLocale.discardDraft,
+                                                        style: const TextStyle(
+                                                            color: Colors
+                                                                .redAccent),
+                                                      ),
+                                                    ),
+                                                    ElevatedButton(
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            primaryColor,
+                                                        foregroundColor:
+                                                            ThemeData.estimateBrightnessForColor(
+                                                                        primaryColor) ==
+                                                                    Brightness
+                                                                        .dark
+                                                                ? Colors.white
+                                                                : Colors.black,
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                      ),
+                                                      onPressed: () async {
+                                                        if (_drawingImageBytes !=
+                                                            null) {
+                                                          await _SnappyDraftData
+                                                              .save(
+                                                            imageBytes:
+                                                                _drawingImageBytes!,
+                                                            widgetTree:
+                                                                _drawingWidgetTree,
+                                                            screenClassName:
+                                                                _drawingScreenClassName,
+                                                            screenSignature:
+                                                                _drawingScreenSignature,
+                                                            drawingPoints:
+                                                                _drawingPoints,
+                                                            pins: _pins,
+                                                            memo:
+                                                                _feedbackMemoController
+                                                                    .text,
+                                                            drawingAspectRatio:
+                                                                _drawingAspectRatio,
+                                                          );
+                                                        }
+                                                        final messengerContext =
+                                                            SnappySnag()
+                                                                    .navigatorKey
+                                                                    ?.currentContext ??
+                                                                context;
+                                                        _closeDrawingOverlay();
+                                                        _showToast(
+                                                          targetContext:
+                                                              messengerContext,
+                                                          message: _SdkLocale
+                                                              .draftSavedToast,
+                                                          type: _SnappyToastType
+                                                              .success,
+                                                          duration:
+                                                              const Duration(
+                                                                  seconds: 3),
+                                                        );
+                                                      },
+                                                      child: Text(
+                                                        _SdkLocale.saveDraft,
+                                                        style: const TextStyle(
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .bold),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                              // 6. Draft save confirmation overlay on send failure
+                              if (_isFailedSendDraftConfirmOpen)
+                                Positioned.fill(
+                                  child: Container(
+                                    color: Colors.black.withValues(alpha: 0.75),
+                                    padding: const EdgeInsets.all(24),
+                                    child: Center(
+                                      child: ConstrainedBox(
+                                        constraints:
+                                            const BoxConstraints(maxWidth: 420),
+                                        child: Card(
+                                          color: dialogBg,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: dialogRadius,
+                                            side:
+                                                BorderSide(color: dialogBorder),
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(20),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.stretch,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Icon(Icons.bookmark_border,
+                                                        color: primaryColor),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      _SdkLocale
+                                                          .saveDraftPromptTitle,
+                                                      style: TextStyle(
+                                                        color: barTextColor,
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 12),
+                                                Text(
+                                                  _SdkLocale
+                                                      .saveDraftPromptOnFailedSend,
+                                                  style: TextStyle(
+                                                    color: isDark
+                                                        ? Colors.white70
+                                                        : Colors.black87,
+                                                    fontSize: 13,
+                                                    height: 1.5,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 16),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.end,
+                                                  children: [
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        setState(() =>
+                                                            _isFailedSendDraftConfirmOpen =
+                                                                false);
+                                                      },
+                                                      child: Text(
+                                                        _SdkLocale.stayOnScreen,
+                                                        style: TextStyle(
+                                                            color: isDark
+                                                                ? Colors.white70
+                                                                : Colors
+                                                                    .black54),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    ElevatedButton(
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            primaryColor,
+                                                        foregroundColor:
+                                                            ThemeData.estimateBrightnessForColor(
+                                                                        primaryColor) ==
+                                                                    Brightness
+                                                                        .dark
+                                                                ? Colors.white
+                                                                : Colors.black,
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                      ),
+                                                      onPressed: () async {
+                                                        if (_drawingImageBytes !=
+                                                            null) {
+                                                          await _SnappyDraftData
+                                                              .save(
+                                                            imageBytes:
+                                                                _drawingImageBytes!,
+                                                            widgetTree:
+                                                                _drawingWidgetTree,
+                                                            screenClassName:
+                                                                _drawingScreenClassName,
+                                                            screenSignature:
+                                                                _drawingScreenSignature,
+                                                            drawingPoints:
+                                                                _drawingPoints,
+                                                            pins: _pins,
+                                                            memo:
+                                                                _feedbackMemoController
+                                                                    .text,
+                                                            drawingAspectRatio:
+                                                                _drawingAspectRatio,
+                                                          );
+                                                        }
+                                                        final messengerContext =
+                                                            SnappySnag()
+                                                                    .navigatorKey
+                                                                    ?.currentContext ??
+                                                                context;
+                                                        _closeDrawingOverlay();
+                                                        _showToast(
+                                                          targetContext:
+                                                              messengerContext,
+                                                          message: _SdkLocale
+                                                              .draftSavedToast,
+                                                          type: _SnappyToastType
+                                                              .success,
+                                                          duration:
+                                                              const Duration(
+                                                                  seconds: 3),
+                                                        );
+                                                      },
+                                                      child: Text(
+                                                        _SdkLocale.saveDraft,
+                                                        style: const TextStyle(
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .bold),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                              // Fullscreen loading overlay while sending feedback
+                              if (_isSendingFeedback)
+                                Positioned.fill(
+                                  child: Container(
+                                    color: Colors.black.withValues(alpha: 0.6),
+                                    child: Center(
+                                      child: Card(
+                                        color: dialogBg,
+                                        elevation: 12,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: dialogRadius,
+                                          side: BorderSide(color: dialogBorder),
+                                        ),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 28, vertical: 24),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              SizedBox(
+                                                width: 36,
+                                                height: 36,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  strokeWidth: 3,
+                                                  valueColor:
+                                                      AlwaysStoppedAnimation<
+                                                              Color>(
+                                                          theme.primaryColor),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 18),
+                                              Text(
+                                                _SdkLocale.sending,
+                                                style: TextStyle(
+                                                  color: barTextColor,
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.bold,
                                                 ),
                                               ),
                                             ],
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(height: 16),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        children: [
-                                          TextButton(
-                                            onPressed: () {
-                                              setState(() => _isPrivacyConfirmOpen = false);
-                                            },
-                                            child: Text(
-                                              _SdkLocale.backToEdit,
-                                              style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          ElevatedButton(
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: primaryColor,
-                                              foregroundColor: ThemeData.estimateBrightnessForColor(primaryColor) == Brightness.dark
-                                                  ? Colors.white
-                                                  : Colors.black,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                            ),
-                                            onPressed: () {
-                                              _executeFeedbackSubmission();
-                                            },
-                                            child: Text(
-                                              _SdkLocale.sendConfirm,
-                                              style: const TextStyle(fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    // 5. Clear all confirmation overlay
-                    if (_isClearConfirmOpen)
-                      Positioned.fill(
-                        child: Container(
-                          color: Colors.black.withValues(alpha: 0.75),
-                          padding: const EdgeInsets.all(24),
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 420),
-                              child: Card(
-                                color: dialogBg,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: dialogRadius,
-                                  side: BorderSide(color: dialogBorder),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          const Icon(Icons.delete_outline, color: Colors.redAccent),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            _SdkLocale.clearConfirmTitle,
-                                            style: TextStyle(
-                                              color: barTextColor,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        _SdkLocale.clearConfirmBody,
-                                        style: TextStyle(
-                                          color: isDark ? Colors.white70 : Colors.black87,
-                                          fontSize: 13,
-                                          height: 1.5,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        children: [
-                                          TextButton(
-                                            onPressed: () {
-                                              setState(() => _isClearConfirmOpen = false);
-                                            },
-                                            child: Text(
-                                              _SdkLocale.cancel,
-                                              style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          ElevatedButton(
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.redAccent,
-                                              foregroundColor: Colors.white,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                            ),
-                                            onPressed: () {
-                                              setState(() {
-                                                _drawingPoints.clear();
-                                                _pins.clear();
-                                                _undoStack.clear();
-                                                _redoStack.clear();
-                                                _isClearConfirmOpen = false;
-                                              });
-                                            },
-                                            child: Text(
-                                              _SdkLocale.clearConfirmButton,
-                                              style: const TextStyle(fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    // 6. Draft save confirmation overlay on cancel
-                    if (_isCancelDraftConfirmOpen)
-                      Positioned.fill(
-                        child: Container(
-                          color: Colors.black.withValues(alpha: 0.75),
-                          padding: const EdgeInsets.all(24),
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 420),
-                              child: Card(
-                                color: dialogBg,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: dialogRadius,
-                                  side: BorderSide(color: dialogBorder),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(Icons.bookmark_border, color: primaryColor),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            _SdkLocale.saveDraftPromptTitle,
-                                            style: TextStyle(
-                                              color: barTextColor,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        _SdkLocale.saveDraftPromptOnCancel,
-                                        style: TextStyle(
-                                          color: isDark ? Colors.white70 : Colors.black87,
-                                          fontSize: 13,
-                                          height: 1.5,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        children: [
-                                          TextButton(
-                                            onPressed: () {
-                                              setState(() => _isCancelDraftConfirmOpen = false);
-                                            },
-                                            child: Text(
-                                              _SdkLocale.cancel,
-                                              style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
-                                            ),
-                                          ),
-                                          TextButton(
-                                            onPressed: () async {
-                                              await _SnappyDraftData.clear();
-                                              _closeDrawingOverlay();
-                                            },
-                                            child: Text(
-                                              _SdkLocale.discardDraft,
-                                              style: const TextStyle(color: Colors.redAccent),
-                                            ),
-                                          ),
-                                          ElevatedButton(
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: primaryColor,
-                                              foregroundColor: ThemeData.estimateBrightnessForColor(primaryColor) == Brightness.dark
-                                                  ? Colors.white
-                                                  : Colors.black,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                            ),
-                                            onPressed: () async {
-                                              if (_drawingImageBytes != null) {
-                                                await _SnappyDraftData.save(
-                                                  imageBytes: _drawingImageBytes!,
-                                                  widgetTree: _drawingWidgetTree,
-                                                  screenClassName: _drawingScreenClassName,
-                                                  screenSignature: _drawingScreenSignature,
-                                                  drawingPoints: _drawingPoints,
-                                                  pins: _pins,
-                                                  memo: _feedbackMemoController.text,
-                                                  drawingAspectRatio: _drawingAspectRatio,
-                                                  existingFeedbacks: _existingFeedbacks,
-                                                  isDevChatEnabled: SnappySnag().isDevChatEnabled,
-                                                );
-                                              }
-                                              final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
-                                              _closeDrawingOverlay();
-                                              _showToast(
-                                                targetContext: messengerContext,
-                                                message: _SdkLocale.draftSavedToast,
-                                                type: _SnappyToastType.success,
-                                                duration: const Duration(seconds: 3),
-                                              );
-                                            },
-                                            child: Text(
-                                              _SdkLocale.saveDraft,
-                                              style: const TextStyle(fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                    // 6. Draft save confirmation overlay on send failure
-                    if (_isFailedSendDraftConfirmOpen)
-                      Positioned.fill(
-                        child: Container(
-                          color: Colors.black.withValues(alpha: 0.75),
-                          padding: const EdgeInsets.all(24),
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 420),
-                              child: Card(
-                                color: dialogBg,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: dialogRadius,
-                                  side: BorderSide(color: dialogBorder),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(Icons.bookmark_border, color: primaryColor),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            _SdkLocale.saveDraftPromptTitle,
-                                            style: TextStyle(
-                                              color: barTextColor,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        _SdkLocale.saveDraftPromptOnFailedSend,
-                                        style: TextStyle(
-                                          color: isDark ? Colors.white70 : Colors.black87,
-                                          fontSize: 13,
-                                          height: 1.5,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        children: [
-                                          TextButton(
-                                            onPressed: () {
-                                              setState(() => _isFailedSendDraftConfirmOpen = false);
-                                            },
-                                            child: Text(
-                                              _SdkLocale.stayOnScreen,
-                                              style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          ElevatedButton(
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: primaryColor,
-                                              foregroundColor: ThemeData.estimateBrightnessForColor(primaryColor) == Brightness.dark
-                                                  ? Colors.white
-                                                  : Colors.black,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                            ),
-                                            onPressed: () async {
-                                              if (_drawingImageBytes != null) {
-                                                await _SnappyDraftData.save(
-                                                  imageBytes: _drawingImageBytes!,
-                                                  widgetTree: _drawingWidgetTree,
-                                                  screenClassName: _drawingScreenClassName,
-                                                  screenSignature: _drawingScreenSignature,
-                                                  drawingPoints: _drawingPoints,
-                                                  pins: _pins,
-                                                  memo: _feedbackMemoController.text,
-                                                  drawingAspectRatio: _drawingAspectRatio,
-                                                  existingFeedbacks: _existingFeedbacks,
-                                                  isDevChatEnabled: SnappySnag().isDevChatEnabled,
-                                                );
-                                              }
-                                              final messengerContext = SnappySnag().navigatorKey?.currentContext ?? context;
-                                              _closeDrawingOverlay();
-                                              _showToast(
-                                                targetContext: messengerContext,
-                                                message: _SdkLocale.draftSavedToast,
-                                                type: _SnappyToastType.success,
-                                                duration: const Duration(seconds: 3),
-                                              );
-                                            },
-                                            child: Text(
-                                              _SdkLocale.saveDraft,
-                                              style: const TextStyle(fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    // 7. Developer passcode verification overlay (topmost compact dialog)
-                    if (_isDevPasscodeDialogOpen)
-                      Positioned.fill(
-                        child: Container(
-                          color: Colors.black.withValues(alpha: 0.75),
-                          padding: const EdgeInsets.all(24),
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 420),
-                              child: Card(
-                                color: dialogBg,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: dialogRadius,
-                                  side: BorderSide(color: dialogBorder),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(6),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: const Icon(
-                                              Icons.lock_outline,
-                                              color: Color(0xFFA78BFA),
-                                              size: 18,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Expanded(
-                                            child: Text(
-                                              _SdkLocale.devPasscodeDialogTitle,
-                                              style: TextStyle(
-                                                color: barTextColor,
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        _SdkLocale.devPasscodeDialogDesc,
-                                        style: TextStyle(
-                                          color: isDark ? Colors.white70 : Colors.black87,
-                                          fontSize: 13,
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      TextField(
-                                        controller: _devPasscodeInputController,
-                                        autofocus: true,
-                                        keyboardType: TextInputType.number,
-                                        maxLength: 4,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: barTextColor,
-                                          fontSize: 22,
-                                          letterSpacing: 8,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        inputFormatters: [
-                                          FilteringTextInputFormatter.digitsOnly,
-                                          LengthLimitingTextInputFormatter(4),
-                                        ],
-                                        decoration: InputDecoration(
-                                          hintText: _SdkLocale.devPasscodeHint,
-                                          hintStyle: TextStyle(
-                                            color: isDark ? Colors.white24 : Colors.black26,
-                                            letterSpacing: 8,
-                                          ),
-                                          counterText: '',
-                                          filled: true,
-                                          fillColor: isDark ? Colors.black26 : Colors.grey.shade100,
-                                          contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(10),
-                                            borderSide: BorderSide(color: dialogBorder),
-                                          ),
-                                          focusedBorder: const OutlineInputBorder(
-                                            borderRadius: BorderRadius.all(Radius.circular(10)),
-                                            borderSide: BorderSide(color: Color(0xFF8B5CF6), width: 2),
-                                          ),
-                                        ),
-                                        onChanged: (_) {
-                                          if (_devPasscodeErrorMessage != null) {
-                                            setState(() {
-                                              _devPasscodeErrorMessage = null;
-                                            });
-                                          }
-                                        },
-                                        onSubmitted: (_) {
-                                          if (!_isVerifyingDevPasscode) {
-                                            _submitDevPasscode();
-                                          }
-                                        },
-                                      ),
-                                      if (_devPasscodeErrorMessage != null) ...[
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          _devPasscodeErrorMessage!,
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                            color: Colors.redAccent,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
-                                      const SizedBox(height: 16),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        children: [
-                                          TextButton(
-                                            onPressed: _isVerifyingDevPasscode
-                                                ? null
-                                                : () {
-                                                    setState(() {
-                                                      _isDevPasscodeDialogOpen = false;
-                                                      _devPasscodeErrorMessage = null;
-                                                      _devPasscodeInputController.clear();
-                                                    });
-                                                  },
-                                            child: Text(
-                                              _SdkLocale.devPasscodeCancel,
-                                              style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          ElevatedButton(
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: const Color(0xFF8B5CF6),
-                                              foregroundColor: Colors.white,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                            ),
-                                            onPressed: _isVerifyingDevPasscode ? null : () => _submitDevPasscode(),
-                                            child: _isVerifyingDevPasscode
-                                                ? const SizedBox(
-                                                    width: 16,
-                                                    height: 16,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: Colors.white,
-                                                    ),
-                                                  )
-                                                : Text(
-                                                    _SdkLocale.devPasscodeSubmit,
-                                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                                  ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                    // 8. Fullscreen loading overlay while sending feedback
-                    if (_isSendingFeedback)
-                      Positioned.fill(
-                        child: Container(
-                          color: Colors.black.withValues(alpha: 0.6),
-                          child: Center(
-                            child: Card(
-                              color: dialogBg,
-                              elevation: 12,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: dialogRadius,
-                                side: BorderSide(color: dialogBorder),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    SizedBox(
-                                      width: 36,
-                                      height: 36,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 3,
-                                        valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
-                                      ),
                                     ),
-                                    const SizedBox(height: 18),
-                                    Text(
-                                      _SdkLocale.sending,
-                                      style: TextStyle(
-                                        color: barTextColor,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ),
+                            ],
                           ),
                         ),
                       ),
-                  ],
+                    );
+                  },
                 ),
-              ),
+              ],
             ),
-          );
-        },
-      ),
-    ],
-  ),
-),
+          ),
         // Feedback Mode Guidance Banner & Floating Trigger Button
         AnimatedBuilder(
           animation: Listenable.merge([
@@ -4810,11 +3733,10 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
           builder: (context, _) {
             final isTriggerVisible = SnappySnag().isTriggerButtonVisible.value;
             final isFeedbackActive = SnappySnag().isFeedbackModeActive.value;
-            final shouldShowButton =
-                (isTriggerVisible || isFeedbackActive) &&
-                    !_isCapturing &&
-                    !_isFeedbackDialogOpen &&
-                    _overlayMode == _SnappyOverlayMode.none;
+            final shouldShowButton = (isTriggerVisible || isFeedbackActive) &&
+                !_isCapturing &&
+                !_isFeedbackDialogOpen &&
+                _overlayMode == _SnappyOverlayMode.none;
 
             return Stack(
               children: [
@@ -4846,7 +3768,9 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                         child: Center(
                           child: SnappySnagIcon(
                             size: 42,
-                            color: ThemeData.estimateBrightnessForColor(SnappySnag().theme.primaryColor) == Brightness.dark
+                            color: ThemeData.estimateBrightnessForColor(
+                                        SnappySnag().theme.primaryColor) ==
+                                    Brightness.dark
                                 ? Colors.white
                                 : Colors.black,
                           ),
@@ -4875,8 +3799,10 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                   builder: (toastContext) {
                     final theme = SnappySnag().theme;
                     final isDark = theme.isDark(toastContext);
-                    final toastBg = isDark ? const Color(0xFF1E1E24) : Colors.white;
-                    final toastBorder = isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
+                    final toastBg =
+                        isDark ? const Color(0xFF1E1E24) : Colors.white;
+                    final toastBorder =
+                        isDark ? const Color(0xFF2E2E38) : Colors.grey.shade300;
                     final textColor = isDark ? Colors.white : Colors.black87;
 
                     final IconData iconData;
@@ -4900,7 +3826,8 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                         break;
                     }
 
-                    final radius = theme.borderRadius > 16 ? 16.0 : theme.borderRadius;
+                    final radius =
+                        theme.borderRadius > 16 ? 16.0 : theme.borderRadius;
 
                     return Material(
                       elevation: 10,
@@ -4911,7 +3838,8 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                         side: BorderSide(color: toastBorder),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 14),
                         child: Row(
                           children: [
                             Icon(iconData, color: iconColor, size: 20),
@@ -4973,7 +3901,8 @@ class _SnappySnagHideButtonState extends State<SnappySnagHideButton> {
   Widget build(BuildContext context) => widget.child;
 }
 
-class _SimpleDiagnosticsSerializationDelegate implements DiagnosticsSerializationDelegate {
+class _SimpleDiagnosticsSerializationDelegate
+    implements DiagnosticsSerializationDelegate {
   const _SimpleDiagnosticsSerializationDelegate();
 
   @override
@@ -4986,8 +3915,6 @@ class _SimpleDiagnosticsSerializationDelegate implements DiagnosticsSerializatio
     return null;
   }
 }
-
-
 
 class _FeedbackResponse {
   final int statusCode;
@@ -5019,6 +3946,7 @@ class WidgetTreeDumper {
       }
       element.visitChildren(findTopScaffold);
     }
+
     context.visitChildElements(findTopScaffold);
 
     // Starting context: use topmost Scaffold if resolved, fallback to provided context
@@ -5030,8 +3958,10 @@ class WidgetTreeDumper {
     final screenHeight = mediaQuery?.size.height ?? 5000.0;
 
     // PII detection regex patterns (email, phone number, credit card, postal code)
-    final emailRegex = RegExp(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}');
-    final phoneRegex = RegExp(r'(?:\+?\d{1,3}[- ]?)?(?:0\d{1,4}[- ]?\d{1,4}[- ]?\d{3,4}|\b\d{3}[- ]?\d{4}[- ]?\d{4}\b)');
+    final emailRegex =
+        RegExp(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}');
+    final phoneRegex = RegExp(
+        r'(?:\+?\d{1,3}[- ]?)?(?:0\d{1,4}[- ]?\d{1,4}[- ]?\d{3,4}|\b\d{3}[- ]?\d{4}[- ]?\d{4}\b)');
     final creditCardRegex = RegExp(r'\b(?:\d{4}[ -]?){3}\d{4}\b');
     final postalCodeRegex = RegExp(r'〒?\s*\d{3}-\d{4}');
 
@@ -5102,8 +4032,11 @@ class WidgetTreeDumper {
                   position.dy + size.height > 0;
 
               if (isInsideScreen) {
-                final rect = Rect.fromLTWH(position.dx, position.dy, size.width, size.height);
-                if (!bounds.any((b) => (b.left - rect.left).abs() < 5 && (b.top - rect.top).abs() < 5)) {
+                final rect = Rect.fromLTWH(
+                    position.dx, position.dy, size.width, size.height);
+                if (!bounds.any((b) =>
+                    (b.left - rect.left).abs() < 5 &&
+                    (b.top - rect.top).abs() < 5)) {
                   bounds.add(rect);
                 }
               }
@@ -5126,7 +4059,8 @@ class WidgetTreeDumper {
     // Traverse tree to retain the last encountered Scaffold (topmost visible screen overlay)
     void findScaffold(Element element) {
       if (element.widget.runtimeType.toString() == 'Scaffold') {
-        scaffoldElement = element; // Update on each match to capture the latest topmost element
+        scaffoldElement =
+            element; // Update on each match to capture the latest topmost element
       }
       element.visitChildren((child) {
         findScaffold(child); // Traverse all subtrees without early return
@@ -5160,7 +4094,8 @@ class WidgetTreeDumper {
   }
 
   // Generate screen structure signature (collects custom widgets below Scaffold)
-  static String findScreenSignature(BuildContext context, String screenClassName) {
+  static String findScreenSignature(
+      BuildContext context, String screenClassName) {
     Element? scaffoldElement;
 
     void findScaffold(Element element) {
@@ -5328,7 +4263,8 @@ class WidgetTreeDumper {
     try {
       final node = element.toDiagnosticsNode();
       // Use toJsonMap with our concrete delegate implementation to safely extract creationLocation metadata
-      final jsonMap = node.toJsonMap(const _SimpleDiagnosticsSerializationDelegate());
+      final jsonMap =
+          node.toJsonMap(const _SimpleDiagnosticsSerializationDelegate());
       if (jsonMap.containsKey('creationLocation')) {
         final locMap = jsonMap['creationLocation'] as Map<String, dynamic>?;
         if (locMap != null && locMap.containsKey('file')) {
@@ -5390,7 +4326,11 @@ class WidgetTreeDumper {
     // Bypass check: If the node contains no location, key, or text, AND is not a structural layout widget,
     // we return null to bypass (skip) this node entirely and let the children flatten up.
     // NOTE: We never bypass the root node (depth == 0) to ensure the tree has a valid starting node.
-    if (depth > 0 && loc == null && key == null && text == null && !_isLayoutStructuralWidget(type)) {
+    if (depth > 0 &&
+        loc == null &&
+        key == null &&
+        text == null &&
+        !_isLayoutStructuralWidget(type)) {
       return null;
     }
 
@@ -5516,7 +4456,8 @@ class WidgetTreeDumper {
   }
 
   /// Extracts the best-matching UI widget anchor metadata (SnappyPinTarget) at the tapped screen position.
-  static SnappyPinTarget? findTargetAtPosition(BuildContext context, Offset globalPos) {
+  static SnappyPinTarget? findTargetAtPosition(
+      BuildContext context, Offset globalPos) {
     Element? topScaffoldElement;
     void findTopScaffold(Element element) {
       if (element.widget.runtimeType.toString() == 'Scaffold') {
@@ -5524,6 +4465,7 @@ class WidgetTreeDumper {
       }
       element.visitChildren(findTopScaffold);
     }
+
     context.visitChildElements(findTopScaffold);
     final Element searchRoot = topScaffoldElement ?? (context as Element);
 
@@ -5572,19 +4514,24 @@ class WidgetTreeDumper {
 
             // Search descendants for EditableText if input widget has not extracted text yet
             if ((text == null || text.trim().isEmpty) &&
-                (clean.contains('TextField') || clean.contains('TextFormField') || clean.contains('EditableText'))) {
+                (clean.contains('TextField') ||
+                    clean.contains('TextFormField') ||
+                    clean.contains('EditableText'))) {
               void findInputText(Element el) {
                 if (text != null && text!.trim().isNotEmpty) return;
                 final w = el.widget;
                 if (w is EditableText) {
                   text = w.controller.text;
-                } else if (w is Text && w.data != null && w.data!.trim().isNotEmpty) {
+                } else if (w is Text &&
+                    w.data != null &&
+                    w.data!.trim().isNotEmpty) {
                   text = w.data!.trim();
                 }
                 if (text == null || text!.isEmpty) {
                   el.visitChildren(findInputText);
                 }
               }
+
               element.visitChildren(findInputText);
             }
 
@@ -5593,7 +4540,8 @@ class WidgetTreeDumper {
 
             // Validate text content (exclude empty, whitespace-only, or PUA icon glyphs)
             final rawText = text;
-            final bool hasValidText = !isIconGlyph && rawText != null && rawText.trim().isNotEmpty;
+            final bool hasValidText =
+                !isIconGlyph && rawText != null && rawText.trim().isNotEmpty;
             final String? trimmedText = hasValidText ? rawText.trim() : null;
 
             // Traverse ancestors upwards to locate interactive buttons or containers
@@ -5639,14 +4587,16 @@ class WidgetTreeDumper {
                   try {
                     final aPos = aBox.localToGlobal(Offset.zero);
                     final aSize = aBox.size;
-                    final aR = Rect.fromLTWH(aPos.dx, aPos.dy, aSize.width, aSize.height);
+                    final aR = Rect.fromLTWH(
+                        aPos.dx, aPos.dy, aSize.width, aSize.height);
                     if (aR.contains(globalPos)) {
                       clickableAncestor = ancestor;
                       ancestorType = aType;
                       ancestorKey = aWidget.key?.toString();
                       ancestorRect = aR;
                       // Immediately prioritize custom app buttons or TextFields when encountered
-                      if (!aType.startsWith('GestureDetector') && !aType.startsWith('InkResponse')) {
+                      if (!aType.startsWith('GestureDetector') &&
+                          !aType.startsWith('InkResponse')) {
                         return false;
                       }
                     }
@@ -5657,10 +4607,18 @@ class WidgetTreeDumper {
             });
 
             // Register interactive ancestor container as candidate if present
-            if (clickableAncestor != null && ancestorType != null && ancestorRect != null) {
+            if (clickableAncestor != null &&
+                ancestorType != null &&
+                ancestorRect != null) {
               final cArea = ancestorRect!.width * ancestorRect!.height;
-              final localXRatio = ancestorRect!.width > 0 ? ((globalPos.dx - ancestorRect!.left) / ancestorRect!.width).clamp(0.0, 1.0) : 0.5;
-              final localYRatio = ancestorRect!.height > 0 ? ((globalPos.dy - ancestorRect!.top) / ancestorRect!.height).clamp(0.0, 1.0) : 0.5;
+              final localXRatio = ancestorRect!.width > 0
+                  ? ((globalPos.dx - ancestorRect!.left) / ancestorRect!.width)
+                      .clamp(0.0, 1.0)
+                  : 0.5;
+              final localYRatio = ancestorRect!.height > 0
+                  ? ((globalPos.dy - ancestorRect!.top) / ancestorRect!.height)
+                      .clamp(0.0, 1.0)
+                  : 0.5;
 
               // Borrow inner button text as anchor text.
               // If tap position itself has no text (e.g. icon or arrow tapped),
@@ -5673,7 +4631,10 @@ class WidgetTreeDumper {
                 void findClosestChildText(Element el) {
                   final w = el.widget;
                   String? candidate;
-                  if (w is Text && w.data != null && !_isPrivateUseAreaIconText(w.data) && w.data!.trim().isNotEmpty) {
+                  if (w is Text &&
+                      w.data != null &&
+                      !_isPrivateUseAreaIconText(w.data) &&
+                      w.data!.trim().isNotEmpty) {
                     candidate = w.data!.trim();
                   } else if (w is RichText) {
                     final plain = w.text.toPlainText().trim();
@@ -5692,7 +4653,8 @@ class WidgetTreeDumper {
                     if (rBox is RenderBox && rBox.hasSize && rBox.attached) {
                       try {
                         final pos = rBox.localToGlobal(Offset.zero);
-                        final center = Offset(pos.dx + rBox.size.width * 0.5, pos.dy + rBox.size.height * 0.5);
+                        final center = Offset(pos.dx + rBox.size.width * 0.5,
+                            pos.dy + rBox.size.height * 0.5);
                         final dist = (center - globalPos).distance;
                         if (dist < minDistance) {
                           minDistance = dist;
@@ -5714,9 +4676,10 @@ class WidgetTreeDumper {
               }
 
               final finalButtonText = buttonText;
-              final resolvedText = (finalButtonText != null && finalButtonText.length > 30)
-                  ? finalButtonText.substring(0, 30)
-                  : finalButtonText;
+              final resolvedText =
+                  (finalButtonText != null && finalButtonText.length > 30)
+                      ? finalButtonText.substring(0, 30)
+                      : finalButtonText;
 
               final isForeContainer = ancestorType!.contains('AppBar') ||
                   ancestorType!.contains('Header') ||
@@ -5726,13 +4689,17 @@ class WidgetTreeDumper {
                 _CandidateTarget(
                   area: cArea,
                   depth: nextPath.length,
-                  priority: isForeContainer ? 110 : 100, // Header containers: 110, Buttons/TextFields: 100
+                  priority: isForeContainer
+                      ? 110
+                      : 100, // Header containers: 110, Buttons/TextFields: 100
                   traversalIndex: currentOrder,
                   target: SnappyPinTarget(
                     widgetKey: ancestorKey,
                     widgetType: ancestorType!,
                     widgetText: resolvedText,
-                    widgetPath: nextPath.length > 5 ? nextPath.sublist(nextPath.length - 5) : nextPath,
+                    widgetPath: nextPath.length > 5
+                        ? nextPath.sublist(nextPath.length - 5)
+                        : nextPath,
                     localXRatio: localXRatio,
                     localYRatio: localYRatio,
                   ),
@@ -5755,26 +4722,41 @@ class WidgetTreeDumper {
 
             if (!isNoise) {
               int priority = 0;
-              final isInputWidget = clean.contains('TextField') || clean.contains('TextFormField') || clean.contains('EditableText');
-              final isButtonSelf = clean.contains('Button') || clean.contains('InkWell') || clean.contains('Tile') || clean.contains('Card') || isInputWidget;
-              final isForeElement = clean.contains('AppBar') || clean.contains('Header') || clean.contains('NavigationBar');
+              final isInputWidget = clean.contains('TextField') ||
+                  clean.contains('TextFormField') ||
+                  clean.contains('EditableText');
+              final isButtonSelf = clean.contains('Button') ||
+                  clean.contains('InkWell') ||
+                  clean.contains('Tile') ||
+                  clean.contains('Card') ||
+                  isInputWidget;
+              final isForeElement = clean.contains('AppBar') ||
+                  clean.contains('Header') ||
+                  clean.contains('NavigationBar');
 
               if (isForeElement) {
-                priority = 110; // Header/AppBar elements prioritized as topmost foreground
+                priority =
+                    110; // Header/AppBar elements prioritized as topmost foreground
               } else if (isButtonSelf) {
                 priority = 100;
               } else if (keyStr != null && keyStr.isNotEmpty) {
                 priority = 80;
               } else if (hasValidText) {
                 priority = 60;
-              } else if (clean.contains('Image') || clean.contains('Icon') || isIconGlyph) {
+              } else if (clean.contains('Image') ||
+                  clean.contains('Icon') ||
+                  isIconGlyph) {
                 priority = 40; // Images and icons (including PUA font glyphs)
               }
 
               if (priority > 0) {
                 final area = size.width * size.height;
-                final localXRatio = size.width > 0 ? ((globalPos.dx - pos.dx) / size.width).clamp(0.0, 1.0) : 0.5;
-                final localYRatio = size.height > 0 ? ((globalPos.dy - pos.dy) / size.height).clamp(0.0, 1.0) : 0.5;
+                final localXRatio = size.width > 0
+                    ? ((globalPos.dx - pos.dx) / size.width).clamp(0.0, 1.0)
+                    : 0.5;
+                final localYRatio = size.height > 0
+                    ? ((globalPos.dy - pos.dy) / size.height).clamp(0.0, 1.0)
+                    : 0.5;
 
                 candidates.add(
                   _CandidateTarget(
@@ -5785,8 +4767,12 @@ class WidgetTreeDumper {
                     target: SnappyPinTarget(
                       widgetKey: keyStr,
                       widgetType: clean,
-                      widgetText: trimmedText != null && trimmedText.length > 30 ? trimmedText.substring(0, 30) : trimmedText,
-                      widgetPath: nextPath.length > 5 ? nextPath.sublist(nextPath.length - 5) : nextPath,
+                      widgetText: trimmedText != null && trimmedText.length > 30
+                          ? trimmedText.substring(0, 30)
+                          : trimmedText,
+                      widgetPath: nextPath.length > 5
+                          ? nextPath.sublist(nextPath.length - 5)
+                          : nextPath,
                       localXRatio: localXRatio,
                       localYRatio: localYRatio,
                     ),
@@ -5837,6 +4823,7 @@ class WidgetTreeDumper {
       }
       element.visitChildren(findTopScaffold);
     }
+
     context.visitChildElements(findTopScaffold);
     final Element searchRoot = topScaffoldElement ?? (context as Element);
 
@@ -5845,7 +4832,9 @@ class WidgetTreeDumper {
     final rootOrigin = (rootRenderBox != null && rootRenderBox.attached)
         ? rootRenderBox.localToGlobal(Offset.zero)
         : Offset.zero;
-    final rootSize = (rootRenderBox != null && rootRenderBox.attached && rootRenderBox.hasSize)
+    final rootSize = (rootRenderBox != null &&
+            rootRenderBox.attached &&
+            rootRenderBox.hasSize)
         ? rootRenderBox.size
         : (MediaQuery.maybeOf(context)?.size ?? Size.zero);
 
@@ -5884,7 +4873,10 @@ class WidgetTreeDumper {
         void findDescendantText(Element el) {
           if (text != null && text!.trim().isNotEmpty) return;
           final w = el.widget;
-          if (w is Text && w.data != null && !_isPrivateUseAreaIconText(w.data) && w.data!.trim().isNotEmpty) {
+          if (w is Text &&
+              w.data != null &&
+              !_isPrivateUseAreaIconText(w.data) &&
+              w.data!.trim().isNotEmpty) {
             text = w.data!.trim();
           } else if (w is RichText) {
             final plain = w.text.toPlainText().trim();
@@ -5901,13 +4893,16 @@ class WidgetTreeDumper {
             el.visitChildren(findDescendantText);
           }
         }
+
         element.visitChildren(findDescendantText);
       }
 
       int score = 0;
 
       // 1. Exact Key match (highest priority: 100 pts)
-      if (target.widgetKey != null && keyStr != null && target.widgetKey == keyStr) {
+      if (target.widgetKey != null &&
+          keyStr != null &&
+          target.widgetKey == keyStr) {
         score += 100;
       }
 
@@ -5930,7 +4925,8 @@ class WidgetTreeDumper {
               int.tryParse(currentText) != null ||
               int.tryParse(targetText) != null;
           if (!isNumericOrShort) {
-            if (currentText.startsWith(targetText) || targetText.startsWith(currentText)) {
+            if (currentText.startsWith(targetText) ||
+                targetText.startsWith(currentText)) {
               score += 20; // Partial match on longer strings
             }
           }
@@ -5963,13 +4959,18 @@ class WidgetTreeDumper {
             int positionBonus = 0;
             final refRatioX = fallbackPosition?.dx ?? target.localXRatio;
             final refRatioY = fallbackPosition?.dy ?? target.localYRatio;
-            if (rootSize.width > 0 && rootSize.height > 0 && refRatioX != null && refRatioY != null) {
-              final elemCenterRatioX = (resolvedOffset.dx - rootOrigin.dx) / rootSize.width;
-              final elemCenterRatioY = (resolvedOffset.dy - rootOrigin.dy) / rootSize.height;
+            if (rootSize.width > 0 &&
+                rootSize.height > 0 &&
+                refRatioX != null &&
+                refRatioY != null) {
+              final elemCenterRatioX =
+                  (resolvedOffset.dx - rootOrigin.dx) / rootSize.width;
+              final elemCenterRatioY =
+                  (resolvedOffset.dy - rootOrigin.dy) / rootSize.height;
               // Euclidean distance between original ratio and candidate center ratio
               final dist = sqrt(
                 pow(elemCenterRatioX - refRatioX, 2) +
-                pow(elemCenterRatioY - refRatioY, 2),
+                    pow(elemCenterRatioY - refRatioY, 2),
               );
               // Higher score for closer proximity (up to 30 pts)
               positionBonus = ((1.0 - dist.clamp(0.0, 1.0)) * 30).round();
@@ -5999,10 +5000,12 @@ class WidgetTreeDumper {
     search(searchRoot, []);
     final match = bestMatch;
     if (match != null) {
-      SnappySnag._log('📍 SnappySnag: Target resolved successfully -> [${match.matchedType}] (Text: "${match.matchedText ?? ''}", Key: "${match.matchedKey ?? ''}") at center pos: ${match.offset} (score: ${match.score})');
+      SnappySnag._log(
+          '📍 SnappySnag: Target resolved successfully -> [${match.matchedType}] (Text: "${match.matchedText ?? ''}", Key: "${match.matchedKey ?? ''}") at center pos: ${match.offset} (score: ${match.score})');
       return match.offset;
     } else {
-      SnappySnag._log('⚠️ SnappySnag: Target resolution failed for [${target.widgetType}] (Text: "${target.widgetText ?? ''}", Key: "${target.widgetKey ?? ''}"). Falling back to relative ratio.');
+      SnappySnag._log(
+          '⚠️ SnappySnag: Target resolution failed for [${target.widgetType}] (Text: "${target.widgetText ?? ''}", Key: "${target.widgetKey ?? ''}"). Falling back to relative ratio.');
       return null;
     }
   }
@@ -6049,7 +5052,10 @@ class WidgetTreeDumper {
         void findDescendantText(Element el) {
           if (text != null && text!.trim().isNotEmpty) return;
           final w = el.widget;
-          if (w is Text && w.data != null && !_isPrivateUseAreaIconText(w.data) && w.data!.trim().isNotEmpty) {
+          if (w is Text &&
+              w.data != null &&
+              !_isPrivateUseAreaIconText(w.data) &&
+              w.data!.trim().isNotEmpty) {
             text = w.data!.trim();
           } else if (w is RichText) {
             final plain = w.text.toPlainText().trim();
@@ -6066,11 +5072,14 @@ class WidgetTreeDumper {
             el.visitChildren(findDescendantText);
           }
         }
+
         element.visitChildren(findDescendantText);
       }
 
       int score = 0;
-      if (target.widgetKey != null && keyStr != null && target.widgetKey == keyStr) {
+      if (target.widgetKey != null &&
+          keyStr != null &&
+          target.widgetKey == keyStr) {
         score += 100;
       }
       if (target.widgetType == clean) {
@@ -6087,7 +5096,8 @@ class WidgetTreeDumper {
               int.tryParse(currentText) != null ||
               int.tryParse(targetText) != null;
           if (!isNumericOrShort) {
-            if (currentText.startsWith(targetText) || targetText.startsWith(currentText)) {
+            if (currentText.startsWith(targetText) ||
+                targetText.startsWith(currentText)) {
               score += 20;
             }
           }
@@ -6115,12 +5125,17 @@ class WidgetTreeDumper {
             int positionBonus = 0;
             final refRatioX = fallbackPosition?.dx ?? target.localXRatio;
             final refRatioY = fallbackPosition?.dy ?? target.localYRatio;
-            if (rootSize.width > 0 && rootSize.height > 0 && refRatioX != null && refRatioY != null) {
-              final elemCenterRatioX = (resolvedOffset.dx - rootOrigin.dx) / rootSize.width;
-              final elemCenterRatioY = (resolvedOffset.dy - rootOrigin.dy) / rootSize.height;
+            if (rootSize.width > 0 &&
+                rootSize.height > 0 &&
+                refRatioX != null &&
+                refRatioY != null) {
+              final elemCenterRatioX =
+                  (resolvedOffset.dx - rootOrigin.dx) / rootSize.width;
+              final elemCenterRatioY =
+                  (resolvedOffset.dy - rootOrigin.dy) / rootSize.height;
               final dist = sqrt(
                 pow(elemCenterRatioX - refRatioX, 2) +
-                pow(elemCenterRatioY - refRatioY, 2),
+                    pow(elemCenterRatioY - refRatioY, 2),
               );
               positionBonus = ((1.0 - dist.clamp(0.0, 1.0)) * 30).round();
             }
@@ -6130,7 +5145,8 @@ class WidgetTreeDumper {
             if (totalScore >= 25) {
               if (bestMatch == null || totalScore > bestMatch!.score) {
                 // Identify section boundary: promote to parent container (AppBar / Card / section block)
-                Rect resolvedRect = Rect.fromLTWH(pos.dx, pos.dy, size.width, size.height);
+                Rect resolvedRect =
+                    Rect.fromLTWH(pos.dx, pos.dy, size.width, size.height);
                 String bestType = clean;
 
                 element.visitAncestorElements((ancestor) {
@@ -6138,12 +5154,18 @@ class WidgetTreeDumper {
                   final aRawType = aWidget.runtimeType.toString();
                   final aClean = _cleanType(aRawType);
 
-                  if (aClean == 'Scaffold' || aClean == 'MaterialApp' || aClean == 'Navigator') {
+                  if (aClean == 'Scaffold' ||
+                      aClean == 'MaterialApp' ||
+                      aClean == 'Navigator') {
                     return false;
                   }
 
-                  final isAppBarAncestor = aClean.contains('AppBar') || aClean.contains('SliverAppBar') || aClean.contains('Header');
-                  final isCardAncestor = aClean.contains('Card') || aClean.contains('Calendar') || aClean.contains('Section');
+                  final isAppBarAncestor = aClean.contains('AppBar') ||
+                      aClean.contains('SliverAppBar') ||
+                      aClean.contains('Header');
+                  final isCardAncestor = aClean.contains('Card') ||
+                      aClean.contains('Calendar') ||
+                      aClean.contains('Section');
 
                   if (isAppBarAncestor || isCardAncestor) {
                     final aBox = ancestor.findRenderObject();
@@ -6151,7 +5173,8 @@ class WidgetTreeDumper {
                       final aPos = aBox.localToGlobal(Offset.zero);
                       final aSize = aBox.size;
                       if (aSize.width > 0 && aSize.height > 0) {
-                        resolvedRect = Rect.fromLTWH(aPos.dx, aPos.dy, aSize.width, aSize.height);
+                        resolvedRect = Rect.fromLTWH(
+                            aPos.dx, aPos.dy, aSize.width, aSize.height);
                         bestType = aClean;
                         if (isAppBarAncestor) {
                           return false; // AppBar is immediately selected as top header section
@@ -6182,10 +5205,12 @@ class WidgetTreeDumper {
     search(searchRoot, []);
     final match = bestMatch;
     if (match != null && match.rect != null) {
-      SnappySnag._log('📍 SnappySnag: Target section Rect resolved successfully -> [${match.matchedType}] ${match.rect} (score: ${match.score})');
+      SnappySnag._log(
+          '📍 SnappySnag: Target section Rect resolved successfully -> [${match.matchedType}] ${match.rect} (score: ${match.score})');
       return match.rect;
     } else {
-      SnappySnag._log('⚠️ SnappySnag: Target section Rect resolution failed for [${target.widgetType}]');
+      SnappySnag._log(
+          '⚠️ SnappySnag: Target section Rect resolution failed for [${target.widgetType}]');
       return null;
     }
   }
@@ -6232,6 +5257,7 @@ class _MatchResult {
     this.rect,
   });
 }
+
 class SnappyPinTarget {
   final String? widgetKey;
   final String widgetType;
@@ -6281,7 +5307,9 @@ class SnappyPinTarget {
       widgetKey: json['key'] as String?,
       widgetType: json['type'] as String? ?? 'Widget',
       widgetText: json['text'] as String?,
-      widgetPath: (json['path'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      widgetPath:
+          (json['path'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
+              [],
       localXRatio: (json['localX'] as num?)?.toDouble(),
       localYRatio: (json['localY'] as num?)?.toDouble(),
     );
@@ -6296,7 +5324,8 @@ class SnappyPin {
   final double yRatio; // 0.0 ~ 1.0 (Relative Y ratio - fallback)
   final String comment;
   final SnappyPinTarget? target; // UI element snapping metadata
-  final bool isActive; // Pin active status (maps to feedback_logs pins["is_active"])
+  final bool
+      isActive; // Pin active status (maps to feedback_logs pins["is_active"])
 
   SnappyPin({
     required this.id,
@@ -6350,50 +5379,23 @@ class SnappyPin {
         ? true
         : (rawIsActive is bool
             ? rawIsActive
-            : (rawIsActive.toString().toLowerCase() != 'false' && rawIsActive.toString() != '0'));
+            : (rawIsActive.toString().toLowerCase() != 'false' &&
+                rawIsActive.toString() != '0'));
     return SnappyPin(
-      id: json['id'] as String? ?? 'pin_${DateTime.now().millisecondsSinceEpoch}',
+      id: json['id'] as String? ??
+          'pin_${DateTime.now().millisecondsSinceEpoch}',
       number: (json['number'] as num?)?.toInt() ?? 1,
-      xRatio: (json['xRatio'] as num?)?.toDouble() ?? (json['x'] as num?)?.toDouble() ?? 0.0,
-      yRatio: (json['yRatio'] as num?)?.toDouble() ?? (json['y'] as num?)?.toDouble() ?? 0.0,
+      xRatio: (json['xRatio'] as num?)?.toDouble() ??
+          (json['x'] as num?)?.toDouble() ??
+          0.0,
+      yRatio: (json['yRatio'] as num?)?.toDouble() ??
+          (json['y'] as num?)?.toDouble() ??
+          0.0,
       comment: json['comment'] as String? ?? '',
       target: target,
       isActive: isActive,
     );
   }
-}
-/// Pin data from previously submitted tickets.
-class ExistingPinItem {
-  final String feedbackId;
-  final String userMemo;
-  final String severity;
-  final SnappyPin pin;
-  final Offset? resolvedRatio; // Screen-relative ratio resolved via element snapping (0.0 - 1.0)
-  final String? screenshotUrl; // URL or path of original screenshot at submission time
-
-  ExistingPinItem({
-    required this.feedbackId,
-    required this.userMemo,
-    required this.severity,
-    required this.pin,
-    this.resolvedRatio,
-    this.screenshotUrl,
-  });
-}
-
-/// Grouped element or section info with past pins (for highlight rendering).
-class ExistingSectionItem {
-  final String id;
-  final String sectionName;
-  final Rect screenRect; // Coordinates and bounding size on application screen (global)
-  final List<ExistingPinItem> pins;
-
-  ExistingSectionItem({
-    required this.id,
-    required this.sectionName,
-    required this.screenRect,
-    required this.pins,
-  });
 }
 
 /// Data class representing a single drawing stroke or point.
@@ -6484,11 +5486,6 @@ class _SnappyDraftData {
   final String memo;
   final double? drawingAspectRatio;
   final int timestamp;
-  // Existing pins snapshot at draft save time (raw JSON list) to avoid network fetch on resume.
-  // Screenshot URLs are lightweight strings without binary payload.
-  final List<dynamic> existingFeedbacks;
-  // isDevChatEnabled flag at draft save time (controls "All Feedback" button visibility).
-  final bool isDevChatEnabled;
 
   _SnappyDraftData({
     required this.imageBytes,
@@ -6500,8 +5497,6 @@ class _SnappyDraftData {
     required this.memo,
     this.drawingAspectRatio,
     required this.timestamp,
-    this.existingFeedbacks = const [],
-    this.isDevChatEnabled = true,
   });
 
   Map<String, dynamic> toJson() => {
@@ -6512,10 +5507,9 @@ class _SnappyDraftData {
         'drawingPoints': drawingPoints.map((p) => p.toJson()).toList(),
         'pins': pins.map((p) => p.toJson()).toList(),
         'memo': memo,
-        if (drawingAspectRatio != null) 'drawingAspectRatio': drawingAspectRatio,
+        if (drawingAspectRatio != null)
+          'drawingAspectRatio': drawingAspectRatio,
         'timestamp': timestamp,
-        'existingFeedbacks': existingFeedbacks,
-        'isDevChatEnabled': isDevChatEnabled,
       };
 
   factory _SnappyDraftData.fromJson(Map<String, dynamic> json) {
@@ -6534,9 +5528,8 @@ class _SnappyDraftData {
           .toList(),
       memo: json['memo'] as String? ?? '',
       drawingAspectRatio: (json['drawingAspectRatio'] as num?)?.toDouble(),
-      timestamp: json['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch,
-      existingFeedbacks: json['existingFeedbacks'] as List<dynamic>? ?? [],
-      isDevChatEnabled: json['isDevChatEnabled'] as bool? ?? true,
+      timestamp:
+          json['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch,
     );
   }
 
@@ -6571,8 +5564,6 @@ class _SnappyDraftData {
     List<SnappyPin> pins = const [],
     required String memo,
     double? drawingAspectRatio,
-    List<dynamic> existingFeedbacks = const [],
-    bool isDevChatEnabled = true,
   }) async {
     try {
       final draft = _SnappyDraftData(
@@ -6585,8 +5576,6 @@ class _SnappyDraftData {
         memo: memo,
         drawingAspectRatio: drawingAspectRatio,
         timestamp: DateTime.now().millisecondsSinceEpoch,
-        existingFeedbacks: existingFeedbacks,
-        isDevChatEnabled: isDevChatEnabled,
       );
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_draftKey, jsonEncode(draft.toJson()));
@@ -6622,8 +5611,12 @@ class DrawingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (final point in points) {
-      final double scaleX = point.recordedSize.width > 0 ? size.width / point.recordedSize.width : 1.0;
-      final double scaleY = point.recordedSize.height > 0 ? size.height / point.recordedSize.height : 1.0;
+      final double scaleX = point.recordedSize.width > 0
+          ? size.width / point.recordedSize.width
+          : 1.0;
+      final double scaleY = point.recordedSize.height > 0
+          ? size.height / point.recordedSize.height
+          : 1.0;
 
       // 1. When auto-masking rectangles exist
       if (point.rect != null) {
@@ -6650,10 +5643,12 @@ class DrawingPainter extends CustomPainter {
             ..strokeWidth = 1.0
             ..style = PaintingStyle.stroke;
           for (double x = scaledRect.left; x < scaledRect.right; x += 10) {
-            canvas.drawLine(Offset(x, scaledRect.top), Offset(x, scaledRect.bottom), gridPaint);
+            canvas.drawLine(Offset(x, scaledRect.top),
+                Offset(x, scaledRect.bottom), gridPaint);
           }
           for (double y = scaledRect.top; y < scaledRect.bottom; y += 10) {
-            canvas.drawLine(Offset(scaledRect.left, y), Offset(scaledRect.right, y), gridPaint);
+            canvas.drawLine(Offset(scaledRect.left, y),
+                Offset(scaledRect.right, y), gridPaint);
           }
         } else {
           // Solid black masking
@@ -6742,11 +5737,14 @@ class DrawingPainter extends CustomPainter {
 
       for (int i = 0; i < point.offsets.length - 1; i++) {
         if (point.offsets[i] != null && point.offsets[i + 1] != null) {
-          final p1 = Offset(point.offsets[i]!.dx * scaleX, point.offsets[i]!.dy * scaleY);
-          final p2 = Offset(point.offsets[i + 1]!.dx * scaleX, point.offsets[i + 1]!.dy * scaleY);
+          final p1 = Offset(
+              point.offsets[i]!.dx * scaleX, point.offsets[i]!.dy * scaleY);
+          final p2 = Offset(point.offsets[i + 1]!.dx * scaleX,
+              point.offsets[i + 1]!.dy * scaleY);
           canvas.drawLine(p1, p2, paint);
         } else if (point.offsets[i] != null && point.offsets[i + 1] == null) {
-          final p1 = Offset(point.offsets[i]!.dx * scaleX, point.offsets[i]!.dy * scaleY);
+          final p1 = Offset(
+              point.offsets[i]!.dx * scaleX, point.offsets[i]!.dy * scaleY);
           canvas.drawPoints(ui.PointMode.points, [p1], paint);
         }
       }
@@ -6767,11 +5765,14 @@ class _SdkLocale {
   static String get ok => _l.ok;
   static String get feedbackModeDialogTitle => _l.feedbackModeDialogTitle;
   static String get feedbackModeDialogContent => _l.feedbackModeDialogContent;
-  static String get feedbackModeAlreadyVisibleTitle => _l.feedbackModeAlreadyVisibleTitle;
-  static String get feedbackModeAlreadyVisibleContent => _l.feedbackModeAlreadyVisibleContent;
+  static String get feedbackModeAlreadyVisibleTitle =>
+      _l.feedbackModeAlreadyVisibleTitle;
+  static String get feedbackModeAlreadyVisibleContent =>
+      _l.feedbackModeAlreadyVisibleContent;
   static String get privacyConfirmTitle => _l.privacyConfirmTitle;
   static String get privacyConfirmContent => _l.privacyConfirmContent;
-  static String privacyShareAccountWithEmail(String email) => _l.privacyShareAccountWithEmail(email);
+  static String privacyShareAccountWithEmail(String email) =>
+      _l.privacyShareAccountWithEmail(email);
   static String get privacyShareAccount => _l.privacyShareAccount;
   static String get privacyAnonymousHint => _l.privacyAnonymousHint;
   static String get backToEdit => _l.backToEdit;
@@ -6794,16 +5795,6 @@ class _SdkLocale {
   static String get pinCommentHint => _l.pinCommentHint;
   static String get pinLimitReached => _l.pinLimitReached;
   static String get pinRequiredSnackBar => _l.pinRequiredSnackBar;
-  static String get existingPinsToggle => _l.existingPinsToggle;
-  static String get sectionPinsTitle => _l.sectionPinsTitle;
-  static String get allScreenPinsTitle => _l.allScreenPinsTitle;
-  static String get allScreenPinsSub => _l.allScreenPinsSub;
-  static String get allScreenPinsBtn => _l.allScreenPinsBtn;
-  static String get previewOriginalScreenshot => _l.previewOriginalScreenshot;
-  static String get originalScreenshotNotFound => _l.originalScreenshotNotFound;
-  static String get issueBadgePrefix => _l.issueBadgePrefix;
-  static String get issueBadgeSuffix => _l.issueBadgeSuffix;
-  static String get noCommentForPin => _l.noCommentForPin;
   static String get close => _l.close;
   static String get back => _l.back;
   static String get elementAttachedBadge => _l.elementAttachedBadge;
@@ -6817,18 +5808,12 @@ class _SdkLocale {
   static String get discardAndNewCapture => _l.discardAndNewCapture;
   static String get saveDraftPromptTitle => _l.saveDraftPromptTitle;
   static String get saveDraftPromptOnCancel => _l.saveDraftPromptOnCancel;
-  static String get saveDraftPromptOnFailedSend => _l.saveDraftPromptOnFailedSend;
+  static String get saveDraftPromptOnFailedSend =>
+      _l.saveDraftPromptOnFailedSend;
   static String get saveDraft => _l.saveDraft;
   static String get discardDraft => _l.discardDraft;
   static String get stayOnScreen => _l.stayOnScreen;
   static String get draftSavedToast => _l.draftSavedToast;
-  static String get devPasscodeDialogTitle => _l.devPasscodeDialogTitle;
-  static String get devPasscodeDialogDesc => _l.devPasscodeDialogDesc;
-  static String get devPasscodeHint => _l.devPasscodeHint;
-  static String get devPasscodeChecking => _l.devPasscodeChecking;
-  static String get devPasscodeInvalid => _l.devPasscodeInvalid;
-  static String get devPasscodeSubmit => _l.devPasscodeSubmit;
-  static String get devPasscodeCancel => _l.devPasscodeCancel;
 }
 
 /// Custom Widget that draws the SnappySnag lightning logo with circular border gap mask.
@@ -6895,7 +5880,8 @@ class SnappySnagIconPainter extends CustomPainter {
     final Paint eraserStroke = Paint()
       ..blendMode = BlendMode.clear
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 24.0 * scale // This creates the 12px clear gap on each side of the bolt
+      ..strokeWidth = 24.0 *
+          scale // This creates the 12px clear gap on each side of the bolt
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
@@ -6936,4 +5922,3 @@ class SnappySnagIconPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

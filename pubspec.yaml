@@ -1,6 +1,6 @@
 name: snappy_snag
 description: "An easy-to-use in-app bug reporting and user feedback SDK for Flutter, allowing users to send screenshots, device info, and custom logs seamlessly."
-version: 1.1.0
+version: 1.1.1
 homepage: https://snappysnag.com?utm_source=pub_dev&utm_medium=referral&utm_campaign=package_sidebar
 repository: https://github.com/snappysnag/snappy_snag_flutter
 issue_tracker: https://github.com/snappysnag/snappy_snag_flutter/issues

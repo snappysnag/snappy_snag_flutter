@@ -6,8 +6,9 @@ We actively provide security patches, updates, and maintenance for the following
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.0.x   | :white_check_mark: |
-| < 0.0.1 | :x:                |
+| 1.1.x   | :white_check_mark: |
+| 1.0.x   | :white_check_mark: |
+| < 1.0.0 | :x:                |
 
 ---
 
@@ -24,9 +25,12 @@ SnappySnag is engineered with a **zero-trust, privacy-first architecture** to gu
    - Framework internal classes (e.g., Flutter internal layout nodes) and application state stores (Provider, Riverpod internals) are filtered on-device to prevent state or token leakage.
 3. **Local Storage Transparency**:
    - `SharedPreferences` is strictly limited to an anonymous random UUID for rate-limiting and a single temporary user-confirmed draft.
-   - Sensitive credentials, auth tokens, and passcodes are **never** persisted to disk and reside exclusively in volatile app memory.
-4. **Bundle ID & Package Name Verification**:
-   - API keys are locked to your registered bundle identifier (e.g., `com.example.app`), neutralizing risks associated with API key extraction via reverse engineering.
+   - Sensitive credentials and auth tokens are **never** persisted to disk and reside exclusively in volatile app memory.
+4. **Strict Write-Only Client API Key (Zero Read Surface)**:
+   - Client SDK API keys (`snag_live_...`) operate on a strict **Write-Only (Publishable Key)** model.
+   - The client API key has zero read (`SELECT`) permissions. Even if an application binary is reverse-engineered and the API key is extracted, no existing tickets, screenshots, or user feedback can ever be queried or retrieved from the server.
+5. **Bundle ID & Package Name Verification**:
+   - API keys are locked to your registered bundle identifier (e.g., `com.example.app`), neutralizing unauthorized submission attempts from third-party clients.
 
 ---
 

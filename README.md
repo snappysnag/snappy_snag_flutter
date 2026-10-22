@@ -21,7 +21,7 @@ SnappySnag is a visual bug reporting and AI auto-fix suggestion tool for Flutter
 * 🔔 **Real-Time Team Notifications (Slack & Discord)**: Receive instant webhook alerts in your team's Slack or Discord channels whenever new feedback is submitted, featuring category, severity, and authenticated deep-links directly to tickets.
 * 💾 **Offline Draft & Resilience**: Automatically saves drawing annotations, pins, and comments locally on connection failure or accidental dismissal. Seamlessly resume or discard drafts on the next capture without wasting user efforts.
 * ⚡ **Pre-Validation Error Guard**: Instantly validates API key configuration and bundle identifiers before users spend time drawing or writing, preventing post-submit authentication surprises.
-* 👥 **One-Build Role-Based Sharing**: Show internal tickets and duplicate warnings to developers while keeping external clients on a clean, simple feedback flow in the exact same build.
+* 🔒 **Strict Write-Only API Key & Dual Operation Modes**: Built on a zero-read, write-only publishable key architecture so internal data can never be fetched from client builds, while supporting dedicated `user` (public end-user) and `dev` (internal QA) submission workflows.
 * 🌐 **Multi-Language & Localization (i18n)**: Out-of-the-box support for English (`en`) and Japanese (`ja`) with automatic system locale matching and customizable dictionaries via `copyWith()`.
 * 🛡️ **Package Name Lock**: Prevents unauthorized API requests by locking your API Key to your registered bundle identifier.
 * 🚫 **Store Production Safe**: Easily disable the overlay button and sensor listeners completely in App Store/Google Play builds using the `enabled` configuration.
@@ -60,7 +60,7 @@ void main() {
   SnappySnag().initialize(
     apiKey: 'snag_live_your_api_key_here',
     // packageName: 'your.package.name', // Optional: Lock API key usage to your app's bundle ID
-    // Optional: Identify user/tester to automatically unlock developer tickets for team members
+    // Optional: Attach reporter identity (email, id, name) to feedback reports
     user: const SnappySnagUser(
       email: 'developer@example.com',
     ),
@@ -270,31 +270,23 @@ flutter build ipa
 ```
 
 
-## Smart Role-Based Access & Multi-Layer Safety Guards
+## Write-Only API Key Architecture & Multi-Layer Safety Guards
 
-In team and client work, building separate app binaries (one for internal developers and one for external clients) is time-consuming and prone to human error. SnappySnag provides a comprehensive defense and access control system to **safely share a single build** between developers and clients without risking internal leakages.
+SnappySnag is engineered so you can safely embed the SDK in both internal QA builds and public production releases without risking data leaks or unauthorized access.
 
-### 1. One-Build Sharing: Role-Based Developer In-App Features
-With `mode: SnappySnagMode.dev`, you can let your development team view **existing internal tickets and duplicate warnings**, while ensuring clients and external testers only see a clean, distraction-free **feedback submission screen**.
+### 1. Strict Write-Only (Publishable) API Key Model
+The client API key (`snag_live_...`) operates strictly as a **Write-Only publishable key**:
+* 🔒 **Zero Read Surface**: The SDK API key has no permission to read, list, or query existing tickets, comments, or screenshots from the backend. Even if an application binary is reverse-engineered and the API key is extracted, zero internal project data or user reports can ever be retrieved.
+* 🛡️ **Package Name Lock**: Lock your API key to your registered bundle identifier (e.g., `com.example.app`) in the Web Dashboard so requests from unauthorized packages are rejected (`403 Forbidden`).
 
-> 🔒 **Default Safety Note**: Newly created projects default to **Disabled** for developer tickets. You can switch this to **Allowed Only** or **Everyone** anytime in your dashboard. Furthermore, if the SDK is running with `mode: SnappySnagMode.user`, developer tickets are **always strictly hidden**, irrespective of dashboard settings.
+### 2. Dual Operation Modes (`user` vs `dev`) & Automatic Release Guard (`kReleaseMode`)
+SnappySnag supports two operation modes via the `mode` parameter:
+* 👤 **`SnappySnagMode.user` (Default)**: Designed for public end-users. Displays a privacy confirmation modal before sending and instructs Gemini AI to generate a polite **User Reply** draft alongside technical fix guides.
+* 💻 **`SnappySnagMode.dev`**: Designed for internal developers and QA testers. Skips the end-user confirmation modal for rapid reporting and instructs Gemini AI to generate a **Team Share** summary optimized for engineering triage.
 
-Control access effortlessly from your **Web Dashboard** > **Project Settings** > **General & SDK**:
-* 🛑 **Disabled (Default)**: Suppresses developer tickets completely across all client devices.
-* 👥 **Allowed Only (Recommended for Teams)**:
-  * **Team Members**: Owners and developers registered in your dashboard's "Team & Members" automatically get full access to internal tickets when their `reporterEmail` matches.
-  * **Additional Allowed Emails**: Seamlessly whitelist client leads or external QA testers by email address without touching your code or re-deploying.
-  * **Unauthenticated / Unknown Testers**: Automatically skip internal tickets and transition directly to the feedback submission screen.
-* 🌐 **Everyone (Passcode Protected)**: 
-  * In projects set to "Everyone", internal tickets and duplicate warnings are protected by a **4-digit Dev Features Passcode** auto-generated on your Web Dashboard.
-  * When opening the internal tickets modal ("全指摘一覧"), users are prompted to enter this 4-digit passcode.
-  * **Zero Storage Leakage**: The entered passcode is kept **strictly in volatile memory only during the current app session** and is never saved to persistent local storage (e.g. SharedPreferences). If the app process terminates or is killed, the passcode is completely forgotten.
-  * **Real-Time Revocation & Re-Authentication**: If your dashboard administrator regenerates the passcode or updates project settings, the active app session automatically verifies the passcode on the next ticket view attempt. The invalid passcode is instantly purged from memory, and the user is immediately prompted with the passcode modal to enter the updated passcode.
+When you build your application in **Release Mode** (`flutter build ipa` / `flutter build appbundle`), SnappySnag automatically checks Flutter's `kReleaseMode`. Even if `mode: SnappySnagMode.dev` was inadvertently left configured in your source code, SnappySnag automatically falls back to `SnappySnagMode.user`.
 
-### 2. Automatic Release Guard (`kReleaseMode`)
-When you build your application in **Release Mode** (`flutter build ipa` / `flutter build appbundle`), SnappySnag automatically checks Flutter's `kReleaseMode`. Even if `mode: SnappySnagMode.dev` was inadvertently left configured in your source code, SnappySnag automatically falls back to `SnappySnagMode.user`, completely hiding developer tickets.
-
-> 💡 **Internal Dogfooding in Release Builds**: If you intentionally wish to test developer mode in a release-compiled build (e.g. TestFlight distribution to internal team members), explicitly set `forceDevInRelease: true`:
+> 💡 **Internal Dogfooding in Release Builds**: If you intentionally wish to use `SnappySnagMode.dev` in a release-compiled build (e.g. TestFlight distribution to internal QA), explicitly set `forceDevInRelease: true`:
 > ```dart
 > SnappySnag().initialize(
 >   apiKey: 'YOUR_KEY',
@@ -320,8 +312,6 @@ Applies to both `user` and `dev` modes out of the box:
 SnappySnag values user privacy and transparency. The SDK uses on-device local storage (`SharedPreferences`) exclusively for the following two purposes:
 1. **`snappy_snag_device_id`**: A randomly generated anonymous UUID used exclusively for backend spam and rate-limit enforcement (`429 Too Many Requests`). Contains no personal identity or hardware fingerprints.
 2. **`snappy_snag_draft_v1`**: Temporary offline draft data (at most 1 active draft) saved strictly when the user chooses to retain unsaved edits after a failed submission or cancellation. Cleared immediately upon submission or explicit discard.
-
-> 🛡️ **Note on Passcodes & Auth**: Dev Features Passcodes and authentication tokens are **never** written to local persistent storage. They are retained strictly in volatile app memory for the current running session only.
 
 ### 6. On-Device Privacy & PII (Personally Identifiable Information) Redaction
 When capturing feedback, user privacy is safeguarded at the client device before any payload is dispatched:

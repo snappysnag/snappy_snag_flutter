@@ -1,3 +1,11 @@
+## 1.1.1
+
+* **Security Architecture Hardening (Strict Write-Only Publishable Key Model)**:
+  * Enforced a strict **Write-Only** data flow for client API keys. Removed legacy in-app ticket fetching (`ExistingPinItem`, `ExistingSectionItem`), duplicate warning modals, and 4-digit passcode verification flows so that internal project feedback can never be queried or read from client devices, even if an API key is extracted via reverse engineering.
+  * Streamlined pre-validation checks to strictly verify API key status, bundle identifier locks, and monthly quota availability with minimal payload overhead.
+* **Localization & Footprint Cleanup (`SnappySnagLocalization`)**:
+  * Removed 17 deprecated localization properties related to legacy in-app ticket lists and passcode dialogs, reducing SDK memory footprint and simplifying custom dictionary overrides.
+
 ## 1.1.0
 
 * **Internationalization & Localization (`SnappySnagLocalization`)**:
