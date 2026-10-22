@@ -1021,7 +1021,9 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
       (UserAccelerometerEvent event) {
         if (_isCapturing ||
             _isFeedbackDialogOpen ||
-            _overlayMode != _SnappyOverlayMode.none) return;
+            _overlayMode != _SnappyOverlayMode.none) {
+          return;
+        }
 
         // Calculate G-force vector length
         final double gForce = sqrt(
@@ -2098,8 +2100,9 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                 onTapUp: (details) {
                                                   if (_isSendingFeedback ||
                                                       _isMemoOpen ||
-                                                      _editingPin != null)
+                                                      _editingPin != null) {
                                                     return;
+                                                  }
                                                   if (_activeTool ==
                                                       SnappyDrawingTool.pin) {
                                                     // Pin count limit check (maximum 5)
@@ -2228,11 +2231,13 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                 onPanStart: (details) {
                                                   if (_isSendingFeedback ||
                                                       _isMemoOpen ||
-                                                      _editingPin != null)
+                                                      _editingPin != null) {
                                                     return;
+                                                  }
                                                   if (_activeTool !=
-                                                      SnappyDrawingTool.mosaic)
+                                                      SnappyDrawingTool.mosaic) {
                                                     return;
+                                                  }
                                                   setState(() {
                                                     const double strokeWidth =
                                                         24.0;
@@ -2257,11 +2262,13 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                 onPanUpdate: (details) {
                                                   if (_isSendingFeedback ||
                                                       _isMemoOpen ||
-                                                      _editingPin != null)
+                                                      _editingPin != null) {
                                                     return;
+                                                  }
                                                   if (_activeTool !=
-                                                      SnappyDrawingTool.mosaic)
+                                                      SnappyDrawingTool.mosaic) {
                                                     return;
+                                                  }
                                                   setState(() {
                                                     if (_drawingPoints
                                                         .isNotEmpty) {
@@ -2275,11 +2282,13 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                 onPanEnd: (details) {
                                                   if (_isSendingFeedback ||
                                                       _isMemoOpen ||
-                                                      _editingPin != null)
+                                                      _editingPin != null) {
                                                     return;
+                                                  }
                                                   if (_activeTool !=
-                                                      SnappyDrawingTool.mosaic)
+                                                      SnappyDrawingTool.mosaic) {
                                                     return;
+                                                  }
                                                   setState(() {
                                                     if (_drawingPoints
                                                         .isNotEmpty) {
@@ -2320,7 +2329,9 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                       HitTestBehavior.opaque,
                                                   onTap: () {
                                                     if (_isSendingFeedback ||
-                                                        _isMemoOpen) return;
+                                                        _isMemoOpen) {
+                                                      return;
+                                                    }
                                                     setState(() {
                                                       _editingPin = pin;
                                                       _pinCommentController
@@ -2330,8 +2341,9 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                   onPanStart: (details) {
                                                     if (_isSendingFeedback ||
                                                         _isMemoOpen ||
-                                                        _editingPin != null)
+                                                        _editingPin != null) {
                                                       return;
+                                                    }
                                                     if (SnappySnag()
                                                         .enableHaptics) {
                                                       HapticFeedback
@@ -2349,14 +2361,16 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
                                                   onPanUpdate: (details) {
                                                     if (_isSendingFeedback ||
                                                         _isMemoOpen ||
-                                                        _editingPin != null)
+                                                        _editingPin != null) {
                                                       return;
+                                                    }
                                                     if (_dragStartGlobal ==
                                                             null ||
                                                         _dragStartPinX ==
                                                             null ||
-                                                        _dragStartPinY == null)
+                                                        _dragStartPinY == null) {
                                                       return;
+                                                    }
                                                     final dx = details
                                                             .globalPosition.dx -
                                                         _dragStartGlobal!.dx;
