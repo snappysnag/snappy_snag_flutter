@@ -31,6 +31,10 @@ SnappySnag is engineered with a **zero-trust, privacy-first architecture** to gu
    - The client API key has zero read (`SELECT`) permissions. Even if an application binary is reverse-engineered and the API key is extracted, no existing tickets, screenshots, or user feedback can ever be queried or retrieved from the server.
 5. **Bundle ID & Package Name Verification**:
    - API keys are locked to your registered bundle identifier (e.g., `com.example.app`), neutralizing unauthorized submission attempts from third-party clients.
+6. **Multi-Layered Edge Abuse Protection & Circuit Breaker**:
+   - **API Key Pause / Resume Toggle**: Project owners can temporarily pause and resume feedback ingestion from the Web Dashboard without rotating the API key or breaking live App Store / Google Play builds.
+   - **Auto-Pause Circuit Breaker**: Configurable burst thresholds automatically pause the API key and notify the project owner if anomalous submission spikes occur within a short window.
+   - **Dual Rate Limiting & Payload Validation**: Edge endpoints enforce both per-IP and per-device UUID rate limits alongside strict pre-storage payload validation.
 
 ---
 

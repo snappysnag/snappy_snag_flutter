@@ -48,6 +48,10 @@ class SnappySnagShowroomApp extends StatelessWidget {
       ),
       // Pass SnappySnag default navigator key
       navigatorKey: SnappySnag.defaultNavigatorKey,
+      // Automatically record screen transitions into Breadcrumbs
+      navigatorObservers: [
+        SnappySnagNavigatorObserver(),
+      ],
       // Wrap your app with SnappySnagOverlay
       builder: (context, child) => SnappySnagOverlay(
         child: child ?? const SizedBox.shrink(),
@@ -419,6 +423,55 @@ class _ShowroomHomePageState extends State<ShowroomHomePage> {
               ),
             ),
 
+            const SizedBox(height: 12),
+
+            // Card 5: Screen Transition & Breadcrumbs Demo
+            Card(
+              color: const Color(0xFF1E293B),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.route, color: Color(0xFF818CF8), size: 18),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Breadcrumbs & Screen Navigation',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Test automatic screen transition tracking leading up to a bug report.',
+                      style: TextStyle(color: Colors.white60, fontSize: 12),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6366F1),
+                        foregroundColor: Colors.white,
+                      ),
+                      icon: const Icon(Icons.arrow_forward),
+                      label: const Text('Navigate to Detail Screen'),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            settings: const RouteSettings(name: '/showroom_detail'),
+                            builder: (_) => const ShowroomDetailScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
             const SizedBox(height: 28),
 
             // Footer note
@@ -433,6 +486,59 @@ class _ShowroomHomePageState extends State<ShowroomHomePage> {
             ),
             const SizedBox(height: 40),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Sample secondary screen for testing screen transition breadcrumbs.
+class ShowroomDetailScreen extends StatelessWidget {
+  const ShowroomDetailScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Text('Detail Screen (Breadcrumb Test)'),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.route, size: 64, color: Color(0xFF6366F1)),
+              const SizedBox(height: 16),
+              const Text(
+                'Screen Transition Recorded!',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'SnappySnagNavigatorObserver automatically captured this navigation event into Breadcrumbs.\nTrigger feedback on this screen to see the trail in the console!',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.camera_alt),
+                label: const Text('Capture Feedback Here'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6366F1),
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => SnappySnag.startFeedbackMode(context: context),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Back to Home'),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
         ),
       ),
     );

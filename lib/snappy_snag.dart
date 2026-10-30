@@ -448,6 +448,221 @@ class SnappySnagLocalization {
   }
 }
 
+/// Representation of a single trail/breadcrumb event leading up to a bug report.
+/// Captures screen navigation, user taps, or state updates to assist AI and developers with reproduction steps.
+class SnappySnagBreadcrumb {
+  /// Category of the breadcrumb: `'navigation'`, `'action'`, `'state'`, or `'system'`.
+  final String category;
+
+  /// Descriptive message (e.g. `'push: /cart'`, `'tap: Checkout Button'`).
+  final String message;
+
+  /// Timestamp when the breadcrumb was recorded.
+  final DateTime timestamp;
+
+  /// Optional arbitrary metadata payload associated with this breadcrumb.
+  final Map<String, dynamic>? data;
+
+  SnappySnagBreadcrumb({
+    required this.category,
+    required this.message,
+    DateTime? timestamp,
+    this.data,
+  }) : timestamp = timestamp ?? DateTime.now();
+
+  Map<String, dynamic> toJson() => {
+        'category': category,
+        'message': message,
+        'timestamp': timestamp.toUtc().toIso8601String(),
+        if (data != null && data!.isNotEmpty) 'data': data,
+      };
+
+  @override
+  String toString() =>
+      'SnappySnagBreadcrumb($category, "$message", at: $timestamp)';
+}
+
+/// NavigatorObserver that automatically records screen transitions (Push, Pop, Replace) into SnappySnag breadcrumbs.
+///
+/// Automatically resolves custom screen widget class names (e.g. `HomeScreen`, `CartCheckoutScreen`)
+/// using `SnappySnag.defaultNavigatorKey` even when anonymous routes (`MaterialPageRoute`, `PageRouteBuilder`) are used.
+///
+/// Add this to your `MaterialApp(navigatorObservers: [SnappySnagNavigatorObserver()])`
+/// or your router configuration (`go_router`, etc.) to effortlessly collect reproduction navigation paths.
+class SnappySnagNavigatorObserver extends NavigatorObserver {
+  /// Custom callback to extract route names if your app uses non-standard route names.
+  final String Function(Route<dynamic> route)? routeNameExtractor;
+
+  SnappySnagNavigatorObserver({this.routeNameExtractor});
+
+  /// The most recent screen name detected on the navigation stack.
+  String? _currentScreenName;
+
+  BuildContext? get _navContext =>
+      SnappySnag().navigatorKey?.currentContext ?? navigator?.context;
+
+  /// Attempts to extract or resolve a human-readable screen name.
+  String _detectScreenName(Route<dynamic>? route) {
+    if (route == null) return '(unknown)';
+
+    // 1. Check custom extractor
+    if (routeNameExtractor != null) {
+      final custom = routeNameExtractor!(route);
+      if (custom.isNotEmpty) return custom;
+    }
+
+    // 2. Check route.settings.name (if explicit and not generic root '/')
+    final settingsName = route.settings.name;
+    if (settingsName != null &&
+        settingsName.trim().isNotEmpty &&
+        settingsName != '/') {
+      return settingsName;
+    }
+
+    // 3. Popup routes (Dialogs, BottomSheets)
+    if (route is PopupRoute) {
+      final type = route.runtimeType.toString();
+      if (type.contains('DialogRoute')) {
+        return settingsName != null && settingsName.isNotEmpty
+            ? 'Dialog ($settingsName)'
+            : 'Dialog';
+      }
+      if (type.contains('ModalBottomSheetRoute')) {
+        return settingsName != null && settingsName.isNotEmpty
+            ? 'BottomSheet ($settingsName)'
+            : 'BottomSheet';
+      }
+      return 'Popup';
+    }
+
+    // 4. Try inspecting the route's own subtreeContext if available
+    if (route is ModalRoute && route.subtreeContext != null) {
+      try {
+        final screenName =
+            WidgetTreeDumper.findScreenName(route.subtreeContext!);
+        if (screenName != 'UnknownScreen' && screenName.isNotEmpty) {
+          return settingsName == '/' ? '$screenName (/)' : screenName;
+        }
+      } catch (_) {}
+    }
+
+    // 5. Try resolving from top-level Navigator context via SnappySnag default key
+    final ctx = _navContext;
+    if (ctx != null) {
+      try {
+        final screenName = WidgetTreeDumper.findScreenName(ctx);
+        if (screenName != 'UnknownScreen' && screenName.isNotEmpty) {
+          return settingsName == '/' ? '$screenName (/)' : screenName;
+        }
+      } catch (_) {}
+    }
+
+    // 6. If settings.name was '/' or any other non-empty string, fallback to it
+    if (settingsName != null && settingsName.isNotEmpty) {
+      return settingsName;
+    }
+
+    // 7. Clean up generic Flutter route types (e.g. PageRouteBuilder<dynamic> -> PageRoute)
+    return _simplifyRouteType(route);
+  }
+
+  static String _simplifyRouteType(Route<dynamic> route) {
+    final type = route.runtimeType.toString();
+    if (type.startsWith('PageRouteBuilder')) return 'PageRoute';
+    if (type.startsWith('MaterialPageRoute')) return 'MaterialPage';
+    if (type.startsWith('CupertinoPageRoute')) return 'CupertinoPage';
+    if (type.startsWith('DialogRoute')) return 'Dialog';
+    if (type.startsWith('ModalBottomSheetRoute')) return 'BottomSheet';
+    return type;
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPush(route, previousRoute);
+    final from = _currentScreenName ??
+        (previousRoute != null ? _detectScreenName(previousRoute) : null);
+
+    // Record after frame completion so new screen widgets are mounted and discoverable
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final target = _detectScreenName(route);
+      _currentScreenName = target;
+
+      SnappySnag.addBreadcrumb(
+        category: 'navigation',
+        message: from != null ? 'push: $from -> $target' : 'push: $target',
+        data: {
+          'action': 'push',
+          'target': target,
+          if (from != null) 'from': from,
+          if (route.settings.name != null) 'route_name': route.settings.name,
+        },
+      );
+    });
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPop(route, previousRoute);
+    final popped = _currentScreenName ?? _detectScreenName(route);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final current = previousRoute != null
+          ? _detectScreenName(previousRoute)
+          : (_navContext != null
+              ? WidgetTreeDumper.findScreenName(_navContext!)
+              : '(unknown)');
+      _currentScreenName = current;
+
+      SnappySnag.addBreadcrumb(
+        category: 'navigation',
+        message: 'pop: $popped (back to $current)',
+        data: {
+          'action': 'pop',
+          'popped': popped,
+          'current': current,
+        },
+      );
+    });
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+    final old = _currentScreenName ??
+        (oldRoute != null ? _detectScreenName(oldRoute) : '(unknown)');
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final target =
+          newRoute != null ? _detectScreenName(newRoute) : '(unknown)';
+      _currentScreenName = target;
+
+      SnappySnag.addBreadcrumb(
+        category: 'navigation',
+        message: 'replace: $old -> $target',
+        data: {
+          'action': 'replace',
+          'target': target,
+          'old': old,
+        },
+      );
+    });
+  }
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didRemove(route, previousRoute);
+    final removed = _detectScreenName(route);
+    SnappySnag.addBreadcrumb(
+      category: 'navigation',
+      message: 'remove: $removed',
+      data: {
+        'action': 'remove',
+        'removed': removed,
+      },
+    );
+  }
+}
+
 /// Representation of reporter/user information for SnappySnag.
 class SnappySnagUser {
   /// Unique identifier of the user (e.g. database UUID, user ID).
@@ -496,6 +711,43 @@ class SnappySnag {
   Map<String, dynamic>? _customMetadata;
   String _supabaseUrl =
       'https://apwesndoqpdlgwcylkzj.supabase.co'; // Default is production
+
+  /// In-memory ring buffer holding the most recent breadcrumb events (max 25 items).
+  final List<SnappySnagBreadcrumb> _breadcrumbs = [];
+
+  /// Maximum number of breadcrumb events retained in memory before older events are evicted.
+  static const int maxBreadcrumbs = 25;
+
+  /// Returns an unmodifiable list of currently recorded breadcrumbs in chronological order.
+  List<SnappySnagBreadcrumb> get breadcrumbs => List.unmodifiable(_breadcrumbs);
+
+  /// Manually records a custom breadcrumb event (e.g. key user interactions, network responses, state changes).
+  static void addBreadcrumb({
+    required String category,
+    required String message,
+    Map<String, dynamic>? data,
+  }) {
+    final instance = SnappySnag();
+    if (!instance.isEnabled) return;
+
+    final crumb = SnappySnagBreadcrumb(
+      category: category,
+      message: message,
+      data: data,
+    );
+
+    if (instance._breadcrumbs.length >= maxBreadcrumbs) {
+      instance._breadcrumbs.removeAt(0); // Evict oldest
+    }
+    instance._breadcrumbs.add(crumb);
+    SnappySnag._log('🍞 SnappySnag Breadcrumb: [$category] $message');
+  }
+
+  /// Clears all recorded breadcrumb events from memory.
+  static void clearBreadcrumbs() {
+    SnappySnag()._breadcrumbs.clear();
+    SnappySnag._log('🍞 SnappySnag: Breadcrumbs cleared.');
+  }
 
   SnappySnagMode _mode = SnappySnagMode.user;
   SnappySnagMode get mode => _mode;
@@ -1551,6 +1803,10 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
             if (_includeAccountAndDiagnostics ||
                 SnappySnag().mode != SnappySnagMode.user)
               ...?SnappySnag()._customMetadata,
+            if (SnappySnag()._breadcrumbs.isNotEmpty &&
+                (_includeAccountAndDiagnostics ||
+                    SnappySnag().mode != SnappySnagMode.user))
+              'breadcrumbs': SnappySnag().breadcrumbs.map((b) => b.toJson()).toList(),
           },
         }),
       );
@@ -1740,6 +1996,13 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
       }
       debugPrint(
           '🌳 Widget Tree: ${_drawingWidgetTree.keys.join(", ")} (${_drawingWidgetTree.length} nodes)');
+      if (SnappySnag()._breadcrumbs.isNotEmpty) {
+        debugPrint(
+            '🍞 Breadcrumbs: (${SnappySnag()._breadcrumbs.length} recorded events)');
+        for (final b in SnappySnag().breadcrumbs) {
+          debugPrint('  - [${b.category}] ${b.message}');
+        }
+      }
       debugPrint(
           '----------------------------------------------------------------------');
       debugPrint(
@@ -4234,6 +4497,24 @@ class WidgetTreeDumper {
       'DecoratedBox',
       'AppBar',
       'SliverAppBar',
+      'FractionalTranslation',
+      'Transform',
+      'RepaintBoundary',
+      'ColoredBox',
+      'RawGestureDetector',
+      'View',
+      'SnapshotWidget',
+      'PageStorage',
+      'PrimaryScrollController',
+      'ScrollConfiguration',
+      'Scrollable',
+      'NotificationListener',
+      'Title',
+      'FocusScope',
+      'Focus',
+      'HeroControllerScope',
+      'ScrollNotificationObserver',
+      'DisplayFeatureSubScreen',
     ];
     if (standards.contains(clean)) return true;
 
@@ -4257,6 +4538,9 @@ class WidgetTreeDumper {
       'Observer',
       'Notification',
       'Transition',
+      'Translation',
+      'Transform',
+      'Boundary',
       'Tween',
       'Barrier',
       'Modal',
@@ -4264,6 +4548,9 @@ class WidgetTreeDumper {
       'Style',
       'Query',
       'Media',
+      'SubScreen',
+      'SnappySnag',
+      'Snappy',
     ];
     for (final keyword in frameworkKeywords) {
       if (clean.contains(keyword)) {

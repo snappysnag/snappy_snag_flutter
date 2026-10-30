@@ -469,6 +469,222 @@ void main() {
       snappy.setLocalization(null);
       expect(snappy.localization.send, '送信');
     });
+
+    test('SnappySnagBreadcrumb and ring buffer test', () {
+      SnappySnag.clearBreadcrumbs();
+      expect(SnappySnag().breadcrumbs.isEmpty, isTrue);
+
+      SnappySnag.addBreadcrumb(
+        category: 'navigation',
+        message: 'push: /home',
+        data: {'route': '/home'},
+      );
+
+      expect(SnappySnag().breadcrumbs.length, 1);
+      final crumb = SnappySnag().breadcrumbs.first;
+      expect(crumb.category, 'navigation');
+      expect(crumb.message, 'push: /home');
+      expect(crumb.data?['route'], '/home');
+
+      final json = crumb.toJson();
+      expect(json['category'], 'navigation');
+      expect(json['message'], 'push: /home');
+      expect(json['data']['route'], '/home');
+      expect(json.containsKey('timestamp'), isTrue);
+
+      // Test maxBreadcrumbs ring buffer (25 items)
+      for (int i = 0; i < 30; i++) {
+        SnappySnag.addBreadcrumb(
+          category: 'action',
+          message: 'item_$i',
+        );
+      }
+
+      expect(SnappySnag().breadcrumbs.length, SnappySnag.maxBreadcrumbs);
+      // Oldest items (0..4) should have been evicted
+      expect(SnappySnag().breadcrumbs.first.message, 'item_5');
+      expect(SnappySnag().breadcrumbs.last.message, 'item_29');
+
+      SnappySnag.clearBreadcrumbs();
+      expect(SnappySnag().breadcrumbs.isEmpty, isTrue);
+    });
+
+    testWidgets('SnappySnagNavigatorObserver records navigation events', (tester) async {
+      SnappySnag.clearBreadcrumbs();
+
+      final observer = SnappySnagNavigatorObserver();
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorObservers: [observer],
+          initialRoute: '/',
+          routes: {
+            '/': (context) => Scaffold(
+                  body: ElevatedButton(
+                    onPressed: () => Navigator.pushNamed(context, '/details'),
+                    child: const Text('Go to details'),
+                  ),
+                ),
+            '/details': (context) => Scaffold(
+                  body: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Back'),
+                  ),
+                ),
+          },
+        ),
+      );
+
+      expect(SnappySnag().breadcrumbs.isNotEmpty, isTrue);
+      expect(SnappySnag().breadcrumbs.last.message.contains('/'), isTrue);
+
+      // Navigate to /details
+      await tester.tap(find.text('Go to details'));
+      await tester.pumpAndSettle();
+
+      expect(SnappySnag().breadcrumbs.last.category, 'navigation');
+      expect(SnappySnag().breadcrumbs.last.message, contains('/details'));
+
+      // Pop back
+      await tester.tap(find.text('Back'));
+      await tester.pumpAndSettle();
+
+      expect(SnappySnag().breadcrumbs.last.category, 'navigation');
+      expect(SnappySnag().breadcrumbs.last.message, contains('pop: /details'));
+    });
+
+    testWidgets('SnappySnagNavigatorObserver resolves screen widget class names for anonymous routes', (tester) async {
+      SnappySnag.clearBreadcrumbs();
+
+      final observer = SnappySnagNavigatorObserver();
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: SnappySnag.defaultNavigatorKey,
+          navigatorObservers: [observer],
+          home: const TestHomeView(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Home should be recorded with its class name TestHomeView
+      expect(SnappySnag().breadcrumbs.isNotEmpty, isTrue);
+      expect(SnappySnag().breadcrumbs.last.message, contains('TestHomeView'));
+
+      // Navigate via anonymous MaterialPageRoute (settings.name is null)
+      await tester.tap(find.text('Push Anonymous Route'));
+      await tester.pumpAndSettle();
+
+      // Should automatically detect target screen as TestDetailView instead of MaterialPageRoute
+      expect(SnappySnag().breadcrumbs.last.message, contains('TestDetailView'));
+      expect(SnappySnag().breadcrumbs.last.data?['target'], equals('TestDetailView'));
+
+      // Pop back
+      await tester.tap(find.text('Pop'));
+      await tester.pumpAndSettle();
+
+      // Should pop back to TestHomeView
+      expect(SnappySnag().breadcrumbs.last.message, contains('pop: TestDetailView (back to TestHomeView'));
+
+      // Open a Dialog
+      await tester.tap(find.text('Show Dialog'));
+      await tester.pumpAndSettle();
+
+      expect(SnappySnag().breadcrumbs.last.message, contains('push: TestHomeView (/) -> Dialog'));
+
+      // Close Dialog
+      await tester.tap(find.text('Close Dialog'));
+      await tester.pumpAndSettle();
+
+      expect(SnappySnag().breadcrumbs.last.message, contains('pop: Dialog (back to TestHomeView'));
+
+      // Navigate to a screen wrapped with SnappySnagHideButton
+      await tester.tap(find.text('Push Camera Screen (Hide Button)'));
+      await tester.pumpAndSettle();
+
+      // Should bypass SnappySnagHideButton and correctly detect TestCameraView
+      expect(SnappySnag().breadcrumbs.last.message, contains('push: TestHomeView (/) -> TestCameraView'));
+    });
   });
+}
+
+class TestHomeView extends StatelessWidget {
+  const TestHomeView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TestDetailView()),
+                );
+              },
+              child: const Text('Push Anonymous Route'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Sample Dialog'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Close Dialog'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              child: const Text('Show Dialog'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const TestCameraView(),
+                  ),
+                );
+              },
+              child: const Text('Push Camera Screen (Hide Button)'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class TestCameraView extends StatelessWidget {
+  const TestCameraView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const SnappySnagHideButton(
+      child: Scaffold(
+        body: Center(child: Text('Camera View Content')),
+      ),
+    );
+  }
+}
+
+class TestDetailView extends StatelessWidget {
+  const TestDetailView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Pop'),
+        ),
+      ),
+    );
+  }
 }
 

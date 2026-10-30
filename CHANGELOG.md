@@ -1,3 +1,13 @@
+## 1.2.0
+
+* **Breadcrumbs & Screen Navigation Tracking (`SnappySnagNavigatorObserver`, `SnappySnagBreadcrumb`)**:
+  * Added automatic screen transition tracking (`didPush`, `didPop`, `didReplace`, `didRemove`) leading up to a bug report.
+  * Developers can simply add `SnappySnagNavigatorObserver()` to `MaterialApp(navigatorObservers: [...])` or `GoRouter` to effortlessly collect user reproduction journeys.
+  * **Zero Breaking Change**: Opt-in design ensures apps that do not add `SnappySnagNavigatorObserver` continue to function normally without any errors or configuration changes.
+  * **Memory-Safe Ring Buffer**: Retains up to 25 recent events in memory, automatically evicting older actions to guarantee zero performance or memory footprint overhead.
+  * **Custom Action Logging**: Added `SnappySnag.addBreadcrumb(category: ..., message: ..., data: ...)` and `SnappySnag.clearBreadcrumbs()` for logging key business actions and network responses.
+  * **Demo / Sandbox Mode Output**: Recorded breadcrumbs are clearly printed in the debug console during local evaluation.
+
 ## 1.1.1
 
 * **Security Architecture Hardening (Strict Write-Only Publishable Key Model)**:

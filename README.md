@@ -17,6 +17,7 @@ SnappySnag is a visual bug reporting and AI auto-fix suggestion tool for Flutter
 * 🎨 **Clean & Annotated Screenshot Preservation**: Pin coordinates are stored as normalized vectors, keeping the original screenshot crystal clear without destructive image stamping.
 * 🌳 **Widget Tree Dumper**: Automatically dumps the widget hierarchy (up to a depth of 10 levels) for precise widget mapping.
 * 🤖 **AI Auto-Fix suggestions**: Generates human-focused technical guides and cursor-compatible agent prompts.
+* 🔌 **Official MCP (Model Context Protocol) Server**: Connect Cursor, Claude Code, or Antigravity directly to your tickets via `https://snappysnag.com/api/mcp`. Let your AI agents fetch feedback, inspect pin coordinates, draft code fixes, mark tickets `resolved`, and post resolution notes without leaving your IDE.
 * 💬 **Interactive AI Discussion & Version Sync**: Directly ask follow-up questions to Gemini about architecture, alternative fixes, or trade-offs. Seamlessly sync discussion consensus into refined Version 2/3 technical guides and agent prompts with syntax-highlighted code snippets.
 * 🔔 **Real-Time Team Notifications (Slack & Discord)**: Receive instant webhook alerts in your team's Slack or Discord channels whenever new feedback is submitted, featuring category, severity, and authenticated deep-links directly to tickets.
 * 💾 **Offline Draft & Resilience**: Automatically saves drawing annotations, pins, and comments locally on connection failure or accidental dismissal. Seamlessly resume or discard drafts on the next capture without wasting user efforts.
@@ -82,7 +83,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       // 2. Simply pass SnappySnag's defaultNavigatorKey
       navigatorKey: SnappySnag.defaultNavigatorKey,
-      // 3. Wrap your screen with SnappySnagOverlay in builder
+      // 3. (Optional) Automatically record screen navigation breadcrumbs for AI repro steps
+      navigatorObservers: [
+        SnappySnagNavigatorObserver(),
+      ],
+      // 4. Wrap your screen with SnappySnagOverlay in builder
       builder: (context, child) => SnappySnagOverlay(
         child: child ?? const SizedBox.shrink(),
       ),
@@ -194,7 +199,36 @@ SnappySnag provides native internationalization out of the box with complete dic
   SnappySnag().setLocalization(customLocalization);
   ```
 
-### 6. Widget Tree Hierarchy & Privacy Opt-Out (`enableWidgetTree`)
+### 6. Breadcrumbs & Screen Navigation Tracking (`SnappySnagNavigatorObserver`)
+
+Breadcrumbs record the sequence of screen transitions and user events leading up to a bug report. This gives developers and AI coding assistants exact, step-by-step reproduction instructions:
+
+* **Automatic Screen Navigation Tracking**:
+  Add `SnappySnagNavigatorObserver()` to your `MaterialApp` or `GoRouter` configuration:
+  ```dart
+  MaterialApp(
+    navigatorKey: SnappySnag.defaultNavigatorKey,
+    navigatorObservers: [
+      SnappySnagNavigatorObserver(), // Automatically logs Push, Pop, Replace
+    ],
+    // ...
+  )
+  ```
+
+* **Manual Breadcrumb Recording**:
+  Record custom breadcrumbs (e.g., checkout steps, network responses, key button taps):
+  ```dart
+  SnappySnag.addBreadcrumb(
+    category: 'action',
+    message: 'User tapped "Checkout Button"',
+    data: {'cart_items_count': 3},
+  );
+  ```
+
+* **Memory-Safe Ring Buffer**:
+  SnappySnag retains the most recent 25 events in memory. Older events are automatically evicted to guarantee zero memory overhead.
+
+### 7. Widget Tree Hierarchy & Privacy Opt-Out (`enableWidgetTree`)
 
 By default (`enableWidgetTree: true`), SnappySnag extracts the Flutter UI hierarchy (up to 10 levels deep) to give Gemini AI complete context on nested layouts and styling:
 
@@ -211,7 +245,7 @@ By default (`enableWidgetTree: true`), SnappySnag extracts the Flutter UI hierar
   ```
   > 💡 When `enableWidgetTree: false`, SnappySnag skips tree traversal entirely and relies strictly on screenshot visual cues and user annotations for AI analysis. The dashboard will automatically reflect this as `Visual Screenshot Analysis (UI Tree Excluded)`.
 
-### 7. Logging & Console Output (`enableLogging`)
+### 8. Logging & Console Output (`enableLogging`)
 
 By default, SnappySnag suppresses all debug output (`enableLogging: false`) to keep your host app's debug and release console output completely clean.
 
@@ -228,14 +262,14 @@ SnappySnag().initialize(
 >
 > *Note: Critical configuration errors (such as missing `apiKey`, security guard dev-mode fallbacks, and macOS sandbox permission guides) will always be output regardless of `enableLogging`.*
 
-### 8. Multi-Point Pin Drop & Itemized Feedback
+### 9. Multi-Point Pin Drop & Itemized Feedback
 
 When users capture a screenshot, they can annotate specific UI elements with numbered pins (1–5) and write separate notes for each pin:
 * **Drop Pins**: Tap anywhere on the captured screenshot to place a pin marker.
 * **Itemized Notes**: Add targeted feedback or repro notes per pin, helping developers address multiple UI issues in a single report without confusing clutter.
 * **Non-Destructive Vectors**: Pin coordinates (`x`, `y` percentages) are stored separately from the image. The original screenshot remains intact and clean on your dashboard.
 
-### 9. Launch Feedback Mode Manually (e.g. from Settings or In-App Menu)
+### 10. Launch Feedback Mode Manually (e.g. from Settings or In-App Menu)
 
 When the floating button is hidden (via `showTriggerButton: false` or `SnappySnagHideButton`), or if you prefer triggering feedback through your own custom UI (such as a "Report Bug" button in a Settings or Help drawer), call `SnappySnag.startFeedbackMode`:
 
@@ -252,7 +286,7 @@ ListTile(
 
 > 💡 When invoked, it displays a guided prompt modal and temporarily reveals the capture button, allowing the user to navigate anywhere in the app to capture and highlight the issue.
 
-### 10. Build for TestFlight / Internal Testing
+### 11. Build for TestFlight / Internal Testing
 
 To compile your app with SnappySnag enabled, build with the `--dart-define` flag:
 
@@ -261,7 +295,7 @@ flutter build ipa --dart-define=ENABLE_SNAPPY_SNAG=true
 flutter build appbundle --dart-define=ENABLE_SNAPPY_SNAG=true
 ```
 
-### 11. Build for App Store / Google Play Store (Production)
+### 12. Build for App Store / Google Play Store (Production)
 
 To compile your app for production release, build normally. SnappySnag will automatically be disabled, will not render the overlay button, and will not register any shake listeners:
 
