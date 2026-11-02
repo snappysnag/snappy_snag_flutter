@@ -2005,9 +2005,10 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
       }
       debugPrint(
           '----------------------------------------------------------------------');
-      debugPrint(
-          '👉 To sync feedback to GitHub Issues and enable AI auto-fix,');
-      debugPrint('   get your free API key at: https://snappysnag.com');
+      debugPrint('👉 Unlock Gemini AI Code Fix Guides for Cursor & Claude Code,');
+      debugPrint('   GitHub Issues Sync, and Real-Time Slack/Discord Alerts:');
+      debugPrint('   ⚡️ Get your free API key in 10s: https://snappysnag.com');
+      debugPrint('   (100% Passwordless: Passkeys, Google, or Email OTP - No CC)');
       debugPrint(
           '======================================================================\n');
 

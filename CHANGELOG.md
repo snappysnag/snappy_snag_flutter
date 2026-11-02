@@ -1,3 +1,11 @@
+## 1.2.1
+
+* **Documentation & Developer Onboarding Refresh**:
+  * Added visual showcase banner and direct link to browser-based interactive demo (`https://snappysnag.com/demo`).
+  * Added 10-second passwordless sign-up badges and clear setup instructions for instant API key retrieval.
+  * Enhanced local Sandbox (`apiKey: 'demo'`) debug console output with direct guidance to unlock Gemini AI code fix suggestions, MCP server integration for Cursor & Claude Code, and GitHub Issue sync.
+  * Updated package description and example comments highlighting modern AI coding workflows.
+
 ## 1.2.0
 
 * **Breadcrumbs & Screen Navigation Tracking (`SnappySnagNavigatorObserver`, `SnappySnagBreadcrumb`)**:

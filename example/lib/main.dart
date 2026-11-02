@@ -4,10 +4,13 @@ import 'package:snappy_snag/snappy_snag.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize SnappySnag SDK in Sandbox / Demo Mode
-  // No server configuration or API key required to test locally!
+  // 🔑 Ready to connect to Dashboard, AI Auto-Fix (Cursor/Claude), & GitHub Issues?
+  // Get your free API key in 10 seconds (Passwordless / No CC required):
+  // 👉 https://snappysnag.com
+  //
+  // Or keep 'demo' for instant local console evaluation without an account:
   SnappySnag().initialize(
-    apiKey: 'demo', // Use 'demo' for instant local testing without an account
+    apiKey: 'demo', // Use 'demo' for local sandbox testing, or 'snag_live_...' from dashboard
     showTriggerButton: true, // Show the floating SnappySnag trigger button
     enableLogging: true,
     enableHaptics: true, // ⚡️ Tactile haptic feedback for pin drops and actions
