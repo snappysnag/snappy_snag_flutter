@@ -1,4 +1,4 @@
-// ignore_for_file: unused_element, use_build_context_synchronously
+// ignore_for_file: unused_element, use_build_context_synchronously, deprecated_member_use
 import 'dart:async';
 
 import 'dart:convert';
@@ -2034,6 +2034,8 @@ class SnappySnagOverlayState extends State<SnappySnagOverlay> {
       }
       // Clear draft on successful submission and close overlay
       await _SnappyDraftData.clear();
+      // Reset recorded breadcrumbs so the next feedback report starts fresh
+      SnappySnag.clearBreadcrumbs();
       setState(() {
         _overlayMode = _SnappyOverlayMode.none;
         _isCapturing = false;

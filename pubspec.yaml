@@ -1,6 +1,6 @@
 name: snappy_snag
 description: "One-tap in-app visual bug reporting for Flutter with multi-point pins, widget tree dumper, and AI code fix suggestions for Cursor, Claude & IDEs via MCP."
-version: 1.2.1
+version: 1.2.2
 homepage: https://snappysnag.com?utm_source=pub_dev&utm_medium=referral&utm_campaign=package_sidebar
 repository: https://github.com/snappysnag/snappy_snag_flutter
 issue_tracker: https://github.com/snappysnag/snappy_snag_flutter/issues

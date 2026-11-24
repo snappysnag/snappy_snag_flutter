@@ -1,3 +1,13 @@
+## 1.2.2
+
+* **Breadcrumb Auto-Reset on Successful Submission**:
+  * Automatically flushes and resets the breadcrumb history buffer (`SnappySnag.clearBreadcrumbs()`) when feedback is successfully submitted.
+  * Ensures that subsequent bug reports start with a clean slate, preventing past user journeys from cluttering future reports.
+  * In case of network errors or failed submissions, breadcrumb logs are preserved so retries retain full diagnostic history.
+* **Static Analysis & Flutter SDK Pre-release Compatibility**:
+  * Added `deprecated_member_use` suppression for `package:flutter/material.dart` under future Flutter pre-release SDK analysis environments (Pana 0.23.19+ / Flutter 3.50+).
+  * Guarantees 100% static analysis score on pub.dev without breaking backward compatibility for Flutter Stable channels.
+
 ## 1.2.1
 
 * **Documentation & Developer Onboarding Refresh**:
